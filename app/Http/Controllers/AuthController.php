@@ -17,17 +17,18 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $randomString = strtoupper(Str::random(10));
+        $auto_password = strtoupper(Str::random(7));
         try {
             $request->validate([
                 'email' => 'required|string|email|max:255|unique:users',
                 'phone_number' => 'required|string|max:11',
-                'password' => 'required|string|min:8|confirmed',
+                // 'password' => 'required|string|min:8|confirmed',
             ]);
 
             $user = User::create([
                 'email' => $request->email,
                 'phone_number' => $request->phone_number,
-                'password' => Hash::make($request->password),
+                'password' => Hash::make($auto_password),
                 'client_id' => $randomString,
             ]);
 
@@ -37,7 +38,7 @@ class AuthController extends Controller
             ]);
 
             // Send the welcome email
-            Mail::to($user->email)->send(new WelcomeEmail($user));
+            Mail::to($user->email)->send(new WelcomeEmail($user, $auto_password));
 
             $token = $user->createToken('auth_token')->plainTextToken;
 

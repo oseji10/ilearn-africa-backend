@@ -41,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Add other routes that require authentication here
     Route::get('clients', [ClientController::class, 'show']);
     Route::post('clients', [ClientController::class, 'store']);
-    Route::put('/clients/{id}', [ClientController::class, 'update']);
+    Route::put('/clients/{client_id}', [ClientController::class, 'update']);
 
     Route::get('courses', [CoursesController::class, 'show']);
     Route::post('courses', [CoursesController::class, 'store']);

@@ -17,9 +17,10 @@ class WelcomeEmail extends Mailable
      *
      * @return void
      */
-    public function __construct($user)
+    public function __construct($user, $auto_password)
     {
         $this->user = $user;
+        $this->auto_password = $auto_password;
     }
 
     /**
@@ -34,7 +35,11 @@ class WelcomeEmail extends Mailable
                     ->with([
                         'email' => $this->user->email,
                         'phone_number' => $this->user->phone_number,
-                        'password' => $this->user->password,
+                        'password' => $this->auto_password,
                     ]);
     }
 }
+
+
+
+

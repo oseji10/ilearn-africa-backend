@@ -11,18 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('clients', function (Blueprint $table) {
-            $table->softDeletes();
-        });
-        Schema::table('users', function (Blueprint $table) {
-            $table->softDeletes();
-        });
-        Schema::table('admin', function (Blueprint $table) {
-            $table->softDeletes();
-        });
-
         Schema::table('courses', function (Blueprint $table) {
-            $table->softDeletes();
+            $table->string('description');
+            $table->string('cost');
+            $table->text('discount');
         });
     }
 

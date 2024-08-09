@@ -11,14 +11,19 @@ class Client extends Model
     public $table = 'clients';
     protected $fillable = [
         'firstname',
-        'lastname',
+        'surname',
         'othernames',
         'gender',
         'marital_status',
         'date_of_birth',
-        'state_of_origin',
-        'state_of_residence',
         'qualification',
         'client_id',
+        'status',
+        'date_of_birth',
+        'country',
+        'nationality',
+        'address',
+        'qualification',
+        'title',
     ]; 
 }
