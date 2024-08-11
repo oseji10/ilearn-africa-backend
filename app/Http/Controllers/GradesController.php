@@ -3,15 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Qualifications;
-class QualificationsController extends Controller
+use App\Models\Grades;
+class GradesController extends Controller
 {
     public function show()
     {
-        $qualifications = Qualifications::all();
+        $grades = Grades::all();
         return response()->json([
-            'message' => 'Qualifications retrieved successfully',
-            'qualifications' => $qualifications,
+            'message' => 'Grades retrieved successfully',
+            'grades' => $grades,
         ]);
        
     }
@@ -20,17 +20,17 @@ class QualificationsController extends Controller
     {
         // Validate the incoming request data
         $validated = $request->validate([
-            'qualification_name' => 'required|string|max:255',
+            'grade' => 'required|string|max:255',
             
         ]);
 
         // Create a new client with the validated data
-        $qualification = Qualifications::create($validated);
+        $grade = Grades::create($validated);
 
         // Return a response, typically JSON
         return response()->json([
-            'message' => 'Qualification created successfully',
-            'qualification' => $qualification,
+            'message' => 'Grade created successfully',
+            'grade' => $grade,
         ], 201); // HTTP status code 201: Created
     }
 }

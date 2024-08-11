@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('clients', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             // $table->dropColumn('status');
             // $table->dropColumn('client_id');
             // $table->string('status')->default('profile_created')->nullable();
@@ -21,6 +21,8 @@ return new class extends Migration
             // $table->text('address')->nullable();
             // $table->string('nationality')->nullable();
             // $table->string('country')->nullable();
+            $table->string('client_id')->nullable();
+            $table->foreign('client_id')->references('client_id')->on('clients')->onDelete('cascade');
         });
     }
 

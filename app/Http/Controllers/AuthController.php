@@ -11,6 +11,8 @@ use App\Mail\WelcomeEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Models\Client;
+use App\Models\Educationaldetails;
+
 class AuthController extends Controller
 {
 
@@ -33,6 +35,11 @@ class AuthController extends Controller
             ]);
 
             $client = Client::create([
+                
+                'client_id' => $randomString,
+            ]);
+
+            $educational_details = Educationaldetails::create([
                 
                 'client_id' => $randomString,
             ]);
@@ -123,5 +130,21 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Logged out successfully'
         ]);
+    }
+
+
+
+    public function getClientId(Request $request)
+    {
+        // Retrieve the authenticated user
+        $user = $request->user();
+
+        // Check if user is authenticated
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Return the client_id
+        return response()->json(['client_id' => $user->client_id, 'email' => $user->email]);
     }
 }

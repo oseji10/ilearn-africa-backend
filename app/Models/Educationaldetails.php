@@ -9,5 +9,15 @@ class Educationaldetails extends Model
 {
     use HasFactory;
     public $table = 'educational_details';
-    protected $fillable = ['client_id', 'qualification_id', 'date_acquired', 'grade'];
+    protected $fillable = ['client_id', 'qualification_id', 'course_studied', 'date_acquired', 'grade'];
+
+    public function grade()
+    {
+        return $this->belongsTo(Grades::class, 'grade');
+    }
+
+    public function qualification()
+    {
+        return $this->belongsTo(Qualifications::class, 'qualification_id');
+    }
 }

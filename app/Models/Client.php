@@ -25,5 +25,39 @@ class Client extends Model
         'address',
         'qualification',
         'title',
+        'created_by'
     ]; 
+
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'client_id', 'client_id');
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class, 'country');
+    }
+
+    public function nationality()
+    {
+        return $this->belongsTo(Nationality::class, 'nationality');
+    }
+
+  
+
+    public function educationalDetails()
+    {
+        return $this->hasMany(Educationaldetails::class, 'client_id', 'client_id');
+    }
+
+    public function workDetails()
+    {
+        return $this->hasMany(Workdetails::class, 'client_id', 'client_id');
+    }
+
+    public function payments()
+    {
+        return $this->belongsTo(Payments::class, 'client_id');
+    }
 }
