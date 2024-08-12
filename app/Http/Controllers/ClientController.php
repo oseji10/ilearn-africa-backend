@@ -27,6 +27,12 @@ class ClientController extends Controller
     
         return response()->json(['clients' => $clients]);
     }
+
+    public function getClient(Request $request)
+    {
+        $client = Client::with(['user', 'nationality', 'country', 'workDetails', 'educationalDetails.grade', 'educationalDetails.qualification'])->where('client_id', $request->client_id)->get();
+        return response()->json(['client' => $client]);
+    }
     
 
     public function store(Request $request)

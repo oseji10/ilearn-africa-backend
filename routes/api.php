@@ -11,6 +11,7 @@ use App\Http\Controllers\GradesController;
 use App\Http\Controllers\CourseListController;
 use App\Http\Controllers\CentersController;
 use App\Http\Controllers\PaymentsController;
+use App\Http\Controllers\PdfController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -43,18 +44,20 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Add other routes that require authentication here
     Route::get('clients', [ClientController::class, 'show']);
+    Route::get('/clients/{client_id}', [ClientController::class, 'getClient']);
+    
     Route::post('clients', [ClientController::class, 'store']);
     Route::put('/clients/{client_id}', [ClientController::class, 'update']);
-
+    
     Route::get('courses', [CoursesController::class, 'show']);
     Route::post('courses', [CoursesController::class, 'store']);
-
+    
     Route::post('qualifications', [QualificationsController::class, 'store']);
     Route::get('qualifications', [QualificationsController::class, 'show']);
     
     Route::post('grades', [GradesController::class, 'store']);
     Route::get('grades', [GradesController::class, 'show']);
-
+    
     Route::get('admin', [AdminController::class, 'show']);
     Route::post('admin', [AdminController::class, 'store']);
     
@@ -63,12 +66,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('centers', [CentersController::class, 'show']);
     Route::post('centers', [CentersController::class, 'store']);
-
+    
     Route::get('payments', [PaymentsController::class, 'show']);
     Route::post('store-payment', [PaymentsController::class, 'store']);
+    Route::post('/manual-payment', [PaymentsController::class, 'storeManualPayment']);
 
     Route::get('states', [StatesController::class, 'show']);
-    
+    Route::post('/generate-receipt', [PdfController::class, 'generateReceipt']);
+
 });
 
 Route::options('/{any}', function () {

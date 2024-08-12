@@ -6,12 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\Payments;
 use Illuminate\Support\Facades\DB;
 use App\Models\Client;
+use App\Models\CourseList;
 class PaymentsController extends Controller
 {
     public function show()
     {
-        // $payments = Payments::all();
-        $payments = Payments::with(['clients'])->get();
+       
+        $payments = Payments::with(['clients'])->orderBy('created_at', 'desc')->get();
+
         return response()->json([
             'message' => 'Payments retrieved successfully',
             'payments' => $payments,
@@ -20,7 +22,8 @@ class PaymentsController extends Controller
 
    
 
-public function store(Request $request)
+
+    public function store(Request $request)
 {
     // Validate the incoming request data
     $validated = $request->validate([
@@ -83,4 +86,31 @@ public function store(Request $request)
     }
 }
 
+
+
+
+
+public function storeManualPayment(Request $request)
+{
+  
+    $check_course_amount = CourseList::select('cost')->where('course_id', $request->course_id)->first();
+    $payments = new Payments();
+    $payments->client_id = $request->client_id;
+    $payments->amount = $check_course_amount->cost;
+    $payments->transaction_reference = $request->transaction_reference;
+    $payments->payment_method = $request->payment_method;
+    $payments->course_id = $request->course_id;
+    $payments->status = 1;
+    $payments->created_by = auth()->id();
+    $payments->save();
+   
+    
+
+       
+        return response()->json([
+            'message' => $payments
+        ], 200); // HTTP success code 200: Internal Server Error
+    }
 }
+
+
