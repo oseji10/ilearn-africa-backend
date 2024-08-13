@@ -12,6 +12,7 @@ use App\Http\Controllers\CourseListController;
 use App\Http\Controllers\CentersController;
 use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\PdfController;
+use App\Http\Controllers\QrCodeGeneratorController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -85,3 +86,8 @@ Route::middleware('auth:sanctum')->get('/test-token', function (Request $request
 });
 
 Route::middleware('auth:sanctum')->get('/client-id', [AuthController::class, 'getClientId']);
+
+// In routes/web.php
+
+Route::get('/verify-payment', [PdfController::class, 'verify'])->name('pdf.verify');
+Route::get('/qr-codes', [PdfController::class, 'generate']);

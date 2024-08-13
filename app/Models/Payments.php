@@ -15,4 +15,14 @@ class Payments extends Model
     {
         return $this->belongsTo(Client::class, 'client_id', 'client_id');
     }
+
+    public function courses()
+    {
+        return $this->belongsTo(CourseList::class, 'course_id', 'course_id');
+    }
+
+    public function users()
+    {
+        return $this->belongsTo(User::class, 'client_id', 'client_id');
+    }
 }
