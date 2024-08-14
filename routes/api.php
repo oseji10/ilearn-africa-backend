@@ -69,8 +69,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('centers', [CentersController::class, 'store']);
     
     Route::get('payments', [PaymentsController::class, 'show']);
+    Route::get('/verified-payments', [PaymentsController::class, 'verifiedPayments']);
     Route::post('store-payment', [PaymentsController::class, 'store']);
     Route::post('/manual-payment', [PaymentsController::class, 'storeManualPayment']);
+    
 
     Route::get('states', [StatesController::class, 'show']);
     Route::post('/generate-receipt', [PdfController::class, 'generateReceipt']);

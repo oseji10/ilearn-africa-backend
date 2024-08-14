@@ -56,8 +56,5 @@ class Client extends Model
         return $this->hasMany(Workdetails::class, 'client_id', 'client_id');
     }
 
-    public function payments()
-    {
-        return $this->belongsTo(Payments::class, 'client_id');
-    }
+  
 }

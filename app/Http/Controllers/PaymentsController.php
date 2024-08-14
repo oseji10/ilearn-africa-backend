@@ -20,7 +20,18 @@ class PaymentsController extends Controller
         ]);
     }
 
-   
+    public function verifiedPayments()
+    {
+       
+        $payments = Payments::with(['clients', 'courses'])->orderBy('created_at', 'desc')
+        ->where('status', "1")
+        ->get();
+
+        return response()->json([
+            'message' => 'Payments retrieved successfully',
+            'payments' => $payments,
+        ]);
+    }
 
 
     public function store(Request $request)
