@@ -9,7 +9,7 @@ class Payments extends Model
 {
     use HasFactory;
     public $table = 'payments';
-    protected $fillable = ['client_id', 'payment_for', 'course_id', 'payment_gateway', 'payment_method', 'amount', 'transaction_reference', 'other_reference','status', 'created_by'];
+    protected $fillable = ['client_id', 'payment_for', 'course_id', 'payment_gateway', 'payment_method', 'amount', 'transaction_reference', 'other_reference','status', 'created_by', 'admission_number'];
 
     public function clients()
     {

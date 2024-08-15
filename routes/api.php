@@ -13,6 +13,7 @@ use App\Http\Controllers\CentersController;
 use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\QrCodeGeneratorController;
+use App\Http\Controllers\AdmissionController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -76,6 +77,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('states', [StatesController::class, 'show']);
     Route::post('/generate-receipt', [PdfController::class, 'generateReceipt']);
+
+    Route::get('admissions', [AdmissionController::class, 'show']);
 
 });
 

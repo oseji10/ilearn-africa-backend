@@ -2,9 +2,9 @@
 /node_modules
 /public/build
 /public/hot
-/public/storage
+# /public/storage
 /storage/*.key
-/vendor
+# /vendor
 .env
 .env.backup
 .env.production

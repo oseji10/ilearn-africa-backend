@@ -7,6 +7,7 @@ use App\Models\Payments;
 use Illuminate\Support\Facades\DB;
 use App\Models\Client;
 use App\Models\CourseList;
+use App\Models\Admissions;
 class PaymentsController extends Controller
 {
     public function show()
@@ -23,7 +24,7 @@ class PaymentsController extends Controller
     public function verifiedPayments()
     {
        
-        $payments = Payments::with(['clients', 'courses'])->orderBy('created_at', 'desc')
+        $payments = Payments::with(['clients', 'courses', 'users'])->orderBy('created_at', 'desc')
         ->where('status', "1")
         ->get();
 
@@ -74,8 +75,19 @@ class PaymentsController extends Controller
         $validated['client_id'] = auth()->user()->client_id;
 
         // Create a new payment with the validated data
-        $payments = Payments::create($validated);
+        $admission_number = mt_rand(1000000, 9999999);
+        
+        $admissions = new Admissions();
+        $admissions->client_id = $request->client_id;
+        $admissions->admission_number = $admission_number;
+        $admissions->status = "pending";
+        $admissions->save();
+        
+        $validated['admission_number'] = $admission_number;
 
+        $payments = Payments::create($validated);
+    
+       
         // Commit the transaction
         DB::commit();
 
@@ -103,7 +115,14 @@ class PaymentsController extends Controller
 
 public function storeManualPayment(Request $request)
 {
+    $admission_number = mt_rand(1000000, 9999999);
   
+    $admissions = new Admissions();
+    $admissions->client_id = $request->client_id;
+    $admissions->admission_number = $admission_number;
+    $admissions->status = "pending";
+    $admissions->save();
+
     $check_course_amount = CourseList::select('cost')->where('course_id', $request->course_id)->first();
     $payments = new Payments();
     $payments->client_id = $request->client_id;
@@ -113,11 +132,12 @@ public function storeManualPayment(Request $request)
     $payments->course_id = $request->course_id;
     $payments->status = 1;
     $payments->created_by = auth()->id();
+    $payments->admission_number = $admission_number;
     $payments->save();
    
     
+   
 
-       
         return response()->json([
             'message' => $payments
         ], 200); // HTTP success code 200: Internal Server Error
