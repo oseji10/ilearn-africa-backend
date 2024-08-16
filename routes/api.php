@@ -79,7 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/generate-receipt', [PdfController::class, 'generateReceipt']);
 
     Route::get('admissions', [AdmissionController::class, 'show']);
-
+    Route::put('admissions', [AdmissionController::class, 'approval'])->name('process-addmissions');
 });
 
 Route::options('/{any}', function () {
