@@ -7,6 +7,8 @@ use App\Models\Client;
 use App\Models\Educationaldetails;
 use App\Models\Workdetails;
 use App\Models\Grades;
+use App\Models\Payments;
+use App\Models\Admissions;
 
 class ClientController extends Controller
 {
@@ -166,6 +168,22 @@ class ClientController extends Controller
             'message' => 'Client updated successfully',
             'client' => $client,
         ]);
+    }
+
+
+    public function statistics(){
+        $client_count = Client::count();
+        $applications_count = Payments::count();
+        $payments_count = Payments::where('status', '=', 1)->count();
+        $admitted_count = Admissions::where('status', 'ADMITTED')->count();
+        return response()->json([
+            // 'message' => 'Client updated successfully',
+            'clients' => $client_count,
+            'applications_count' => $applications_count,
+            'payments_count' => $payments_count,
+            'admitted_count' => $admitted_count
+        ]);
+       
     }
     
 }

@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('admissions/admission_letter', [PdfController::class, 'generateAdmissionLetter'])->name('admission_letter');
     
     Route::get('get-role', [AuthController::class, 'getRole']);
+    Route::get('statistics', [ClientController::class, 'statistics']);
 });
 
 Route::options('/{any}', function () {
