@@ -78,7 +78,7 @@ class PaymentsController extends Controller
         $admission_number = mt_rand(1000000, 9999999);
         
         $admissions = new Admissions();
-        $admissions->client_id = $request->client_id;
+        $admissions->client_id = auth()->user()->client_id;
         $admissions->admission_number = $admission_number;
         $admissions->status = "pending";
         $admissions->save();
