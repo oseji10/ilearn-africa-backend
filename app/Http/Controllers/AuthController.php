@@ -12,58 +12,70 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Models\Client;
 use App\Models\Educationaldetails;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class AuthController extends Controller
 {
 
     public function register(Request $request)
-    {
-        $randomString = strtoupper(Str::random(10));
-        $auto_password = strtoupper(Str::random(7));
-        try {
-            $request->validate([
-                'email' => 'required|string|email|max:255|unique:users',
-                'phone_number' => 'required|string|max:11',
-                // 'password' => 'required|string|min:8|confirmed',
-            ]);
+{
+    $randomString = strtoupper(Str::random(10));
+    $auto_password = strtoupper(Str::random(7));
 
-            $user = User::create([
-                'email' => $request->email,
-                'phone_number' => $request->phone_number,
-                'password' => Hash::make($auto_password),
-                'client_id' => $randomString,
-            ]);
+    try {
+        $request->validate([
+            'email' => 'required|string|email|max:255|unique:users',
+            'phone_number' => 'required|string|max:11',
+            // 'password' => 'required|string|min:8|confirmed',
+        ]);
 
-            $client = Client::create([
-                
-                'client_id' => $randomString,
-            ]);
+        // Create the client record
+        $client = Client::create([
+            'client_id' => $randomString,
+        ]);
 
-            $educational_details = Educationaldetails::create([
-                
-                'client_id' => $randomString,
-            ]);
+        // Create the user record
+        $user = User::create([
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'password' => Hash::make($auto_password),
+            'client_id' => $randomString,
+        ]);
 
-            // Send the welcome email
-            Mail::to($user->email)->send(new WelcomeEmail($user, $auto_password));
+        // Create the educational details record
+        Educationaldetails::create([
+            'client_id' => $randomString,
+        ]);
 
-            $token = $user->createToken('auth_token')->plainTextToken;
-
-            return response()->json([
-                'access_token' => $token,
-                'token_type' => 'Bearer',
-            ]);
-        } catch (ValidationException $e) {
-            // Check if the validation error is for the unique email constraint
-            if ($e->validator->errors()->has('email')) {
-                return response()->json([
-                    'message' => 'This user has already been created',
-                ], 409); // HTTP status code 409: Conflict
-            }
-
-            throw $e;
+        // Assign the role to the user
+        $userRole = User::where('client_id', $randomString)->first();
+        if ($userRole) {
+            $userRole->assignRole('client');
         }
+
+        // Send the welcome email
+        Mail::to($user->email)->send(new WelcomeEmail($user, $auto_password));
+
+        // Create and return the API token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user, // Include user details if needed
+        ]);
+    } catch (ValidationException $e) {
+        // Check if the validation error is for the unique email constraint
+        if ($e->validator->errors()->has('email')) {
+            return response()->json([
+                'message' => 'This user has already been created',
+            ], 409); // HTTP status code 409: Conflict
+        }
+
+        throw $e;
     }
+}
 
     // Login Method
     public function login(Request $request)
