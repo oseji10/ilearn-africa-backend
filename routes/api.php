@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('admissions/{admission_number}', [AdmissionController::class, 'approval'])->name('process-admissions');
     Route::post('admissions/admission_letter', [PdfController::class, 'generateAdmissionLetter'])->name('admission_letter');
     
+    Route::get('get-role', [AuthController::class, 'getRole']);
 });
 
 Route::options('/{any}', function () {

@@ -143,8 +143,17 @@ class AuthController extends Controller
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-
+        $client = $user->client;
         // Return the client_id
-        return response()->json(['client_id' => $user->client_id, 'email' => $user->email]);
+        return response()->json(['client_id' => $user->client_id, 'email' => $user->email, 'id' => $user->id, 'firstname' => $client->firstname, 'surname' => $client->surname, 'othernames' => $client->othernames]);
     }
+
+
+    public function getRole()
+{
+    $role = auth()->user()->roles->pluck('name')->first();
+
+
+    return response()->json($role);
+}
 }
