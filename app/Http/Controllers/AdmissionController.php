@@ -25,11 +25,11 @@ class AdmissionController extends Controller
         ]);
     }
 
-    public function approval(Request $request)
+    public function approval(Request $request, $admission_number)
     {
-        $ids = $request->input('ids'); // Array of admission IDs to update
+        // $admission_number = $request->input('admission_number'); // Array of admission IDs to update
     
-        $updatedCount = Admissions::whereIn('id', $ids)->update(['status' => 'ADMITTED']);
+        $updatedCount = Admissions::where('admission_number', $admission_number)->update(['status' => 'ADMITTED', 'created_by' => auth()->id()]);
     
         return response()->json([
             'message' => 'Successfully admitted',

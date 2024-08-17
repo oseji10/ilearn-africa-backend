@@ -10,4 +10,10 @@ class CourseList extends Model
     use HasFactory;
     public $table = 'course_list';
     protected $fillable = ['course_id', 'course_name', 'cost', 'course_image', 'status', 'created_by', 'center_id'];
+
+
+    public function centers()
+    {
+        return $this->belongsTo(Centers::class, 'center_id', 'center_id');
+    }
 }

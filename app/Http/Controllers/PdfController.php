@@ -9,6 +9,7 @@ use NumberToWords\NumberToWords;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
+use App\Models\Admissions;
 
 class PdfController extends Controller
 {
@@ -74,6 +75,59 @@ class PdfController extends Controller
 public function verify(){
     return view('pdf.verify');
 }
+
+
+
+public function generateAdmissionLetter(Request $request)
+    {
+        // Validate the request
+        $request->validate([
+            'admission_number' => 'required',
+        ]);
+    
+        // Fetch the payment data based on the transaction_reference
+        $admission = Admissions::with("clients",  "users", "payments.courses.centers")->where('admission_number', $request->admission_number)->first();
+        // return $admission->payments->courses->centers->center_name;
+        // return response()->json([
+        //     'message' => 'Payments retrieved successfully',
+        //     'payments' => $admission,
+        // ]);
+        
+        // Check if payment exists
+        if (!$admission) {
+            return response()->json(['error' => 'Admission not found'], 404);
+        }
+    
+        // Prepare the data for the PDF
+        $data = [
+            'client_id' => $admission->client_id,
+            'amount' => $admission->amount,
+            'created_at' => $admission->created_at->format('Y-m-d'),
+            'firstname' => $admission->clients->firstname,
+            'surname' => $admission->clients->surname,
+            'othernames' => $admission->clients->othernames,
+            'phone_number' => $admission->users->phone_number,
+            'email' => $admission->users->email,
+            'payment_method' => $admission->payment_method,
+            'transaction_reference' => $admission->transaction_reference,
+            'course_name' => $admission->payments->courses->course_name,
+            'course_id' => $admission->payments->courses->course_id,
+            'admission_date' => $admission->created_at,
+            'center_name' => $admission->payments->courses->centers->center_name,
+            // Add other necessary fields
+        ];
+
+        
+
+        // Load the view file and pass in the data
+        $pdf = Pdf::loadView('pdf.admission_letter', $data);
+    
+        
+        // Return the generated PDF
+        return $pdf->download("admission-{$admission->admission_number}.pdf");
+    }
+
+
     
     
 }

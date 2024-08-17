@@ -24,11 +24,16 @@ class Admissions extends Model
 
     public function courses()
     {
-        return $this->belongsTo(CourseList::class, 'client_id', 'client_id');
+        return $this->belongsTo(CourseList::class, 'course_id', 'course_id');
     }
 
     public function payments()
     {
         return $this->belongsTo(Payments::class, 'admission_number', 'admission_number');
+    }
+
+    public function users()
+    {
+        return $this->belongsTo(User::class, 'client_id', 'client_id');
     }
 }
