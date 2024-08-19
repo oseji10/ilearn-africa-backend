@@ -85,38 +85,39 @@ class AuthController extends Controller
             'login' => 'required|string',
             'password' => 'required|string',
         ]);
-
+    
         // Determine if the input is an email or phone number
         $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone_number';
-
+    
         // Adjust the credentials array accordingly
         $credentials = [$loginType => $request->login, 'password' => $request->password];
-
+    
         // Attempt to authenticate the user
         if (!Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
                 'login' => ['The provided credentials are incorrect.'],
             ]);
         }
-
+    
         // Retrieve the authenticated user
         $user = User::where($loginType, $request->login)->firstOrFail();
-
-        
+    
         // Revoke all previous tokens (uncomment if needed)
         $user->tokens()->delete();
-
-
+    
         // Generate the authentication token using Sanctum
         $token = $user->createToken('auth_token')->plainTextToken;
-
-        // Return the response with the token
+    
+        // Return the response with the token and user role
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user,
+            'role' => $user->role->name, // Assuming the user has a role relationship
+            'client' => $user->client, 
         ]);
     }
+    
 
 
 //     public function login(Request $request)
