@@ -27,16 +27,25 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|string|email|max:255|unique:users',
             'phone_number' => 'required|string|max:11',
+            'firstname' => 'string',
+             'surname' => 'string',
+              'othernames' => 'string|nullable'
             // 'password' => 'required|string|min:8|confirmed',
         ]);
 
         // Create the client record
         $client = Client::create([
             'client_id' => $randomString,
+            'firstname' => $request->firstname,
+            'surname' => $request->surname,
+            'othernames' => $request->othernames,
         ]);
 
         // Create the user record
         $user = User::create([
+            // 'firstname' => $request->firstname,
+            // 'surname' => $request->surname,
+            // 'othernames' => $request->othernames,
             'email' => $request->email,
             'phone_number' => $request->phone_number,
             'password' => Hash::make($auto_password),
@@ -158,7 +167,7 @@ class AuthController extends Controller
         }
         $client = $user->client;
         // Return the client_id
-        return response()->json(['client_id' => $user->client_id, 'email' => $user->email, 'id' => $user->id, 'firstname' => $client->firstname, 'surname' => $client->surname, 'othernames' => $client->othernames]);
+        return response()->json(['status' => $client->status, 'client_id' => $user->client_id, 'email' => $user->email, 'id' => $user->id, 'firstname' => $client->firstname, 'surname' => $client->surname, 'othernames' => $client->othernames]);
     }
 
 
