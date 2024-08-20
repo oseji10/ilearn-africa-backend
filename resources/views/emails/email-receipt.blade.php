@@ -486,7 +486,7 @@
                                 Phone Number: {{$phone_number}}<br/>
                                 <tr>
                                   <td width="80%" class="purchase_item"><span class="f-fallback">{{$course_id}} - {{$course_name}}</span></td>
-                                  <td class="align-right" width="20%" class="purchase_item"><span class="f-fallback">{{number_format(($amount),2)}}</span></td>
+                                  <td class="align-right" width="20%" class="purchase_item"><span class="f-fallback">NGN{{number_format(($amount),2)}}</span></td>
                                 </tr>
                                
                                 <tr>
@@ -494,14 +494,14 @@
                                     <p class="f-fallback purchase_total purchase_total--label">Total</p>
                                   </td>
                                   <td width="20%" class="purchase_footer" valign="middle">
-                                    <p class="f-fallback purchase_total">{{number_format(($amount),2)}}</p>
+                                    <p class="f-fallback purchase_total">NGN{{number_format(($amount),2)}}</p>
                                   </td>
                                 </tr>
                               </table>
                             </td>
                           </tr>
                         </table>
-                        <p>If you have any questions about this receipt, simply reply to this email or reach out to our <a href="[support_email]">support team</a> for help.</p>
+                        <p>If you have any questions about this receipt, simply reply to this email or reach out to our <a href="{{$support_email}}">support team</a> for help.</p>
                         <p>Cheers,
                           <br>The iLearn Africa Team</p>
                         <!-- Action -->

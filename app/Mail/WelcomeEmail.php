@@ -35,6 +35,7 @@ class WelcomeEmail extends Mailable
                     ->subject('Welcome to iLearn Africa')
                     ->with([
                         'email' => $this->user->email,
+                        'client_id' => $this->user->client_id,
                         'phone_number' => $this->user->phone_number,
                         'password' => $this->auto_password,
                         'action_url' => "https://app.ilearnafricaedu.com/auth/signin/",

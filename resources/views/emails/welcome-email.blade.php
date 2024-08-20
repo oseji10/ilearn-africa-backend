@@ -490,6 +490,14 @@
                                 <tr>
                                   <td class="attributes_item">
                                     <span class="f-fallback">
+              <strong>Client ID:</strong> {{$client_id}}
+            </span>
+                                  </td>
+                                </tr>
+
+                                <tr>
+                                  <td class="attributes_item">
+                                    <span class="f-fallback">
               <strong>Username:</strong> {{$email}} or {{$phone_number}}
             </span>
                                   </td>
