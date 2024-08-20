@@ -50,6 +50,7 @@ class AuthController extends Controller
             'phone_number' => $request->phone_number,
             'password' => Hash::make($auto_password),
             'client_id' => $randomString,
+            'role_id' => 3
         ]);
 
         // Create the educational details record
@@ -112,7 +113,7 @@ class AuthController extends Controller
         $user = User::where($loginType, $request->login)->firstOrFail();
     
         // Revoke all previous tokens (uncomment if needed)
-        $user->tokens()->delete();
+        // $user->tokens()->delete();
     
         // Generate the authentication token using Sanctum
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -129,19 +130,7 @@ class AuthController extends Controller
     
 
 
-//     public function login(Request $request)
-// {
-//     $credentials = $request->only('login', 'password');
 
-//     if (Auth::attempt($credentials)) {
-//         $user = Auth::user();
-//         $token = $user->createToken('Personal Access Token')->plainTextToken;
-
-//         return response()->json([
-//             'success' => true,
-//             'token' => $token
-//         ]);
-//     }
     
 
     // Logout Method

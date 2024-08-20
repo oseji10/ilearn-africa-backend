@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Payments;
@@ -10,6 +10,8 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use App\Models\Admissions;
+use App\Mail\EmailReceipt;
+use App\Mail\EmailAdmission;
 
 class PdfController extends Controller
 {
@@ -30,7 +32,7 @@ class PdfController extends Controller
         }
     
         // Prepare the data for the PDF
-        $data = [
+        $user_data = [
             'client_id' => $payment->client_id,
             'amount' => $payment->amount,
             'created_at' => $payment->created_at->format('Y-m-d'),
@@ -43,16 +45,17 @@ class PdfController extends Controller
             'transaction_reference' => $payment->transaction_reference,
             'course_name' => $payment->courses->course_name,
             'course_id' => $payment->courses->course_id,
+            'transaction_date' => $payment->created_at,
             // Add other necessary fields
         ];
 
         $numberToWords = new NumberToWords();
 
         $numberTransformer = $numberToWords->getNumberTransformer('en');
-        $word_amount = $numberTransformer->toWords($data['amount'], 'NGN');
+        $word_amount = $numberTransformer->toWords($user_data['amount'], 'NGN');
         
         // Optionally, add the word amount back into the $data array
-        $data['amount_in_words'] = $word_amount;  
+        $user_data['amount_in_words'] = $word_amount;  
         
         $verificationUrl = route('pdf.verify', ['reference' => $payment->transaction_reference]);
         $qrCode = Builder::create()
@@ -62,14 +65,18 @@ class PdfController extends Controller
         ->build();
 
     // Save the QR code to a file or directly use it in the PDF
-    $data['qr_code'] = $qrCode->getDataUri();
+    $user_data['qr_code'] = $qrCode->getDataUri();
 
         // Load the view file and pass in the data
-        $pdf = Pdf::loadView('pdf.receipt', $data);
+        $pdf = Pdf::loadView('pdf.receipt', $user_data);
+
+      
+        
+        Mail::to($payment->users->email)->send(new EmailReceipt($user_data));
     
         
         // Return the generated PDF
-        return $pdf->download("invoice-{$payment->transaction_reference}.pdf");
+        // return $pdf->download("invoice-{$payment->transaction_reference}.pdf");
     }
 
 public function verify(){
@@ -87,11 +94,7 @@ public function generateAdmissionLetter(Request $request)
     
         // Fetch the payment data based on the transaction_reference
         $admission = Admissions::with("clients",  "users", "payments.courses.centers")->where('admission_number', $request->admission_number)->first();
-        // return $admission->payments->courses->centers->center_name;
-        // return response()->json([
-        //     'message' => 'Payments retrieved successfully',
-        //     'payments' => $admission,
-        // ]);
+     
         
         // Check if payment exists
         if (!$admission) {
@@ -99,7 +102,7 @@ public function generateAdmissionLetter(Request $request)
         }
     
         // Prepare the data for the PDF
-        $data = [
+        $admission_data = [
             'client_id' => $admission->client_id,
             'amount' => $admission->amount,
             'created_at' => $admission->created_at->format('Y-m-d'),
@@ -113,6 +116,7 @@ public function generateAdmissionLetter(Request $request)
             'course_name' => $admission->payments->courses->course_name,
             'course_id' => $admission->payments->courses->course_id,
             'admission_date' => $admission->created_at,
+            'admission_number' => $admission->admission_number,
             'center_name' => $admission->payments->courses->centers->center_name,
             // Add other necessary fields
         ];
@@ -120,11 +124,15 @@ public function generateAdmissionLetter(Request $request)
         
 
         // Load the view file and pass in the data
-        $pdf = Pdf::loadView('pdf.admission_letter', $data);
+        $pdf = Pdf::loadView('pdf.admission_letter', $admission_data);
+
+            
+        
+        Mail::to($admission->users->email)->send(new EmailAdmission($admission_data));
     
         
         // Return the generated PDF
-        return $pdf->download("admission-{$admission->admission_number}.pdf");
+        // return $pdf->download("admission-{$admission->admission_number}.pdf");
     }
 
 

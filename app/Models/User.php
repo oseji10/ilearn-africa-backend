@@ -23,7 +23,7 @@ class User extends Authenticatable
         'phone_number',
         'password',
         'client_id',
-      
+        'role_id'
     ];
     // protected $primaryKey = 'client_id';
     /**
