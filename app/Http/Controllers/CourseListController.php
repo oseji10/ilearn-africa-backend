@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\CourseList;
+use App\Models\Payments;
 
 class CourseListController extends Controller
 {
@@ -16,6 +17,35 @@ class CourseListController extends Controller
         ]);
        
     }
+
+    public function showMyRegisterableCourses()
+{
+    // Get the logged-in user's ID
+    $userId = auth()->user()->client_id;
+
+    // Fetch all courses
+    $courses = CourseList::all();
+
+    // Iterate through each course and check if the user has paid for it
+    $coursesWithStatus = $courses->map(function ($course) use ($userId) {
+        // Check if a payment exists for this course by this user
+        $paymentExists = Payments::where('course_id', $course->course_id)
+                                ->where('client_id', $userId)
+                                ->exists();
+
+        // Add a status field based on whether the payment exists
+        $course->status = $paymentExists ? 'Paid' : 'Not Paid';
+
+        return $course;
+    });
+
+    // Return the modified course list with the payment status
+    return response()->json([
+        'message' => 'Courses retrieved successfully',
+        'courses' => $coursesWithStatus,
+    ]);
+}
+
 
     public function store(Request $request)
     {

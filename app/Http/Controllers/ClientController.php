@@ -30,6 +30,10 @@ class ClientController extends Controller
         return response()->json(['clients' => $clients]);
     }
 
+
+ 
+
+
     public function getClient(Request $request)
     {
         $client = Client::with(['user', 'nationality', 'country', 'workDetails', 'educationalDetails.grade', 'educationalDetails.qualification'])->where('client_id', $request->client_id)->get();
@@ -84,7 +88,7 @@ class ClientController extends Controller
             'address' => 'sometimes|nullable',
             'status' => 'sometimes|nullable',
         ]);
-
+        $validated['status'] = 'registered';
         $client = Client::where('client_id', '=', $client_id)->firstOrFail();
         $client->update($validated);
 
@@ -146,8 +150,8 @@ class ClientController extends Controller
         // Extract and process the first detail
         $firstWorkDetail = array_shift($workDetailsList);
 
-        \Log::info('First Work Detail:', $firstWorkDetail);
-        \Log::info('Remaining Work Details:', $workDetailsList);
+        // \Log::info('First Work Detail:', $firstWorkDetail);
+        // \Log::info('Remaining Work Details:', $workDetailsList);
 
         // Update or insert the first work detail
         $existingWorkDetail = Workdetails::where('client_id', $client_id)->first();
@@ -162,6 +166,8 @@ class ClientController extends Controller
         foreach ($workDetailsList as $detail) {
             Workdetails::create(array_merge(['client_id' => $client_id], $detail));
         }
+
+
     }
         // Return a response, typically JSON
         return response()->json([

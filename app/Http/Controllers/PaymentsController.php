@@ -8,12 +8,24 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Client;
 use App\Models\CourseList;
 use App\Models\Admissions;
+use App\Models\User;
 class PaymentsController extends Controller
 {
     public function show()
     {
        
         $payments = Payments::with(['clients'])->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'message' => 'Payments retrieved successfully',
+            'payments' => $payments,
+        ]);
+    }
+
+    public function myPayments()
+    {
+       
+        $payments = Payments::with(['clients'])->where('client_id', auth()->user()->client_id)->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'message' => 'Payments retrieved successfully',
@@ -86,8 +98,7 @@ class PaymentsController extends Controller
         $validated['admission_number'] = $admission_number;
 
         $payments = Payments::create($validated);
-    
-       
+   
         // Commit the transaction
         DB::commit();
 
@@ -142,6 +153,14 @@ public function storeManualPayment(Request $request)
             'message' => $payments
         ], 200); // HTTP success code 200: Internal Server Error
     }
+
+
+    public function registeredCourses()
+    {
+        $my_courses = Payments::with(['courses'])->where('client_id', '=', auth()->user()->client_id)->get();
+        return response()->json(['my_courses' => $my_courses]);
+    }
+
 }
 
 

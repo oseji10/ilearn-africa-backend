@@ -14,6 +14,7 @@ use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\QrCodeGeneratorController;
 use App\Http\Controllers\AdmissionController;
+use App\Http\Controllers\UploadDocumentController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -70,9 +71,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('centers', [CentersController::class, 'store']);
     
     Route::get('payments', [PaymentsController::class, 'show']);
+    Route::get('my-payments', [PaymentsController::class, 'myPayments'])->name('my-payments');
+    
     Route::get('/verified-payments', [PaymentsController::class, 'verifiedPayments']);
     Route::post('store-payment', [PaymentsController::class, 'store']);
     Route::post('/manual-payment', [PaymentsController::class, 'storeManualPayment']);
+    Route::get('/my-courses', [PaymentsController::class, 'registeredCourses'])->name('payment.my-courses');
+    Route::get('/my-registerable-courses', [CourseListController::class, 'showMyRegisterableCourses'])->name('payment.my-registerable-courses');
     
 
     Route::get('states', [StatesController::class, 'show']);
@@ -84,6 +89,11 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('get-role', [AuthController::class, 'getRole']);
     Route::get('statistics', [ClientController::class, 'statistics']);
+
+    Route::put('change-password', [AuthController::class, 'changePassword'])->name('change-password');
+
+    
+    Route::post('/upload-document', [UploadDocumentController::class, 'uploadDocument']);
 });
 
 Route::options('/{any}', function () {
