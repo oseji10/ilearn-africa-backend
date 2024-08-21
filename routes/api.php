@@ -94,6 +94,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     
     Route::post('/upload-document', [UploadDocumentController::class, 'uploadDocument']);
+    Route::post('/proof-of-payment', [PaymentsController::class, 'uploadProofOfPayment']);
+    
 });
 
 Route::options('/{any}', function () {

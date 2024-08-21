@@ -9,6 +9,8 @@ use App\Models\Client;
 use App\Models\CourseList;
 use App\Models\Admissions;
 use App\Models\User;
+use App\Models\ProofOfPayment;
+
 class PaymentsController extends Controller
 {
     public function show()
@@ -154,6 +156,45 @@ public function storeManualPayment(Request $request)
         ], 200); // HTTP success code 200: Internal Server Error
     }
 
+    public function uploadProofOfPayment(Request $request)
+{
+    $other_reference = mt_rand(1000000, 9999999);
+    $payment_gateway = "SELF";
+    $payment_method = "Mobile Transefer";
+    $check_course_amount = CourseList::select('cost')->where('course_id', $request->course_id)->first();
+    $payments = new Payments();
+    $payments->client_id = $request->client_id;
+    $payments->amount = $check_course_amount->cost;
+    // $payments->transaction_reference = $request->client_id;
+    $payments->payment_method = $payment_method;
+    $payments->payment_gateway = $payment_gateway;
+    $payments->course_id = $request->course_id;
+    $payments->other_reference = $other_reference;
+    $payments->status = 0;
+    $payments->created_by = auth()->id();
+    // $payments->admission_number = $admission_number;
+    $payments->save();
+   
+    $validated = $request->validate([
+        'file' => 'required|file|mimes:png,jpg,jpeg,JPG,pdf,doc,docx|max:1024', // Adjust validation rules as needed
+    ]);
+
+    if ($request->file('file')) {
+        $file = $request->file('file');
+        $path = $file->store('documents', 'public'); // Store in the 'public/documents' directory
+
+        $validated['file_path'] = $path;
+        $validated['client_id'] = auth()->user()->client_id;
+
+        // Save the file path or other related information to the database if needed
+        $save = ProofOfPayment::create($validated);
+   
+
+        return response()->json([
+            'message' => $payments
+        ], 200); // HTTP success code 200: Internal Server Error
+    }
+}
 
     public function registeredCourses()
     {
