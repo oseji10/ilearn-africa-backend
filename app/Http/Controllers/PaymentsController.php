@@ -16,7 +16,18 @@ class PaymentsController extends Controller
     public function show()
     {
        
-        $payments = Payments::with(['clients'])->orderBy('created_at', 'desc')->get();
+        $payments = Payments::with(['clients'])->orderBy('updated_at', 'desc')->get();
+
+        return response()->json([
+            'message' => 'Payments retrieved successfully',
+            'payments' => $payments,
+        ]);
+    }
+
+    public function pendingPayments()
+    {
+       
+        $payments = Payments::with(['clients'])->where('status', '0')->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'message' => 'Payments retrieved successfully',
@@ -201,6 +212,27 @@ public function storeManualPayment(Request $request)
         $my_courses = Payments::with(['courses'])->where('client_id', '=', auth()->user()->client_id)->get();
         return response()->json(['my_courses' => $my_courses]);
     }
+
+    public function confirmPayment(Request $request)
+    {
+        $validated = $request->validate([
+            'transaction_reference' => 'string',
+            'client_id' => 'string',
+            'other_reference' => 'string',
+            'status' => 'string',
+            'updated_by'
+        ]);
+    
+        // Use the where clause first to get the query builder instance
+        $status = "1";
+        $validated['status'] = $status;
+        $validated['updated_by'] = auth()->id();
+        $confirm_payment = Payments::where('other_reference', $validated['other_reference'])
+            ->update($validated);
+    
+        return $confirm_payment;
+    }
+    
 
 }
 

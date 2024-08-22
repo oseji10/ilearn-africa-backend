@@ -71,6 +71,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('centers', [CentersController::class, 'store']);
     
     Route::get('payments', [PaymentsController::class, 'show']);
+    Route::get('pending-payments', [PaymentsController::class, 'pendingPayments']);
+    Route::put('confirm-payment', [PaymentsController::class, 'confirmPayment']);
+    
     Route::get('my-payments', [PaymentsController::class, 'myPayments'])->name('my-payments');
     
     Route::get('/verified-payments', [PaymentsController::class, 'verifiedPayments']);
