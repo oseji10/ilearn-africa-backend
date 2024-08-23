@@ -10,13 +10,21 @@ use App\Models\CourseList;
 use App\Models\Admissions;
 use App\Models\User;
 use App\Models\ProofOfPayment;
+use Barryvdh\DomPDF\Facade\Pdf;
+use NumberToWords\NumberToWords;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EmailReceipt;
 
 class PaymentsController extends Controller
 {
     public function show()
     {
        
-        $payments = Payments::with(['clients'])->orderBy('updated_at', 'desc')->get();
+        // $payments = Payments::with(['clients'])->orderBy('updated_at', 'desc')->get();
+        $payments = Payments::with(['clients'])->where('status', '1')->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'message' => 'Payments retrieved successfully',
@@ -200,6 +208,7 @@ public function storeManualPayment(Request $request)
         // Save the file path or other related information to the database if needed
         $save = ProofOfPayment::create($validated);
    
+        
 
         return response()->json([
             'message' => $payments
@@ -223,6 +232,7 @@ public function storeManualPayment(Request $request)
             'updated_by'
         ]);
     
+      
         // Use the where clause first to get the query builder instance
         $status = "1";
         $validated['status'] = $status;
@@ -230,7 +240,51 @@ public function storeManualPayment(Request $request)
         $confirm_payment = Payments::where('other_reference', $validated['other_reference'])
             ->update($validated);
     
-        return $confirm_payment;
+            $my_data = Payments::with('users', 'courses', 'clients')->where('transaction_reference', $request->transaction_reference)
+            ->orWhere('other_reference', $request->other_reference)
+            ->first();
+            // $email = $user_data->user->email;
+            // $amount = $user_data->amount;
+
+            $user_data = ([
+            'client_id' => $my_data->client_id,
+            'amount' => $my_data->amount,
+            'created_at' => $my_data->created_at->format('Y-m-d'),
+            'firstname' => $my_data->clients->firstname,
+            'surname' => $my_data->clients->surname,
+            'othernames' => $my_data->clients->othernames,
+            'phone_number' => $my_data->users->phone_number,
+            'email' => $my_data->users->email,
+            'payment_method' => $my_data->payment_method,
+            'transaction_reference' => $my_data->transaction_reference,
+            'course_name' => $my_data->courses->course_name,
+            'course_id' => $my_data->courses->course_id,
+            'transaction_date' => $my_data->created_at,
+            ]);
+
+            $numberToWords = new NumberToWords();
+            $numberTransformer = $numberToWords->getNumberTransformer('en');
+            $word_amount = $numberTransformer->toWords($user_data['amount'], 'NGN');
+        
+        // Optionally, add the word amount back into the $data array
+            $user_data['amount_in_words'] = $word_amount;  
+        
+            $verificationUrl = route('pdf.verify', ['reference' => $my_data->transaction_reference]);
+            $qrCode = Builder::create()
+            ->writer(new PngWriter())
+            ->data(route('pdf.verify', ['reference' => $my_data->transaction_reference]))
+            ->size(200)
+            ->build();
+
+    // Save the QR code to a file or directly use it in the PDF
+        $user_data['qr_code'] = $qrCode->getDataUri();
+
+            $pdf = Pdf::loadView('pdf.receipt', $user_data);
+            Mail::to($my_data->users->email)->send(new EmailReceipt($user_data));
+            
+            // return $user_data;
+
+        // return $confirm_payment;
     }
     
 
