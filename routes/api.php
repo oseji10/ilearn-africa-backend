@@ -87,8 +87,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/generate-receipt', [PdfController::class, 'generateReceipt']);
 
     Route::get('admissions', [AdmissionController::class, 'show']);
+    Route::get('admitted', [AdmissionController::class, 'admittedClients'])->name('admissions.admitted');
+    
     Route::put('admissions/{admission_number}', [AdmissionController::class, 'approval'])->name('process-admissions');
     Route::post('admissions/admission_letter', [PdfController::class, 'generateAdmissionLetter'])->name('admission_letter');
+
+    Route::post('certificates', [PdfController::class, 'generateCertificate'])->name('certificate');
+    
     
     Route::get('get-role', [AuthController::class, 'getRole']);
     Route::get('statistics', [ClientController::class, 'statistics']);

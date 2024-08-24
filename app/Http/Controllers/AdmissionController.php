@@ -11,6 +11,24 @@ class AdmissionController extends Controller
 {
     public function show(){
         $admissions = Admissions::with(['clients.user', 'payments.courses'])
+        ->where('status', 'pending')
+        ->orderBy(
+            Payments::select('created_at')
+                ->whereColumn('payments.admission_number', 'admissions.admission_number')
+                ->latest()
+                ->take(1)
+        )
+        ->get();
+    
+        return response()->json([
+            'message' => 'Admissions retrieved successfully',
+            'admissions' => $admissions,
+        ]);
+    }
+
+    public function admittedClients(){
+        $admissions = Admissions::with(['clients.user', 'payments.courses'])
+        ->where('status', 'ADMITTED')
         ->orderBy(
             Payments::select('created_at')
                 ->whereColumn('payments.admission_number', 'admissions.admission_number')
