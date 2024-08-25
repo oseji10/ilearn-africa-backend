@@ -15,6 +15,7 @@ use App\Http\Controllers\PdfController;
 use App\Http\Controllers\QrCodeGeneratorController;
 use App\Http\Controllers\AdmissionController;
 use App\Http\Controllers\UploadDocumentController;
+use App\Http\Controllers\CertificatesController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -91,8 +92,9 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::put('admissions/{admission_number}', [AdmissionController::class, 'approval'])->name('process-admissions');
     Route::post('admissions/admission_letter', [PdfController::class, 'generateAdmissionLetter'])->name('admission_letter');
-
+    
     Route::post('certificates', [PdfController::class, 'generateCertificate'])->name('certificate');
+    Route::get('certificates/my-certificates/{client_id}', [CertificatesController::class, 'myCertificates']);
     
     
     Route::get('get-role', [AuthController::class, 'getRole']);
