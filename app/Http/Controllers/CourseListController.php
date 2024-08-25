@@ -10,7 +10,10 @@ class CourseListController extends Controller
 {
     public function show()
     {
-        $courses = CourseList::orderBy('id', 'desc')->get();
+        // $courses = CourseList::orderBy('id', 'desc')->get();
+        $courses = CourseList::with('centers')
+        ->orderBy('id', 'desc')
+        ->get();
         return response()->json([
             'message' => 'Courses retrieved successfully',
             'courses' => $courses,
