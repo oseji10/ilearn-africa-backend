@@ -19,4 +19,12 @@ class CertificatesController extends Controller
             'certificates' => $my_certificates
         ]);
     }
+
+    public function clientCertificates(){
+        $certificates = Admissions::with("clients",  "users", "payments.courses.centers")->where('status', 'COMPLETED')->get();
+        return response()->json([
+            'message' => 'Certificates retrieved successfuly',
+            'certificates' => $certificates
+        ]);
+    }
 }

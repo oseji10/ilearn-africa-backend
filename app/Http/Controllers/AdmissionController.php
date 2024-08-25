@@ -29,6 +29,7 @@ class AdmissionController extends Controller
     public function admittedClients(){
         $admissions = Admissions::with(['clients.user', 'payments.courses'])
         ->where('status', 'ADMITTED')
+        ->orWhere('status', 'COMPLETED')
         ->orderBy(
             Payments::select('created_at')
                 ->whereColumn('payments.admission_number', 'admissions.admission_number')
