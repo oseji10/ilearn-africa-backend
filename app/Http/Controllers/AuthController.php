@@ -156,7 +156,7 @@ class AuthController extends Controller
         }
         $client = $user->client;
         // Return the client_id
-        return response()->json(['status' => $client->status, 'client_id' => $user->client_id, 'email' => $user->email, 'id' => $user->id, 'firstname' => $client->firstname, 'surname' => $client->surname, 'othernames' => $client->othernames]);
+        return response()->json(['status' => $client->status, 'client_id' => $user->client_id, 'email' => $user->email, 'id' => $user->id, 'role' => $user->role_id, 'firstname' => $client->firstname, 'surname' => $client->surname, 'othernames' => $client->othernames]);
     }
 
 
