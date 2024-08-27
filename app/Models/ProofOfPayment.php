@@ -9,7 +9,7 @@ class ProofOfPayment extends Model
 {
     use HasFactory;
     public $table = 'proof_of_payment';
-    protected $fillable = ['client_id', 'file_path'];
+    protected $fillable = ['client_id', 'file_path', 'other_reference', 'transaction_reference'];
 
     public function clients()
     {

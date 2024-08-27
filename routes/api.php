@@ -16,6 +16,7 @@ use App\Http\Controllers\QrCodeGeneratorController;
 use App\Http\Controllers\AdmissionController;
 use App\Http\Controllers\UploadDocumentController;
 use App\Http\Controllers\CertificatesController;
+use App\Http\Controllers\CourseMaterialController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -67,7 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('course_list', [CourseListController::class, 'show']);
     Route::post('course_list', [CourseListController::class, 'store']);
-    Route::post('course_material', [UploadDocumentController::class, 'uploadCourseMaterial']);
+    Route::post('course_material', [CourseMaterialController::class, 'uploadCourseMaterial']);
 
     Route::get('centers', [CentersController::class, 'show']);
     Route::post('centers', [CentersController::class, 'store']);
@@ -79,7 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('my-payments', [PaymentsController::class, 'myPayments'])->name('my-payments');
     
     Route::get('/verified-payments', [PaymentsController::class, 'verifiedPayments']);
-    Route::post('store-payment', [PaymentsController::class, 'store']);
+    Route::post('store-payment', [PaymentsController::class, 'storePayment']);
     Route::post('/manual-payment', [PaymentsController::class, 'storeManualPayment']);
     Route::get('/my-courses', [PaymentsController::class, 'registeredCourses'])->name('payment.my-courses');
     Route::get('/my-registerable-courses', [CourseListController::class, 'showMyRegisterableCourses'])->name('payment.my-registerable-courses');
@@ -108,6 +109,8 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/upload-document', [UploadDocumentController::class, 'uploadDocument']);
     Route::post('/proof-of-payment', [PaymentsController::class, 'uploadProofOfPayment']);
+
+    Route::get('/course_materials', [CourseMaterialController::class, 'showMaterials']);
     
 });
 

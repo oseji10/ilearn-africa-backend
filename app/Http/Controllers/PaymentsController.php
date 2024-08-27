@@ -204,7 +204,7 @@ public function storeManualPayment(Request $request)
 
         $validated['file_path'] = $path;
         $validated['client_id'] = auth()->user()->client_id;
-
+        $validated['other_reference']=$other_reference;
         // Save the file path or other related information to the database if needed
         $save = ProofOfPayment::create($validated);
    
@@ -287,7 +287,17 @@ public function storeManualPayment(Request $request)
         // return $confirm_payment;
     }
     
+    public function viewReceipt(Request $request){
+        $view_receipt = Documents::where('transaction_reference', $request->transaction_reference)
+        ->orWhere('other_reference', $request->other_reference)
+        ->get();
 
+        
+        return response()->json([
+        'message' => 'Receipt retrieved succesfully',
+        'receipt' => $view_receipt,
+        ]);
+    }
 }
 
 
