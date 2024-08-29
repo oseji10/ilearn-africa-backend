@@ -24,7 +24,7 @@ class ClientController extends Controller
     // ->groupBy('clients.client_id', 'users.email', 'users.phone_number', 'country.country_name', 'nationality.nationality', 'qualifications.qualification_name')
     // ->get();
 
-    $clients = Client::with(['user', 'nationality', 'country', 'workDetails', 'educationalDetails.grade', 'educationalDetails.qualification'])->get();
+    $clients = Client::with(['user', 'nationality', 'country', 'workDetails', 'educationalDetails.grade', 'educationalDetails.qualification', 'documents'])->get();
 
     
         return response()->json(['clients' => $clients]);

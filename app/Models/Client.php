@@ -60,5 +60,10 @@ class Client extends Model
     {
         return $this->hasMany(Payments::class, 'client_id', 'client_id');
     }
+
+    public function documents()
+    {
+        return $this->belongsTo(Documents::class, 'client_id', 'client_id');
+    }
   
 }
