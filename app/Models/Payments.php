@@ -25,4 +25,9 @@ class Payments extends Model
     {
         return $this->belongsTo(User::class, 'client_id', 'client_id');
     }
+
+    public function proof()
+    {
+        return $this->belongsTo(ProofOfPayment::class, 'client_id', 'client_id');
+    }
 }

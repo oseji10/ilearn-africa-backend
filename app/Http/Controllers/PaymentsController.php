@@ -24,7 +24,7 @@ class PaymentsController extends Controller
     {
        
         // $payments = Payments::with(['clients'])->orderBy('updated_at', 'desc')->get();
-        $payments = Payments::with(['clients'])->where('status', '1')->orderBy('created_at', 'desc')->get();
+        $payments = Payments::with(['clients', 'proof'])->where('status', '1')->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'message' => 'Payments retrieved successfully',
@@ -35,7 +35,7 @@ class PaymentsController extends Controller
     public function pendingPayments()
     {
        
-        $payments = Payments::with(['clients'])->where('status', '0')->orderBy('created_at', 'desc')->get();
+        $payments = Payments::with(['clients', 'proof'])->where('status', '0')->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'message' => 'Payments retrieved successfully',
@@ -235,8 +235,10 @@ public function storeManualPayment(Request $request)
       
         // Use the where clause first to get the query builder instance
         $status = "1";
+        $other_reference = $validated['other_reference'];
         $validated['status'] = $status;
         $validated['updated_by'] = auth()->id();
+        $validated['transaction_reference'] = $other_reference;
         $confirm_payment = Payments::where('other_reference', $validated['other_reference'])
             ->update($validated);
     
@@ -296,6 +298,17 @@ public function storeManualPayment(Request $request)
         return response()->json([
         'message' => 'Receipt retrieved succesfully',
         'receipt' => $view_receipt,
+        ]);
+    }
+
+    public function fetchProof(Request $request, $other_reference){
+        $view_proof = ProofOfPayment::where('other_reference', $other_reference)
+        ->get();
+
+        
+        return response()->json([
+        'message' => 'Proof retrieved succesfully',
+        'proof' => $view_proof,
         ]);
     }
 }

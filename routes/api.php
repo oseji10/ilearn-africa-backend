@@ -76,7 +76,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('payments', [PaymentsController::class, 'show']);
     Route::get('pending-payments', [PaymentsController::class, 'pendingPayments']);
     Route::put('confirm-payment', [PaymentsController::class, 'confirmPayment']);
-    
+    Route::get('proof-of-payment/{other_reference}', [PaymentsController::class, 'fetchProof']);
+
     Route::get('my-payments', [PaymentsController::class, 'myPayments'])->name('my-payments');
     
     Route::get('/verified-payments', [PaymentsController::class, 'verifiedPayments']);
@@ -89,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('states', [StatesController::class, 'show']);
     Route::post('/generate-receipt', [PdfController::class, 'generateReceipt']);
 
+    Route::get('my-admissions/{client_id}', [AdmissionController::class, 'myAdmissions']);
     Route::get('admissions', [AdmissionController::class, 'show']);
     Route::get('admitted', [AdmissionController::class, 'admittedClients'])->name('admissions.admitted');
     

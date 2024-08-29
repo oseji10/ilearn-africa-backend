@@ -11,12 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Schema::disableForeignKeyConstraints(); 
-        // Schema::table('payments', function (Blueprint $table) {
-        //     $table->dropColumn('other_reference');
-        // });
-        // Schema::enableForeignKeyConstraints(); 
-
         Schema::table('payments', function (Blueprint $table) {
             $table->string('other_reference')->unique()->nullable();
             
@@ -33,6 +27,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        
+        Schema::table('proof_of_payment', function (Blueprint $table) {
+            //
+        });
     }
 };

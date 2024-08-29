@@ -44,6 +44,25 @@ class AdmissionController extends Controller
         ]);
     }
 
+    public function myAdmissions(Request $request, $client_id){
+        $admissions = Admissions::with(['clients.user', 'payments.courses'])
+        ->where('client_id', $client_id)
+        ->orderBy(
+            Payments::select('created_at')
+                ->whereColumn('payments.admission_number', 'admissions.admission_number')
+                ->latest()
+                ->take(1)
+        )
+        ->get();
+    
+        return response()->json([
+            'message' => 'Admissions retrieved successfully',
+            'admissions' => $admissions,
+        ]);
+    }
+
+    
+
     public function approval(Request $request, $admission_number)
     {
         // $admission_number = $request->input('admission_number'); // Array of admission IDs to update
