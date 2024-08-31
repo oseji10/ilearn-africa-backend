@@ -519,7 +519,7 @@
                   
                         <p>If you have any questions, feel free to <a href="mailto:{{$support_email}}">email our customer success team</a>. </p>
                         <p>Thanks,
-                          <br>Ifeoma and the iLearn Africa Team</p>
+                          <br>iLearn Africa Team</p>
                         
                         <!-- Sub copy -->
                         <table class="body-sub" role="presentation">

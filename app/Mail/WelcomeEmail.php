@@ -41,7 +41,7 @@ class WelcomeEmail extends Mailable
                         'action_url' => "https://app.ilearnafricaedu.com/auth/signin/",
                         'login_url' => "https://app.ilearnafricaedu.com/auth/signin/",
                         'firstname' => $this->user->client->firstname, // Accessing the client's firstname
-                        'support_email' => "support@ilearnafricaedu.ng",
+                        'support_email' => "info@ilearnafricaedu.com",
                     ]);
     }
 }

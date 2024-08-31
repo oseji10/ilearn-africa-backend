@@ -74,10 +74,10 @@ class PdfController extends Controller
       
         
         Mail::to($payment->users->email)->send(new EmailReceipt($user_data));
-    
+        
         
         // Return the generated PDF
-        // return $pdf->download("invoice-{$payment->transaction_reference}.pdf");
+        return $pdf->download("invoice-{$payment->transaction_reference}.pdf");
     }
 
 public function verify(){
@@ -130,10 +130,10 @@ public function generateAdmissionLetter(Request $request)
             
         
         Mail::to($admission->users->email)->send(new EmailAdmission($admission_data));
-    
+        
         
         // Return the generated PDF
-        // return $pdf->download("admission-{$admission->admission_number}.pdf");
+        return $pdf->download("admission-{$admission->admission_number}.pdf");
     }
 
 
@@ -183,7 +183,7 @@ public function generateAdmissionLetter(Request $request)
           ->setPaper('a4', 'landscape');
         
         Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
-        // return $pdf->download("admission-{$admission->admission_number}.pdf");
+        return $pdf->download("admission-{$admission->admission_number}.pdf");
     }
 
 

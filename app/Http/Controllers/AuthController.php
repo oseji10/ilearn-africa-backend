@@ -8,12 +8,20 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use App\Mail\WelcomeEmail;
+use App\Mail\PasswordEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Models\Client;
 use App\Models\Educationaldetails;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Password;
+use DB;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Validator;
+// use Illuminate\Support\Str;
+// use App\Models\User;
+use Illuminate\Auth\Events\PasswordReset;
 
 class AuthController extends Controller
 {
@@ -26,7 +34,7 @@ class AuthController extends Controller
     try {
         $request->validate([
             'email' => 'required|string|email|max:255|unique:users',
-            'phone_number' => 'required|string|max:11',
+            'phone_number' => 'required|string|max:11|unique:users',
             'firstname' => 'string',
              'surname' => 'string',
               'othernames' => 'string|nullable'
@@ -73,18 +81,20 @@ class AuthController extends Controller
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
+            'message' => 'Success! Your signup was successful. Please check your email for login details',
             'user' => $user, // Include user details if needed
         ]);
     } catch (ValidationException $e) {
-        // Check if the validation error is for the unique email constraint
-        if ($e->validator->errors()->has('email')) {
+        // Check if the validation error is for the unique email or phone number constraint
+        if ($e->validator->errors()->has('email') || $e->validator->errors()->has('phone_number')) {
             return response()->json([
-                'message' => 'This user has already been created',
+                'message' => 'A user with this email or phone number has already been created',
             ], 409); // HTTP status code 409: Conflict
         }
-
+    
         throw $e;
     }
+    
 }
 
     // Login Method
@@ -125,6 +135,7 @@ class AuthController extends Controller
             'user' => $user,
             'role' => $user->role->name, // Assuming the user has a role relationship
             'client' => $user->client, 
+            
         ]);
     }
     
@@ -168,6 +179,37 @@ class AuthController extends Controller
     return response()->json($role);
 }
 
+// Forgot password
+public function forgotPassword(Request $request)
+{
+    // Generate a random 5-digit OTP
+    $pass = mt_rand(10000, 99999);
+    $password = Hash::make($pass);
+
+    // Find the user by email or phone number
+    $forgot_password = User::where('email', $request->login)
+        ->orWhere('phone_number', $request->login)
+        ->first();
+
+    // Check if a user was found
+    if (!$forgot_password) {
+        return response()->json([
+            'message' => 'User not found',
+        ], 404); // HTTP status code 404: Not Found
+    }
+
+    // Update the user's password
+    $forgot_password->password = $password;
+    $forgot_password->save();
+
+    // Optionally, send the OTP via email or SMS here
+
+    return response()->json([
+        'message' => 'OTP sent to your email',
+        'password' => $pass, // In a real application, you wouldn't return the password here
+    ]);
+}
+
 
 // Change Password
 public function changePassword(Request $request)
@@ -200,5 +242,74 @@ public function changePassword(Request $request)
             'user' => $user,
         ]);
     }
+
+
+
+
+
+    public function sendResetLinkEmail(Request $request)
+{
+    $request->validate(['login' => 'required']);
+
+    // Find the user by email
+    $user = DB::table('users')->where('email', $request->login)
+    ->orWhere('phone_number', $request->login)
+    ->first();
+    if (!$user) {
+        return response()->json(['message' => 'Email not found'], 404);
+    }
+    $email = $user->email;
+    // return $email;
+    // // Generate the token
+    $token = Str::random(60);
+
+    // Insert the token into the password_resets table
+    DB::table('password_reset_tokens')->updateOrInsert(
+        ['email' => $email],
+        [
+            'email' => $email,
+            'token' => Hash::make($token),
+            'created_at' => Carbon::now(),
+        ]
+    );
+
+    // Create the reset link
+    $resetLink = ('http://localhost:3000/auth/reset-password?token=' . $token . '&email=' . urlencode($email));
+
+    // Send the reset link via email if needed
+    Mail::to($email)->send(new PasswordEmail($resetLink));
+    return response()->json(['message' => 'Password reset link sent to your email', 'reset_link' => $resetLink], 200);
+}
+
+
+public function reset(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'token' => 'required',
+        'password' => 'required|string|min:8|confirmed',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    $status = Password::reset(
+        $request->only('email', 'password', 'password_confirmation', 'token'),
+        function ($user, $password) {
+            $user->forceFill([
+                'password' => Hash::make($password),
+                'remember_token' => Str::random(60),
+            ])->save();
+
+            event(new PasswordReset($user));
+        }
+    );
+
+    if ($status == Password::PASSWORD_RESET) {
+        return response()->json(['message' => 'Password has been reset successfully.']);
+    } else {
+        return response()->json(['message' => __($status)], 500);
+    }
+}
 
 }

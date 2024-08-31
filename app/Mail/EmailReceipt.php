@@ -58,7 +58,7 @@ class EmailReceipt extends Mailable
                         'course_id' => $this->user_data['course_id'],
                         'transaction_date' => $this->user_data['transaction_date'],
                         
-                        'support_email' => "support@ilearnafricaedu.com",
+                        'support_email' => "info@ilearnafricaedu.com",
                     ]);
     }
 

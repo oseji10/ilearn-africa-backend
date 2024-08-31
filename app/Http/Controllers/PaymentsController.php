@@ -75,7 +75,7 @@ class PaymentsController extends Controller
         'payment_for' => 'nullable|string',
         'course_id' => 'nullable|string',
         'payment_gateway' => 'nullable|string',
-        'amount' => 'nullable|string',
+        'amount' => 'nullable',
         'transaction_reference' => 'nullable|string',
         'other_reference' => 'nullable|string',
         'status' => 'nullable|integer',
