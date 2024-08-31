@@ -11,6 +11,7 @@ use App\Models\Payments;
 use App\Models\Admissions;
 use App\Models\ProfileImage;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class ClientController extends Controller
 {
@@ -180,16 +181,35 @@ class ClientController extends Controller
 
 
     public function statistics(){
-        $client_count = Client::count();
-        $applications_count = Payments::count();
-        $payments_count = Payments::where('status', '=', 1)->count();
-        $admitted_count = Admissions::where('status', 'ADMITTED')->count();
+        $today = Carbon::today();
+        $startOfWeek = Carbon::now()->startOfWeek(); // Defaults to Monday
+        $endOfWeek = Carbon::now()->endOfWeek(); 
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $endOfMonth = Carbon::now()->endOfMonth();
+        
+        $incomplete_applications = Client::where('status', 'profile_created')->count();
+        $registered_clients = Client::where('status', 'registered')->count();
+        $pending_admissions = Admissions::where('status', 'pending')->count();
+        $currently_admitted_clients = Admissions::where('status', 'ADMITTED')->count();
+        $all_graduated_clients = Admissions::where('status', 'COMPLETED')->count();
+
+        $payments_today = Payments::where('status', 1)->whereDate('created_at', $today)->sum('amount');
+        $payments_this_week = Payments::where('status', 1)->whereBetween('created_at', [$startOfWeek, $endOfWeek])->sum('amount');
+        $payments_this_month = Payments::where('status', 1)->whereBetween('created_at', [$startOfMonth, $endOfMonth])->sum('amount');
+        $all_payments = Payments::where('status', 1)->sum('amount');
+
         return response()->json([
             // 'message' => 'Client updated successfully',
-            'clients' => $client_count,
-            'applications_count' => $applications_count,
-            'payments_count' => $payments_count,
-            'admitted_count' => $admitted_count
+            'incomplete_applications' => $incomplete_applications,
+            'registered_clients' => $registered_clients,
+            'pending_admissions' => $pending_admissions,
+            'currently_admitted_clients' => $currently_admitted_clients,
+            'all_graduated_clients' => $all_graduated_clients,
+
+            'payments_today' => $payments_today,
+            'payments_this_week' => $payments_this_week,
+            'payments_this_month' => $payments_this_month,
+            'all_payments' => $all_payments,
         ]);
        
     }
