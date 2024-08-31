@@ -157,18 +157,45 @@ class AuthController extends Controller
 
 
     public function getClientId(Request $request)
-    {
-        // Retrieve the authenticated user
-        $user = $request->user();
+    // public function getUserProfile(Request $request)
+{
+    // Retrieve the authenticated user
+    $user = $request->user();
 
-        // Check if user is authenticated
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-        $client = $user->client;
-        // Return the client_id
-        return response()->json(['status' => $client->status, 'client_id' => $user->client_id, 'email' => $user->email, 'id' => $user->id, 'role' => $user->role_id, 'firstname' => $client->firstname, 'surname' => $client->surname, 'othernames' => $client->othernames, 'phone_number' =>$user->phone_number]);
+    // Check if the user is authenticated
+    if (!$user) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    // Access the related Client data
+    $client = $user->client;
+
+    // Check if the client relationship exists
+    if (!$client) {
+        return response()->json(['error' => 'Client not found'], 404);
+    }
+
+    // Access the related ProfileImage data
+    $profileImage = $user->profileImage;
+
+    // Check if the profile image relationship exists
+    $imageUrl = $profileImage ? $profileImage->image_url : null;
+
+    // Return the user, client, and profile image data
+    return response()->json([
+        'status' => $client->status,
+        'client_id' => $client->client_id, 
+        'email' => $user->email,
+        'id' => $user->id,
+        'role' => $user->role_id,
+        'firstname' => $client->firstname,
+        'surname' => $client->surname,
+        'othernames' => $client->othernames,
+        'phone_number' => $user->phone_number,
+        'image_url' => $imageUrl // Add the image_url to the response
+    ]);
+}
+
 
 
     public function getRole()
@@ -274,7 +301,12 @@ public function changePassword(Request $request)
     );
 
     // Create the reset link
-    $resetLink = ('http://localhost:3000/auth/reset-password?token=' . $token . '&email=' . urlencode($email));
+    // $url = config('myconfig.url');
+    // $url = env('URL');
+    // echo getenv('URL');
+    // return $url;
+    $url = "https://app.ilearnafricaedu.com";
+    $resetLink = ($url .'/auth/reset-password?token=' . $token . '&email=' . urlencode($email));
 
     // Send the reset link via email if needed
     Mail::to($email)->send(new PasswordEmail($resetLink));

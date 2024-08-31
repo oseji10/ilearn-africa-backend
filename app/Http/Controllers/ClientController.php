@@ -9,6 +9,8 @@ use App\Models\Workdetails;
 use App\Models\Grades;
 use App\Models\Payments;
 use App\Models\Admissions;
+use App\Models\ProfileImage;
+use Illuminate\Support\Facades\Storage;
 
 class ClientController extends Controller
 {
@@ -191,5 +193,46 @@ class ClientController extends Controller
         ]);
        
     }
+
+
+
+
+    public function profileImage(Request $request)
+{
+    $validated = $request->validate([
+        'image' => 'required|file|mimes:png,jpg,jpeg|max:5048', // Adjust validation rules as needed
+        'client_id' => 'required|string', // Ensure client_id is passed and validated
+    ]);
+
+    // Retrieve existing profile image for the client
+    $existingImage = ProfileImage::where('client_id', $request->client_id)->first();
+
+    if ($existingImage) {
+        // Delete the existing image from the storage
+        Storage::disk('public')->delete($existingImage->image_url);
+
+        // Delete the existing image record from the database
+        $existingImage->delete();
+    }
+
+    // Store the new image
+    if ($request->file('image')) {
+        $file = $request->file('image');
+        $path = $file->store('profile_images', 'public'); // Store in the 'public/profile_images' directory
+
+        // Save the new image data to the database
+        $validated['image_url'] = $path;
+
+        // Create a new profile image record
+        $save = ProfileImage::create($validated);
+
+        return response()->json([
+            'message' => 'Image uploaded successfully',
+            'path' => $path
+        ], 200);
+    }
+
+    return response()->json(['message' => 'File not uploaded'], 400);
+}
     
 }

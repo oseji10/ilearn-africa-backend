@@ -97,10 +97,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('admissions/{admission_number}', [AdmissionController::class, 'approval'])->name('process-admissions');
     Route::post('admissions/admission_letter', [PdfController::class, 'generateAdmissionLetter'])->name('admission_letter');
     
+    Route::post('certificates/client-certificate/{admission_number}', [PdfController::class, 'downloadCertificate'])->name('download_certificate');
     Route::post('certificates', [PdfController::class, 'generateCertificate'])->name('certificate');
     Route::get('certificates', [CertificatesController::class, 'clientCertificates'])->name('certificate');
     
     Route::get('certificates/my-certificates/{client_id}', [CertificatesController::class, 'myCertificates']);
+    // Route::get('certificates/client-certificate/{admission_number}', [CertificatesController::class, 'downloadCertificate']);
     
     
     Route::get('get-role', [AuthController::class, 'getRole']);
@@ -113,7 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/proof-of-payment', [PaymentsController::class, 'uploadProofOfPayment']);
 
     Route::get('/course_materials', [CourseMaterialController::class, 'showMaterials']);
-    
+    Route::post('/upload-profile-image', [ClientController::class, 'profileImage']);
 });
 
 Route::options('/{any}', function () {

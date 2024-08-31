@@ -27,4 +27,9 @@ class CertificatesController extends Controller
             'certificates' => $certificates
         ]);
     }
+
+
+    
+
+   
 }
