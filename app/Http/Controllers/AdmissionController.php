@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Admissions;
 use App\Models\Payments;
 use App\Models\Clients;
+use Illuminate\Support\Facades\Log;
 
 class AdmissionController extends Controller
 {
@@ -74,5 +75,33 @@ class AdmissionController extends Controller
             'updated_count' => $updatedCount
         ]);
     }
+
+
+
+    public function admitAll(Request $request)
+    {
+        $ids = $request->input('ids');
+
+        // Validate input
+        if (empty($ids) || !is_array($ids)) {
+            return response()->json(['message' => 'Invalid input'], 400);
+        }
+
+        // Check if IDs are valid
+        $admissions = Admissions::whereIn('id', $ids)->get();
+        if ($admissions->isEmpty()) {
+            return response()->json(['message' => 'No valid admissions found'], 404);
+        }
+
+        // Update status
+        try {
+            Admissions::whereIn('id', $ids)->update(['status' => 'ADMITTED']);
+            return response()->json(['message' => 'Admissions updated successfully'], 200);
+        } catch (\Exception $e) {
+            Log::error('Error updating admissions: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to update admissions'], 500);
+        }
+    }
+
     
 }

@@ -17,6 +17,7 @@ use App\Http\Controllers\AdmissionController;
 use App\Http\Controllers\UploadDocumentController;
 use App\Http\Controllers\CertificatesController;
 use App\Http\Controllers\CourseMaterialController;
+use App\Http\Controllers\StatisticsController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -95,6 +96,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('admitted', [AdmissionController::class, 'admittedClients'])->name('admissions.admitted');
     
     Route::put('admissions/{admission_number}', [AdmissionController::class, 'approval'])->name('process-admissions');
+    Route::put('admit-all', [AdmissionController::class, 'admitAll']);
     Route::post('admissions/admission_letter', [PdfController::class, 'generateAdmissionLetter'])->name('admission_letter');
     
     Route::post('certificates/client-certificate/{admission_number}', [PdfController::class, 'downloadCertificate'])->name('download_certificate');
@@ -116,6 +118,19 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/course_materials', [CourseMaterialController::class, 'showMaterials']);
     Route::post('/upload-profile-image', [ClientController::class, 'profileImage']);
+
+    Route::get('incomplete_applications', [StatisticsController::class, 'incompleteApplications']);
+    Route::get('registered_clients', [StatisticsController::class, 'registeredClients']);
+    Route::get('pending_admissions', [StatisticsController::class, 'pendingAdmissions']);
+    Route::get('currently_admitted', [StatisticsController::class, 'currentlyAdmitted']);
+    Route::get('graduated', [StatisticsController::class, 'graduated']);
+    
+    Route::get('payments_today', [StatisticsController::class, 'paymentsToday']);
+    Route::get('payments_this_week', [StatisticsController::class, 'paymentsThisWeek']);
+    Route::get('payments_this_month', [StatisticsController::class, 'paymentsThisMonth']);
+    Route::get('all_payments', [StatisticsController::class, 'allPayments']);
+    
+
 });
 
 Route::options('/{any}', function () {
