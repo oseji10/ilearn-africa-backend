@@ -84,6 +84,36 @@ public function verify(){
     return view('pdf.verify');
 }
 
+public function verifyCertificate(Request $request){
+    $admission = Admissions::with("clients",  "users", "payments.courses.centers")->where('admission_number', $request->admission_number)->first();
+     
+        
+    // Check if payment exists
+    if (!$admission) {
+        return response()->json(['message' => 'Admission not found'], 404);
+    }
+
+    $admission_data = [
+        'id' => $admission->clients->id,
+        'client_id' => $admission->client_id,
+        'amount' => $admission->amount,
+        'created_at' => $admission->created_at->format('Y-m-d'),
+            'firstname' => $admission->clients->firstname,
+            'surname' => $admission->clients->surname,
+            'othernames' => $admission->clients->othernames,
+            'phone_number' => $admission->users->phone_number,
+            'email' => $admission->users->email,
+            'payment_method' => $admission->payment_method,
+            'transaction_reference' => $admission->transaction_reference,
+            'course_name' => $admission->payments->courses->course_name ?? '',
+            'certification_name' => $admission->payments->courses->certification_name ?? '',
+            'course_id' => $admission->payments->courses->course_id ?? '',
+            'admission_date' => $admission->created_at,
+            'admission_number' => $admission->admission_number,
+    ];
+    return view('pdf.verify_certificate', $admission_data);
+}
+
 
 
 public function generateAdmissionLetter(Request $request)
@@ -181,9 +211,24 @@ public function generateAdmissionLetter(Request $request)
         $status = "COMPLETED";
         $validated['status'] = $status;
         $update_admission = Admissions::where('admission_number', $request->admission_number)->update($validated);
+
+
+        $verificationUrl = route('pdf.verify_certificate', ['admission_number' => $request->admission_number]);
+        $qrCode = Builder::create()
+        ->writer(new PngWriter())
+        ->data(route('pdf.verify_certificate', ['admission_number' => $request->admission_number]))
+        ->size(200)
+        ->build();
+
+    // Save the QR code to a file or directly use it in the PDF
+    $certificate_data['qr_code'] = $qrCode->getDataUri();
+
+
         $pdf = Pdf::loadView('pdf.certificate', $certificate_data)
           ->setPaper('a4', 'landscape');
         
+
+
         Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
         return $pdf->download("admission-{$admission->admission_number}.pdf");
     }
@@ -230,6 +275,18 @@ public function generateAdmissionLetter(Request $request)
         $status = "COMPLETED";
         $validated['status'] = $status;
         $update_admission = Admissions::where('admission_number', $request->admission_number)->update($validated);
+
+
+        $verificationUrl = route('pdf.verify_certificate', ['admission_number' => $request->admission_number]);
+        $qrCode = Builder::create()
+        ->writer(new PngWriter())
+        ->data(route('pdf.verify_certificate', ['admission_number' => $request->admission_number]))
+        ->size(200)
+        ->build();
+
+    // Save the QR code to a file or directly use it in the PDF
+    $certificate_data['qr_code'] = $qrCode->getDataUri();
+
         $pdf = Pdf::loadView('pdf.certificate', $certificate_data)
           ->setPaper('a4', 'landscape');
         

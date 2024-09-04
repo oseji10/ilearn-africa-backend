@@ -80,6 +80,7 @@
                 <div class="header">
                     <p style="font" align="left"><b>Certificate NO:</b> iLA/{{ str_pad($id, 3, '0', STR_PAD_LEFT) }}/{{ \Carbon\Carbon::parse($admission_date)->format('Y') }}</p>
                     <img src="images/ilearn-logo.png" alt="Logo" align="left" style="border-radius: 5%;"><br/><br/><br/>
+                    
                     <p align="left">On {{ \Carbon\Carbon::parse($admission_date)->format('F j, Y') }}.</p>
                     <p align="left" style="font-size: 35pt; margin:0;  font-family: 'Cinzel Bold'; text-transform: uppercase;">
                         {{$firstname}} {{$othernames}} {{$surname}}
@@ -92,8 +93,11 @@
                     </p>
                     <p align="left">This course has been developed and delivered by iLearn Africa</p>
                 </div>
+           
+   
+
                 <div>
-                    <p>Yours Sincerely,</p><br/>
+                    <p>Yours Sincerely,</p>
                     <u style="margin:0;"><img src="images/cd-sign.png" /><br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>
                     <p style="font-size:16pt; font-weight:bold; margin:0;">Nwude Ifeoma Grace</p>
@@ -106,7 +110,7 @@
 
 
             <td class="third-column">
-                <p></p>
+            <p align="right"> <img width="70px" height="auto" align="right" style="display: table-cell; vertical-align: bottom; text-align: center;" src="{{ $qr_code }}" alt="QR Code"></p>
             </td>
         </tr>
     </table>

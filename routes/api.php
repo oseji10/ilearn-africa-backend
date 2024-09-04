@@ -146,6 +146,8 @@ Route::middleware('auth:sanctum')->get('/client-id', [AuthController::class, 'ge
 // In routes/web.php
 
 Route::get('/verify-payment', [PdfController::class, 'verify'])->name('pdf.verify');
+Route::get('/verify_certificate', [PdfController::class, 'verifyCertificate'])->name('pdf.verify_certificate');
+
 Route::get('/qr-codes', [PdfController::class, 'generate']);
 
 Route::post('forgot-password', [AuthController::class, 'sendResetLinkEmail']);
