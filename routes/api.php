@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Add other routes that require authentication here
     Route::get('clients', [ClientController::class, 'show']);
     Route::get('/clients/{client_id}', [ClientController::class, 'getClient']);
+    Route::get('delete_client/{client_id}', [ClientController::class, 'deleteClient']);
     
     Route::post('clients', [ClientController::class, 'store']);
     Route::put('/clients/{client_id}', [ClientController::class, 'update']);

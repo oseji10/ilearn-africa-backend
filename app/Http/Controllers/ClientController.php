@@ -254,5 +254,22 @@ class ClientController extends Controller
 
     return response()->json(['message' => 'File not uploaded'], 400);
 }
+
+
+
+public function deleteClient($client_id)
+{
+    // Find the client using the unique client_id field
+    $model = Client::where('client_id', $client_id)->first();
+    // return $model->created_at;
+    // Check if the model was found
+    if ($model) {
+        $model->delete();
+        return response()->json(['message' => 'Client deleted successfully.']);
+    } else {
+        return response()->json(['message' => 'Client not found.'], 404);
+    }
+}
+
     
 }
