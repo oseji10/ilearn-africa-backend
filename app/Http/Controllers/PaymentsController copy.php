@@ -176,15 +176,7 @@ public function storeManualPayment(Request $request)
     }
 
     public function uploadProofOfPayment(Request $request)
-    {
-    $admission_number = mt_rand(1000000, 9999999);
-    $admissions = new Admissions();
-    $admissions->client_id = auth()->user()->client_id;
-    $admissions->admission_number = $admission_number;
-    $admissions->status = "pending";
-    $admissions->save();
-
-    
+{
     $other_reference = mt_rand(1000000, 9999999);
     $payment_gateway = "SELF";
     $payment_method = "Mobile Transefer";
@@ -197,38 +189,31 @@ public function storeManualPayment(Request $request)
     $payments->payment_gateway = $payment_gateway;
     $payments->course_id = $request->course_id;
     $payments->other_reference = $other_reference;
-    $payments->status = 1; //change to 0 later
+    $payments->status = 0;
     $payments->created_by = auth()->id();
-    $payments->admission_number = $admission_number;
+    // $payments->admission_number = $admission_number;
     $payments->save();
    
+    $validated = $request->validate([
+        'file' => 'required|file|mimes:png,jpg,jpeg,JPG,pdf,doc,docx|max:1024', // Adjust validation rules as needed
+    ]);
 
-        
-    // $validated['admission_number'] = $admission_number;
-    
+    if ($request->file('file')) {
+        $file = $request->file('file');
+        $path = $file->store('documents', 'public'); // Store in the 'public/documents' directory
 
-    // $payments = Payments::create($validated);
-
-    // $validated = $request->validate([
-    //     'file' => 'required|file|mimes:png,jpg,jpeg,JPG,pdf,doc,docx|max:1024', // Adjust validation rules as needed
-    // ]);
-
-    // if ($request->file('file')) {
-    //     $file = $request->file('file');
-    //     $path = $file->store('documents', 'public'); // Store in the 'public/documents' directory
-
-    //     $validated['file_path'] = $path;
-    //     $validated['client_id'] = auth()->user()->client_id;
-    //     $validated['other_reference']=$other_reference;
-    //     // Save the file path or other related information to the database if needed
-    //     $save = ProofOfPayment::create($validated);
+        $validated['file_path'] = $path;
+        $validated['client_id'] = auth()->user()->client_id;
+        $validated['other_reference']=$other_reference;
+        // Save the file path or other related information to the database if needed
+        $save = ProofOfPayment::create($validated);
    
         
 
-    //     return response()->json([
-    //         'message' => $payments
-    //     ], 200); // HTTP success code 200: Internal Server Error
-    // }
+        return response()->json([
+            'message' => $payments
+        ], 200); // HTTP success code 200: Internal Server Error
+    }
 }
 
     public function registeredCourses()

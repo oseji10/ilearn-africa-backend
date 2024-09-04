@@ -115,6 +115,7 @@ public function generateAdmissionLetter(Request $request)
             'payment_method' => $admission->payment_method,
             'transaction_reference' => $admission->transaction_reference,
             'course_name' => $admission->payments->courses->course_name ?? '',
+            'certification_name' => $admission->payments->courses->certification_name ?? '',
             'course_id' => $admission->payments->courses->course_id ?? '',
             'admission_date' => $admission->created_at,
             'admission_number' => $admission->admission_number,
@@ -171,6 +172,7 @@ public function generateAdmissionLetter(Request $request)
             'transaction_reference' => $admission->transaction_reference,
             'course_name' => $admission->payments->courses->course_name,
             'course_id' => $admission->payments->courses->course_id,
+            'certification_name' => $admission->payments->courses->certification_name,
             'admission_date' => $admission->created_at,
             'admission_number' => $admission->admission_number,
             'center_name' => $admission->payments->courses->centers->center_name,
@@ -222,6 +224,7 @@ public function generateAdmissionLetter(Request $request)
             'admission_date' => $admission->created_at,
             'admission_number' => $admission->admission_number,
             'center_name' => $admission->payments->courses->centers->center_name,
+            'certification_name' => $admission->payments->courses->certification_name,
             // Add other necessary fields
         ];
         $status = "COMPLETED";

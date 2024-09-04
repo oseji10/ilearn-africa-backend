@@ -78,17 +78,17 @@
 
             <td class="left-column">
                 <div class="header">
-                    <p style="font" align="left"><b>Certificate NO:</b> iLA/{{ \Carbon\Carbon::parse($admission_date)->format('y') }}/{{ str_pad($id, 3, '0', STR_PAD_LEFT) }}</p>
+                    <p style="font" align="left"><b>Certificate NO:</b> iLA/{{ str_pad($id, 3, '0', STR_PAD_LEFT) }}/{{ \Carbon\Carbon::parse($admission_date)->format('Y') }}</p>
                     <img src="images/ilearn-logo.png" alt="Logo" align="left" style="border-radius: 5%;"><br/><br/><br/>
                     <p align="left">On {{ \Carbon\Carbon::parse($admission_date)->format('F j, Y') }}.</p>
                     <p align="left" style="font-size: 35pt; margin:0;  font-family: 'Cinzel Bold'; text-transform: uppercase;">
                         {{$firstname}} {{$othernames}} {{$surname}}
                     </p>
                     <p align="left">Has Successfully Completed a Course in<br/>
-                    {{$course_name}} and Has Been Awarded this</p>
+                    {{$certification_name}} and Has Been Awarded this</p>
                     <p align="left" style="font-size:30px; margin:0; font-weight: bold;">
                         Proficiency certificate in<br/>
-                        {{$course_name}}
+                        {{$certification_name}}
                     </p>
                     <p align="left">This course has been developed and delivered by iLearn Africa</p>
                 </div>

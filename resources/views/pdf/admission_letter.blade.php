@@ -113,7 +113,7 @@
         <div class="content">
             <b>Dear {{$firstname}} {{$othernames}} {{$surname}},</b><br/><br/>
             <i>Congratulations!</i><br/><br/>
-            <i>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of ILEARN AFRICA has granted you admission into the {{$course_name}} program of its affiliated institute; {{$center_name}}.</i>
+            <i>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of ILEARN AFRICA has granted you admission into the {{$certification_name}} program of its affiliated institute; {{$center_name}}.</i>
             <i>This program will lead to the prestigious award of a {{$course_name}} from our esteemed partner institution and a proficiency certificate in SEND from ILEARN AFRICA.</p>
             <i>This course is slated to commence on the 10th of May, 2024, and will run for a duration of 5 weekends (Fridays only). You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course.</i>
             <i>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once.</i>
@@ -122,8 +122,18 @@
 
         <div class="signature">
             <i>Yours Sincerely,</i><br/><br/>
+            <u style="margin:0;"><img src="images/cd-sign.png" /><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u><br/>
             <i>Nwude Ifeoma Grace<br>Country Director<br>iLearn Africa</i>
         </div>
+
+        <!-- <div>
+                    <p>Yours Sincerely,</p><br/>
+                    <u style="margin:0;"><img src="images/cd-sign.png" /><br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>
+                    <p style="font-size:16pt; font-weight:bold; margin:0;">Nwude Ifeoma Grace</p>
+                    <p style="margin:0;">Programme Director/iLearn Africa</p>
+                </div> -->
 
     </div>
     <footer class="footer">
