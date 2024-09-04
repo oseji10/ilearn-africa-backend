@@ -101,9 +101,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('admissions/admission_letter', [PdfController::class, 'generateAdmissionLetter'])->name('admission_letter');
     
     Route::post('certificates/client-certificate/{admission_number}', [PdfController::class, 'downloadCertificate'])->name('download_certificate');
-    Route::post('certificates', [PdfController::class, 'generateCertificate'])->name('certificate');
+    Route::post('certificate/issue', [PdfController::class, 'generateCertificate'])->name('certificate');
     Route::get('certificates', [CertificatesController::class, 'clientCertificates'])->name('certificate');
     Route::post('certificates/batch-process', [CertificatesController::class, 'batchProcess']);
+    Route::get('process_certificate', [AdmissionController::class, 'processCertificate']);
     
     Route::get('certificates/my-certificates/{client_id}', [CertificatesController::class, 'myCertificates']);
     

@@ -205,6 +205,7 @@ public function generateAdmissionLetter(Request $request)
             'certification_name' => $admission->payments->courses->certification_name,
             'admission_date' => $admission->created_at,
             'admission_number' => $admission->admission_number,
+            'admission_id' => $admission->id,
             'center_name' => $admission->payments->courses->centers->center_name,
             // Add other necessary fields
         ];

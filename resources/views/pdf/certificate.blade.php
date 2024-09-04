@@ -78,7 +78,7 @@
 
             <td class="left-column">
                 <div class="header">
-                    <p style="font" align="left"><b>Certificate NO:</b> iLA/{{ str_pad($id, 3, '0', STR_PAD_LEFT) }}/{{ \Carbon\Carbon::parse($admission_date)->format('Y') }}</p>
+                    <p style="font" align="left"><b>Certificate NO:</b> iLA/{{ str_pad($admission_id, 3, '0', STR_PAD_LEFT) }}/{{ \Carbon\Carbon::parse($admission_date)->format('Y') }}</p>
                     <img src="images/ilearn-logo.png" alt="Logo" align="left" style="border-radius: 5%;"><br/><br/><br/>
                     
                     <p align="left">On {{ \Carbon\Carbon::parse($admission_date)->format('F j, Y') }}.</p>

@@ -38,12 +38,26 @@ class AdmissionController extends Controller
                 ->take(1)
         )
         ->get();
-    
-        return response()->json([
-            'message' => 'Admissions retrieved successfully',
-            'admissions' => $admissions,
-        ]);
-    }
+}
+
+
+public function processCertificate(){
+    $admissions = Admissions::with(['clients.user', 'payments.courses'])
+    ->where('status', 'ADMITTED')
+    // ->orWhere('status', 'COMPLETED')
+    ->orderBy(
+        Payments::select('created_at')
+            ->whereColumn('payments.admission_number', 'admissions.admission_number')
+            ->latest()
+            ->take(1)
+    )
+    ->get();
+
+return response()->json([
+    'message' => 'Admissions retrieved successfully',
+    'admissions' => $admissions,
+]);
+}
 
     public function myAdmissions(Request $request, $client_id){
         $admissions = Admissions::with(['clients.user', 'payments.courses'])
