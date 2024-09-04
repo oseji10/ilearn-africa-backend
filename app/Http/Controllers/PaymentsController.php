@@ -197,7 +197,7 @@ public function storeManualPayment(Request $request)
     $payments->payment_gateway = $payment_gateway;
     $payments->course_id = $request->course_id;
     $payments->other_reference = $other_reference;
-    $payments->status = 1; //change to 0 later
+    $payments->status = 0; //change to 0 later
     $payments->created_by = auth()->id();
     $payments->admission_number = $admission_number;
     $payments->save();
