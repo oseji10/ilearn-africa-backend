@@ -9,7 +9,7 @@ class CourseList extends Model
 {
     use HasFactory;
     public $table = 'course_list';
-    protected $fillable = ['course_id', 'course_name', 'cost', 'course_image', 'status', 'created_by', 'center_id'];
+    protected $fillable = ['course_id', 'course_name', 'cost', 'course_image', 'status', 'created_by', 'center_id', 'certification_name'];
 
 
     public function centers()

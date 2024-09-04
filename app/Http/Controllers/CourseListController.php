@@ -59,6 +59,7 @@ class CourseListController extends Controller
             'course_image' => 'nullable|string',
             'cost' => 'nullable|string',
             'center_id' => 'nullable|string',
+            'certification_name' => 'nullable|string',
         ]);
     
         // Add the created_by field with the authenticated user's ID
