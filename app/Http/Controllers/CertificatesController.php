@@ -6,6 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\Admissions;
 use App\Models\Client;
 use App\Models\CourseList;
+use NumberToWords\NumberToWords;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Support\Facades\Mail;
+// use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Mail\EmailCertificate;
 
 class CertificatesController extends Controller
 {
@@ -53,6 +61,120 @@ class CertificatesController extends Controller
         return response()->json(['message' => 'Failed to process certificates'], 500);
     }
 }
+
+
+
+public function downloadCertificate(Request $request, $admission_number)
+{
+      // Fetch the payment data based on the transaction_reference
+    $admission = Admissions::with("clients",  "users", "payments.courses.centers")->where('admission_number', $admission_number)->first();
+ 
+    
+    // Check if payment exists
+    if (!$admission) {
+        return response()->json(['error' => 'Admission not found'], 404);
+    }
+
+    // Prepare the data for the PDF
+    $certificate_data = [
+        'id' => $admission->id ?? '',
+        'client_id' => $admission->client_id ?? '',
+        'amount' => $admission->amount ?? '',
+        'created_at' => $admission->created_at->format('Y-m-d') ?? '',
+        'firstname' => $admission->clients->firstname ?? '',
+        'surname' => $admission->clients->surname ?? '',
+        'othernames' => $admission->clients->othernames ?? '',
+        'phone_number' => $admission->users->phone_number ?? '',
+        'email' => $admission->users->email ?? '',
+        'payment_method' => $admission->payment_method ?? '',
+        'transaction_reference' => $admission->transaction_reference ?? '',
+        'course_name' => $admission->payments->courses->course_name ?? '',
+        'course_id' => $admission->payments->courses->course_id ?? '',
+        'admission_date' => $admission->created_at  ?? '',
+        'admission_number' => $admission->admission_number ?? '',
+        'center_name' => $admission->payments->courses->centers->center_name ?? '',
+        'certification_name' => $admission->payments->courses->certification_name ?? '',
+        'admission_id' => $admission->id ?? '',
+        // Add other necessary fields
+    ];
+    $status = "COMPLETED";
+    $validated['status'] = $status;
+    $update_admission = Admissions::where('admission_number', $request->admission_number)->update($validated);
+
+
+    $verificationUrl = route('pdf.verify_certificate', ['admission_number' => $request->admission_number]);
+    $qrCode = Builder::create()
+    ->writer(new PngWriter())
+    ->data(route('pdf.verify_certificate', ['admission_number' => $request->admission_number]))
+    ->size(200)
+    ->build();
+
+// Save the QR code to a file or directly use it in the PDF
+$certificate_data['qr_code'] = $qrCode->getDataUri();
+
+    $pdf = Pdf::loadView('pdf.certificate', $certificate_data)
+      ->setPaper('a4', 'landscape');
+    
+    // Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+    return $pdf->download("admission-{$admission->admission_number}.pdf");
+}
+
+
+public function emailCertificate(Request $request, $admission_number)
+{
+      // Fetch the payment data based on the transaction_reference
+    $admission = Admissions::with("clients",  "users", "payments.courses.centers")->where('admission_number', $admission_number)->first();
+ 
+    
+    // Check if payment exists
+    if (!$admission) {
+        return response()->json(['error' => 'Admission not found'], 404);
+    }
+
+    // Prepare the data for the PDF
+    $certificate_data = [
+        'id' => $admission->id ?? '',
+        'client_id' => $admission->client_id ?? '',
+        'amount' => $admission->amount ?? '',
+        'created_at' => $admission->created_at->format('Y-m-d') ?? '',
+        'firstname' => $admission->clients->firstname ?? '',
+        'surname' => $admission->clients->surname ?? '',
+        'othernames' => $admission->clients->othernames ?? '',
+        'phone_number' => $admission->users->phone_number ?? '',
+        'email' => $admission->users->email ?? '',
+        'payment_method' => $admission->payment_method ?? '',
+        'transaction_reference' => $admission->transaction_reference ?? '',
+        'course_name' => $admission->payments->courses->course_name ?? '',
+        'course_id' => $admission->payments->courses->course_id ?? '',
+        'admission_date' => $admission->created_at  ?? '',
+        'admission_number' => $admission->admission_number ?? '',
+        'center_name' => $admission->payments->courses->centers->center_name ?? '',
+        'certification_name' => $admission->payments->courses->certification_name ?? '',
+        'admission_id' => $admission->id ?? '',
+        // Add other necessary fields
+    ];
+    $status = "COMPLETED";
+    $validated['status'] = $status;
+    $update_admission = Admissions::where('admission_number', $request->admission_number)->update($validated);
+
+
+    $verificationUrl = route('pdf.verify_certificate', ['admission_number' => $request->admission_number]);
+    $qrCode = Builder::create()
+    ->writer(new PngWriter())
+    ->data(route('pdf.verify_certificate', ['admission_number' => $request->admission_number]))
+    ->size(200)
+    ->build();
+
+// Save the QR code to a file or directly use it in the PDF
+$certificate_data['qr_code'] = $qrCode->getDataUri();
+
+    $pdf = Pdf::loadView('pdf.certificate', $certificate_data)
+      ->setPaper('a4', 'landscape');
+    
+    Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+    // return $pdf->download("admission-{$admission->admission_number}.pdf");
+}
+
 
    
 }
