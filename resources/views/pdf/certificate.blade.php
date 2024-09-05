@@ -69,7 +69,7 @@
         }
 
         .proficiency {
-            font-size: 24px;
+            font-size: 30px;
             font-weight: bold;
             margin-bottom: 30px;
             text-align: left;
