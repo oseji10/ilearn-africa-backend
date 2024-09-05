@@ -271,6 +271,7 @@ public function generateAdmissionLetter(Request $request)
             'admission_number' => $admission->admission_number,
             'center_name' => $admission->payments->courses->centers->center_name,
             'certification_name' => $admission->payments->courses->certification_name,
+            'admission_id' => $admission->id,
             // Add other necessary fields
         ];
         $status = "COMPLETED";

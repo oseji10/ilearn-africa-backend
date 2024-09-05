@@ -54,7 +54,7 @@ public function processCertificate(){
     ->get();
 
 return response()->json([
-    'message' => 'Admissions retrieved successfully',
+    'message' => 'Certificates processed successfully',
     'admissions' => $admissions,
 ]);
 }

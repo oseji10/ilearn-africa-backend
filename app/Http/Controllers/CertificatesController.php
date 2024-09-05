@@ -30,29 +30,29 @@ class CertificatesController extends Controller
 
 
     public function batchProcess(Request $request)
-    {
-        $ids = $request->input('admission_number');
+{
+    $ids = $request->input('admission_number');
 
-        // Validate input
-        if (empty($ids) || !is_array($ids)) {
-            return response()->json(['message' => 'Invalid input'], 400);
-        }
-
-        // Check if IDs are valid
-        $admissions = Admissions::whereIn('admission_number', $ids)->get();
-        if ($admissions->isEmpty()) {
-            return response()->json(['message' => 'No valid admissions found'], 404);
-        }
-
-        // Update status
-        try {
-            Admissions::whereIn('admission_number', $ids)->update(['status' => 'ADMITTED']);
-            return response()->json(['message' => 'Certificates generated successfully'], 200);
-        } catch (\Exception $e) {
-            Log::error('Error updating admissions: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to process certificates'], 500);
-        }
+    // Validate input
+    if (empty($ids) || !is_array($ids)) {
+        return response()->json(['message' => 'Invalid input'], 400);
     }
+
+    // Check if IDs are valid
+    $admissions = Admissions::whereIn('admission_number', $ids)->get();
+    if ($admissions->isEmpty()) {
+        return response()->json(['message' => 'No valid admissions found'], 404);
+    }
+
+    // Update status
+    try {
+        Admissions::whereIn('admission_number', $ids)->update(['status' => 'COMPLETED']);
+        return response()->json(['message' => 'Certificates generated successfully'], 200);
+    } catch (\Exception $e) {
+        Log::error('Error updating admissions: ' . $e->getMessage());
+        return response()->json(['message' => 'Failed to process certificates'], 500);
+    }
+}
 
    
 }

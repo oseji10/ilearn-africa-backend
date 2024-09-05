@@ -3,116 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href='https://fonts.googleapis.com/css?family=Cinzel' rel='stylesheet'>
-    <link href='https://fonts.googleapis.com/css?family=Cinzel+Bold' rel='stylesheet'>
+    <link href="https://fonts.googleapis.com/css?family=Cinzel&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Cinzel:700&display=swap" rel="stylesheet">
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding-bottom: -100;
-        }
-
         body {
-            /* background-image: url('images/certificate-logo.png'); Replace with your image path */
-            background-size: cover; /* Ensures the image covers the whole page */
-            background-position: center; /* Centers the image */
-            background-repeat: no-repeat; /* Prevents the image from repeating */
-            background-attachment: fixed; /* Keeps the image fixed in place when scrolling */
-            line-height: 1.6;
-            display: flex;
-            align-items: stretch;
-        }
-
-        table {
-            height: 100%;
-            width: 100%;
-            border-collapse: collapse;
-            background-color: transparent; /* Ensure the table background is transparent */
-        }
-
-        td {
-            margin: 0px;
-            padding: 10px;
-            vertical-align: top;
-            background-color: transparent; /* Ensure the cell background is transparent */
-        }
-
-        .left-column {
-            width: 82%;
-            background-image: url('images/certificate-logo.png');
+            margin: 0;
+            padding: 0;
             
-            /* background-color: rgba(240, 240, 240, 0.8); Semi-transparent background color */
+            font-family: 'Cinzel', serif;
+            background: white;
+            background-image: url('images/certificate-logo.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center top;
         }
 
-        .first-column {
-            width: 2%;
-        }
-        .right-column {
-            width: 11%;
-            background-color: #203484; /* Semi-transparent background color */
-        }
-
-        .third-column {
-            width: 5%;
-            /* background-color: rgba(224, 224, 224, 0.8); Semi-transparent background color */
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 0 0 0;
+            /* padding: -300px; */
+            /* text-align: center; */
         }
 
         .header {
+            margin-bottom: 20px;
+            
             text-align: right;
-            margin-bottom: 30px;
+            font-size: 12px;
         }
 
         .header img {
-            max-width: 150px;
-            margin-bottom: 10px;
+            max-width: 100px;
+            margin-left: auto;
+            margin-right: 0;
+            text-align: left;
+            margin-top: 5px;
         }
 
-        
+        .certificate-no {
+            text-align: left;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .date {
+            margin-bottom: 30px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .recipient {
+            font-size: 32pt;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .course-details {
+            margin-bottom: 20px;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .proficiency {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .developed-by {
+            font-size: 16px;
+            margin-bottom: 50px;
+            text-align: left;
+        }
+
+        .signature-section {
+            text-align: left;
+            padding-top: 30px;
+        }
+
+        .signature {
+            margin-bottom: 5px;
+            text-align: left;
+        }
+
+        .signature img {
+            width: 10%;
+        }
+
+        .signatory-name {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .signatory-title {
+            font-size: 14px;
+        }
+
+        .qr-code {
+            position: absolute;
+            left: 600px;
+            bottom: 100px;
+        }
+
+        .qr-code img {
+            width: 90px;
+        }
+
+        .logo-container {
+            text-align: left;
+        }
+
+        .right-column {
+            padding-right: -300px;
+    position: absolute;
+    bottom: -100px;              /* Stretches to the bottom */
+    top: -100px;                 /* Stretches to the top */
+    right: 0;               /* Aligns to the right */
+    width: 13%;             /* Set width as per your requirement */
+    background-color: #203484; /* Set the background color */
+}
+
     </style>
 </head>
 <body>
-    <table>
-        <tr>
-        <td class="first-column">
-         </td>
+    <div class="container">
+        <div class="certificate-no">
+           <br/> <strong>Certificate NO:</strong> iLA/{{ str_pad($admission_id, 3, '0', STR_PAD_LEFT) }}/{{ \Carbon\Carbon::parse($admission_date)->format('Y') }}
+        </div>
+        <div class="logo-container">
+            <img src="images/ilearn-logo.png" width="20%" height="auto" alt="iLearn Logo" align="left" style="border-radius: 5%;">
+        </div>
 
-            <td class="left-column">
-                <div class="header">
-                    <p style="font" align="left"><b>Certificate NO:</b> iLA/{{ str_pad($admission_id, 3, '0', STR_PAD_LEFT) }}/{{ \Carbon\Carbon::parse($admission_date)->format('Y') }}</p>
-                    <img src="images/ilearn-logo.png" alt="Logo" align="left" style="border-radius: 5%;"><br/><br/><br/>
-                    
-                    <p align="left">On {{ \Carbon\Carbon::parse($admission_date)->format('F j, Y') }}.</p>
-                    <p align="left" style="font-size: 35pt; margin:0;  font-family: 'Cinzel Bold'; text-transform: uppercase;">
-                        {{$firstname}} {{$othernames}} {{$surname}}
-                    </p>
-                    <p align="left">Has Successfully Completed a Course in<br/>
-                    {{$certification_name}} and Has Been Awarded this</p>
-                    <p align="left" style="font-size:30px; margin:0; font-weight: bold;">
-                        Proficiency certificate in<br/>
-                        {{$certification_name}}
-                    </p>
-                    <p align="left">This course has been developed and delivered by iLearn Africa</p>
-                </div>
-           
-   
+        <div class="date">
+        <br/><br/><br/><br/><br/><br/>On {{ \Carbon\Carbon::parse($admission_date)->format('F j, Y') }}.
+        </div>
+        <div class="recipient">
+            {{$firstname}} {{$othernames}} {{$surname}}
+        </div>
+        <div class="course-details">
+            Has Successfully Completed a Course in<br>
+            {{$certification_name}} and Has Been Awarded this
+        </div>
+        <div class="proficiency">
+            Proficiency Certificate in<br>
+            {{$certification_name}}
+        </div>
+        <div class="developed-by">
+            This course has been developed and delivered by iLearn Africa
+        </div>
 
-                <div>
-                    <p>Yours Sincerely,</p>
-                    <u style="margin:0;"><img src="images/cd-sign.png" /><br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>
-                    <p style="font-size:16pt; font-weight:bold; margin:0;">Nwude Ifeoma Grace</p>
-                    <p style="margin:0;">Programme Director/iLearn Africa</p>
-                </div>
-            </td>
-           <td class="right-column">
-    <img src="images/logo1.png" width="150px" style="margin-left: -10px; margin-right: -15px; margin-top:500px; background:white;"/>
-</td>
+        <div class="right-column">
+          <span style="margin-right:10px"><img src="images/logo1.png" width="140px" height="auto" style="padding-right: -300px; margin-top:600px; background:white;"/></span> 
+    </div> 
 
-
-            <td class="third-column">
-            <p align="right"> <img width="70px" height="auto" align="right" style="display: table-cell; vertical-align: bottom; text-align: center;" src="{{ $qr_code }}" alt="QR Code"></p>
-            </td>
-        </tr>
-    </table>
+        <div class="signature-section">
+            <div class="signature">
+                <img src="images/cd-sign.png" alt="Signature"><br/>
+            <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>
+            </div>
+            <div class="signatory-name">
+                Nwude Ifeoma Grace
+            </div>
+            <div class="signatory-title">
+                Programme Director/iLearn Africa
+            </div>
+        </div>
+        <div class="qr-code">
+            <img src="{{ $qr_code }}" alt="QR Code">
+        </div>
+    </div>
 </body>
 </html>
