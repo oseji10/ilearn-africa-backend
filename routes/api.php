@@ -95,8 +95,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('my-admissions/{client_id}', [AdmissionController::class, 'myAdmissions']);
     Route::get('admissions', [AdmissionController::class, 'show']);
-    Route::get('admitted', [AdmissionController::class, 'admittedClients'])->name('admissions.admitted');
+    Route::get('admitted-clients', [AdmissionController::class, 'admittedClients'])->name('admissions.admitted');
     
+    Route::get('admitted', [AdmissionController::class, 'show'])->name('admissions.admitted');
+    
+
     Route::put('admissions/{admission_number}', [AdmissionController::class, 'approval'])->name('process-admissions');
     Route::put('admit-all', [AdmissionController::class, 'admitAll']);
     Route::post('admissions/admission_letter', [PdfController::class, 'generateAdmissionLetter'])->name('admission_letter');

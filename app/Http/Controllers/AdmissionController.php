@@ -38,6 +38,11 @@ class AdmissionController extends Controller
                 ->take(1)
         )
         ->get();
+
+        return response()->json([
+            'message' => 'Admissions retrieved successfully',
+            'admissions' => $admissions,
+        ]);
 }
 
 
