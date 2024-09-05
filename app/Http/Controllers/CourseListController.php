@@ -99,6 +99,37 @@ class CourseListController extends Controller
             return response()->json(['message' => 'Course not found.'], 404);
         }
     }
+
+
+
+
+
+    public function updateCourse(Request $request, $course_id)
+{
+    // Validate the incoming request data
+    $validatedData = $request->validate([
+        // 'course_id' => 'required|string',
+        'course_name' => 'required|string',
+        'course_image' => 'nullable|string',
+        'cost' => 'nullable|string',
+        'certification_name' => 'nullable|string',
+        'center_id' => 'nullable|string',
+    ]);
+
+    // Find the course by its course_id
+    $course = CourseList::where('course_id', $course_id)->first();
+
+    // Check if the course exists
+    if (!$course) {
+        return response()->json(['message' => 'Course not found.'], 404);
+    }
+
+    // Update the course with the validated data
+    $course->update($validatedData);
+
+    return response()->json(['message' => 'Course updated successfully.']);
+}
+
     
     
 }
