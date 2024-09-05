@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\CourseList;
 use App\Models\Payments;
+use App\Models\CourseMaterial;
 
 class CourseListController extends Controller
 {
@@ -74,5 +75,30 @@ class CourseListController extends Controller
             'course' => $course,
         ], 201); // HTTP status code 201: Created
     }
+
+
+    public function deleteCourse($course_id)
+    {
+        // First, find and delete the related course materials
+        $courseMaterials = CourseMaterial::where('course_id', $course_id)->get();
+    
+        if ($courseMaterials->isNotEmpty()) {
+            foreach ($courseMaterials as $material) {
+                $material->delete(); // Delete each course material
+            }
+        }
+    
+        // Now, find the course in the course list
+        $course = CourseList::where('course_id', $course_id)->first();
+    
+        // Check if the course exists
+        if ($course) {
+            $course->delete(); // Delete the course from the course list
+            return response()->json(['message' => 'Course and related materials deleted successfully.']);
+        } else {
+            return response()->json(['message' => 'Course not found.'], 404);
+        }
+    }
+    
     
 }

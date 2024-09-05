@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('course_list', [CourseListController::class, 'show']);
     Route::post('course_list', [CourseListController::class, 'store']);
     Route::post('course_material', [CourseMaterialController::class, 'uploadCourseMaterial']);
+    Route::delete('delete_course/{course_id}', [CourseListController::class, 'deleteCourse']);
 
     Route::get('centers', [CentersController::class, 'show']);
     Route::post('centers', [CentersController::class, 'store']);
