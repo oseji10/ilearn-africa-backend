@@ -39,5 +39,29 @@ class CentersController extends Controller
             'center' => $center,
         ], 201); // HTTP status code 201: Created
     }
+
+
+    public function updateCenter(Request $request, $center_id)
+    {
+        // Validate the incoming request data
+        $validatedData = $request->validate([
+            // 'center_id' => 'required|string',
+            'center_name' => 'required|string',
+            'center_contact_person' => 'nullable|string',
+        ]);
+    
+        // Find the center by its course_id
+        $center = Centers::where('center_id', $center_id)->first();
+    
+        // Check if the center exists
+        if (!$center) {
+            return response()->json(['message' => 'Center not found.'], 404);
+        }
+    
+        // Update the course with the validated data
+        $center->update($validatedData);
+    
+        return response()->json(['message' => 'Center updated successfully.']);
+    }
     
 }

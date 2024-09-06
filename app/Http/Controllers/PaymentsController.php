@@ -233,7 +233,7 @@ public function storeManualPayment(Request $request)
 
     public function registeredCourses()
     {
-        $my_courses = Payments::with(['courses.centers'])->where('client_id', '=', auth()->user()->client_id)->get();
+        $my_courses = Payments::with(['admissions', 'courses.centers'])->where('client_id', '=', auth()->user()->client_id)->get();
         return response()->json(['my_courses' => $my_courses]);
     }
 
