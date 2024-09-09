@@ -271,5 +271,31 @@ public function deleteClient($client_id)
     }
 }
 
+
+public function updateClient(Request $request, $client_id)
+{
+    // Validate the incoming request data
+    $validatedData = $request->validate([
+        // 'course_id' => 'required|string',
+        'firstname' => 'required|string',
+        'othernames' => 'nullable|string',
+        'surname' => 'required|string',
+        'phone_number' => 'nullable|string',
+        'email' => 'nullable|string',
+    ]);
+
+    // Find the course by its course_id
+    $client = Client::where('client_id', $client_id)->first();
+
+    // Check if the course exists
+    if (!$client) {
+        return response()->json(['message' => 'Client not found.'], 404);
+    }
+
+    // Update the course with the validated data
+    $client->update($validatedData);
+
+    return response()->json(['message' => 'Client updated successfully.']);
+}
     
 }

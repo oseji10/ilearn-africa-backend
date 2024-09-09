@@ -24,7 +24,7 @@ class StatisticsController extends Controller
 
     public function registeredClients()
     {
-        $registeredClients = Client::where('status', 'registered')->get();
+        $registeredClients = Client::with('user')->where('status', 'registered')->get();
         return response()->json([
             'message' => 'Registered clients retrieved successfully',
             'registeredClients' => $registeredClients,
