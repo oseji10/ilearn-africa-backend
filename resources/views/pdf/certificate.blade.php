@@ -147,11 +147,19 @@
         </div>
         <div class="course-details">
             Has Successfully Completed a Course in<br>
-            {{$certification_name}} and Has Been Awarded this
+            {{$course_name}} and Has Been Awarded this
         </div>
+
+        @php
+    $words = explode(' ', $certification_name);
+    $firstTwoWords = implode(' ', array_slice($words, 0, 2));
+    $remainingWords = implode(' ', array_slice($words, 2));
+@endphp
+
         <div class="proficiency">
-            Proficiency Certificate in<br>
-            {{$certification_name}}
+            <!-- Proficiency Certificate in<br> -->
+            <!-- {{$certification_name}} -->
+            {{ $firstTwoWords }}<br>{{ $remainingWords }}
         </div>
         <div class="developed-by">
             This course has been developed and delivered by iLearn Africa
