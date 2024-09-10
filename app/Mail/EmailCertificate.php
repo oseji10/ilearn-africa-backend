@@ -60,6 +60,7 @@ class EmailCertificate extends Mailable
                         'support_email' => "support@ilearnafricaedu.com",
                         'admission_number' => $this->certificate_data['admission_number'],
                         'admission_date' => $this->certificate_data['admission_date'],
+                        'name_on_certificate' => $this->certificate_data['name_on_certificate'],
                     ]);
     }
 

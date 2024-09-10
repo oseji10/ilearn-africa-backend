@@ -143,8 +143,13 @@
         <br/><br/><br/><br/><br/><br/>On {{ \Carbon\Carbon::parse($admission_date)->format('F j, Y') }}.
         </div>
         <div class="recipient">
-            {{$firstname}} {{$othernames}} {{$surname}}
-        </div>
+    @if(!empty($name_on_certificate))
+        {{$name_on_certificate}}
+    @else
+        {{$firstname}} {{$othernames}} {{$surname}}
+    @endif
+</div>
+
         <div class="course-details">
             Has Successfully Completed a Course in<br>
             {{$course_name}} and Has Been Awarded this
