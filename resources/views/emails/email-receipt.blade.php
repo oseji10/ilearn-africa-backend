@@ -480,7 +480,7 @@
                                     <p class="f-fallback">Amount</p>
                                   </th>
                                 </tr>
-                                Client ID: {{$client_id}}<br/>
+                                <!-- Client ID: {{$client_id}}<br/> -->
                                 Client Name: {{$firstname}} {{$surname}}<br/>
                                 Email: {{$email}}<br/>
                                 Phone Number: {{$phone_number}}<br/>

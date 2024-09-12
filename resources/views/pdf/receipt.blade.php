@@ -50,8 +50,8 @@
         <td colspan="2"><h4>PERSONAL INFORMATION</b></h4></td>
         
     </tr>
-    <tr>
-        <td><h4>Client ID: <b>{{ $client_id }}</b></h4></td>
+    <tr colspan="2">
+        <!-- <td><h4>Client ID: <b>{{ $client_id }}</b></h4></td> -->
         <td align="right"><h4>Receipt # <b style="font-size:20px;">{{ $client_id ?? ''}}</b></h4></td>
     </tr>
     <tr>
