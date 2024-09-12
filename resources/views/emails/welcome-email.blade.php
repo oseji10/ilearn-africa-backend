@@ -515,7 +515,7 @@
                             </td>
                           </tr>
                         </table>
-                        <p>While we thank you for signing up, we hope you are able to quickly complete your application so you can get started immediately.</p>
+                        <p>We hope you are able to quickly complete your application so you can get started immediately.</p>
                   
                         <p>If you have any questions, feel free to <a href="mailto:{{$support_email}}">email our customer success team</a>. </p>
                         <p>Thanks,
