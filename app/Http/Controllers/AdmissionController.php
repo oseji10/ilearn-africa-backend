@@ -12,20 +12,24 @@ class AdmissionController extends Controller
 {
     public function show(){
         $admissions = Admissions::with(['clients.user', 'payments.courses'])
-        ->where('status', 'pending')
-        ->orderBy(
-            Payments::select('created_at')
-                ->whereColumn('payments.admission_number', 'admissions.admission_number')
-                ->latest()
-                ->take(1)
-        )
-        ->get();
-    
+            // ->where('status', 'pending')
+            ->whereHas('payments', function ($query) {
+                $query->where('status', 1);
+            })
+            ->orderBy(
+                Payments::select('created_at')
+                    ->whereColumn('payments.admission_number', 'admissions.admission_number')
+                    ->latest()
+                    ->take(1)
+            )
+            ->get();
+        
         return response()->json([
             'message' => 'Admissions retrieved successfully',
             'admissions' => $admissions,
         ]);
     }
+    
 
     public function admittedClients(){
         $admissions = Admissions::with(['clients.user', 'payments.courses'])
@@ -50,6 +54,9 @@ public function processCertificate(){
     $admissions = Admissions::with(['clients.user', 'payments.courses'])
     ->where('status', 'ADMITTED')
     // ->orWhere('status', 'COMPLETED')
+    ->whereHas('payments', function ($query) {
+        $query->where('status', 1);
+    })
     ->orderBy(
         Payments::select('created_at')
             ->whereColumn('payments.admission_number', 'admissions.admission_number')
