@@ -18,6 +18,7 @@ use App\Http\Controllers\UploadDocumentController;
 use App\Http\Controllers\CertificatesController;
 use App\Http\Controllers\CourseMaterialController;
 use App\Http\Controllers\StatisticsController;
+use App\Http\Controllers\CohortsController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -79,6 +80,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('centers', [CentersController::class, 'store']);
     Route::patch('centers/update/{center_id}', [CentersController::class, 'updateCenter']);
 
+    Route::get('cohorts', [CohortsController::class, 'showCohorts']);
+    Route::get('cohorts/courses', [CohortsController::class, 'showCohortsAllcourses']);
+    Route::get('cohorts/{cohort_id}/courses', [CohortsController::class, 'showCohortsCourses']);
+    
+    Route::post('cohorts/add-cohort', [CohortsController::class, 'addCohort']);
+    Route::post('cohorts/add-cohort-courses', [CohortsController::class, 'addCohortCourses']);
+    Route::patch('cohorts/update-cohort/{cohort_id}', [CohortsController::class, 'updateCohort']);
+    
     Route::get('payments', [PaymentsController::class, 'show']);
     Route::get('pending-payments', [PaymentsController::class, 'pendingPayments']);
     Route::put('confirm-payment', [PaymentsController::class, 'confirmPayment']);
@@ -90,6 +99,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('store-payment', [PaymentsController::class, 'storePayment']);
     Route::post('/manual-payment', [PaymentsController::class, 'storeManualPayment']);
     Route::get('/my-courses', [PaymentsController::class, 'registeredCourses'])->name('payment.my-courses');
+    // Route::get('/my-registerable-courses', [CourseListController::class, 'showMyRegisterableCourses'])->name('payment.my-registerable-courses');
+    
     Route::get('/my-registerable-courses', [CourseListController::class, 'showMyRegisterableCourses'])->name('payment.my-registerable-courses');
     
 

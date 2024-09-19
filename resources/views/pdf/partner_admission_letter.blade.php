@@ -111,13 +111,21 @@
         <p align="right" style="margin-right:30; margin-top:-10">{{ \Carbon\Carbon::parse($admission_date)->format('F jS, Y') }}.</p>
         <p align="center" style="color:blue;">RE: ACCEPTANCE LETTER</p>
         <div class="content">
-            <b>Dear {{$firstname}} {{$othernames}} {{$surname}},</b><br/><br/>
+            <!-- <b>Dear {{$firstname}} {{$othernames}} {{$surname}},</b><br/><br/>
             <i>Congratulations!</i><br/><br/>
             <i>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of ILEARN AFRICA has granted you admission into the {{$certification_name}} program of its affiliated institute; {{$center_name}}.</i>
             <i>This program will lead to the prestigious award of a {{$course_name}} from our esteemed partner institution and a proficiency certificate in SEND from ILEARN AFRICA.</p>
             <i>This course is slated to commence on the 10th of May, 2024, and will run for a duration of 5 weekends (Fridays only). You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course.</i>
             <i>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once.</i>
-            <i>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</i>
+            <i>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</i> -->
+
+            <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLEARN AFRICA has granted you admission into the <b style="text-transform:uppercase;">{{$course_name}} program</b> of its affiliated institute; <b style="text-transform:uppercase;">{{$center_name}}</b>. </p>
+       
+            <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$professional_certification_name}}</b> from our esteemed partner institution and a <b style="text-transform:uppercase;">{{$certification_name}}</b> from iLEARN AFRICA. This course is slated to commence on the <b>12th of September, 2024.</b> </p>
+            
+            <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
+            <p>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once. </p>
+            <p>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</p>
         </div>
 
         <div class="signature">

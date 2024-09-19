@@ -146,6 +146,7 @@ public function generateAdmissionLetter(Request $request)
             'transaction_reference' => $admission->transaction_reference,
             'course_name' => $admission->payments->courses->course_name ?? '',
             'certification_name' => $admission->payments->courses->certification_name ?? '',
+            'professional_certification_name' => $admission->payments->courses->professional_certification_name ?? '',
             'course_id' => $admission->payments->courses->course_id ?? '',
             'admission_date' => $admission->created_at,
             'admission_number' => $admission->admission_number,
@@ -155,12 +156,22 @@ public function generateAdmissionLetter(Request $request)
 
         
 
-        // Load the view file and pass in the data
-        $pdf = Pdf::loadView('pdf.admission_letter', $admission_data);
+      // Assuming you have the necessary data in $admission_data
+$centerName = $admission->payments->courses->centers->center_name;
+
+// Determine which PDF view to load based on the center name
+if (strpos($centerName, 'iLearn Africa') !== false) {
+    $pdf = Pdf::loadView('pdf.ilearn_admission_letter', $admission_data);
+} else {
+    $pdf = Pdf::loadView('pdf.partner_admission_letter', $admission_data);
+}
+
+// Optionally, return or output the PDF
+return $pdf->download('admission_letter.pdf');
 
             
         
-        Mail::to($admission->users->email)->send(new EmailAdmission($admission_data));
+        // Mail::to($admission->users->email)->send(new EmailAdmission($admission_data));
         
         
         // Return the generated PDF

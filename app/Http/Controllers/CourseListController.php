@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use App\Models\CourseList;
 use App\Models\Payments;
 use App\Models\CourseMaterial;
+use App\Models\Cohorts;
+use App\Models\CohortsClients;
+use App\Models\CohortsCourses;
+use App\Models\Client;
 
 class CourseListController extends Controller
 {
@@ -28,7 +32,7 @@ class CourseListController extends Controller
     $userId = auth()->user()->client_id;
 
     // Fetch all courses
-    $courses = CourseList::all();
+    $courses = CohortsCourses::with('course_list')->get();
 
     // Iterate through each course and check if the user has paid for it
     $coursesWithStatus = $courses->map(function ($course) use ($userId) {
@@ -47,8 +51,40 @@ class CourseListController extends Controller
     return response()->json([
         'message' => 'Courses retrieved successfully',
         'courses' => $coursesWithStatus,
+        // 'courses' => $courses,
     ]);
 }
+
+
+
+
+// public function showMyRegisterableCourses()
+// {
+//     // Get the logged-in user's ID
+//     $userId = auth()->user()->client_id;
+
+//     // Fetch all courses
+//     $courses = CourseList::all();
+
+//     // Iterate through each course and check if the user has paid for it
+//     $coursesWithStatus = $courses->map(function ($course) use ($userId) {
+//         // Check if a payment exists for this course by this user
+//         $paymentExists = Payments::where('course_id', $course->course_id)
+//                                 ->where('client_id', $userId)
+//                                 ->exists();
+
+//         // Add a status field based on whether the payment exists
+//         $course->status = $paymentExists ? 'Paid' : 'Not Paid';
+
+//         return $course;
+//     });
+
+//     // Return the modified course list with the payment status
+//     return response()->json([
+//         'message' => 'Courses retrieved successfully',
+//         'courses' => $coursesWithStatus,
+//     ]);
+// }
 
 
 public function store(Request $request)
@@ -61,6 +97,7 @@ public function store(Request $request)
         'cost' => 'nullable|string',
         'center_id' => 'nullable|string',
         'certification_name' => 'nullable|string',
+        'professional_certification_name' => 'nullable|string',
     ]);
 
     // Check if the course_id already exists
@@ -122,6 +159,7 @@ public function store(Request $request)
         'cost' => 'nullable|string',
         'certification_name' => 'nullable|string',
         'center_id' => 'nullable|string',
+        'professional_certification_name' => 'nullable|string',
     ]);
 
     // Find the course by its course_id
