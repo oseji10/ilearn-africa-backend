@@ -17,6 +17,7 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\EmailReceipt;
+use App\Models\PartPayments;
 
 class PaymentsController extends Controller
 {
@@ -29,6 +30,17 @@ class PaymentsController extends Controller
         return response()->json([
             'message' => 'Payments retrieved successfully',
             'payments' => $payments,
+        ]);
+    }
+
+
+    public function myPaymentPartPaymentHistory(Request $request, $id)
+    {
+      $part_payments = Payments::with(['part_payments'])->where('id', $id)->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'message' => 'Part Payments retrieved successfully',
+            'part_payments' => $part_payments,
         ]);
     }
 
@@ -46,7 +58,7 @@ class PaymentsController extends Controller
     public function myPayments()
     {
        
-        $payments = Payments::with(['clients'])->where('client_id', auth()->user()->client_id)->orderBy('created_at', 'desc')->get();
+        $payments = Payments::with(['clients', 'courses'])->where('client_id', auth()->user()->client_id)->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'message' => 'Payments retrieved successfully',
@@ -182,6 +194,7 @@ public function storeManualPayment(Request $request)
     $admissions->client_id = auth()->user()->client_id;
     $admissions->admission_number = $admission_number;
     $admissions->status = "pending";
+    $admissions->cohort_id = $request->cohort_id;
     $admissions->save();
 
     
@@ -200,36 +213,71 @@ public function storeManualPayment(Request $request)
     $payments->status = 0; //change to 0 later
     $payments->created_by = auth()->id();
     $payments->admission_number = $admission_number;
+    $payments->cohort_id = $request->cohort_id;
+    $payments->part_payment = $request->part_payment;
     $payments->save();
+
+    $payment_id = $payments->id;
+
+    $part_payments = new PartPayments();
+    $part_payments->client_id = $request->client_id;
+    $part_payments->payment_id = $payment_id;
+    $part_payments->amount = $request->part_payment;
+    $part_payments->save();
    
 
-        
-    // $validated['admission_number'] = $admission_number;
+  
+}
+
+
+
+
+public function topUpPayment(Request $request)
+{
+    $validated = $request->validate([
+        'id' => 'required|integer',  // Make 'id' required for the update
+        'client_id' => 'required|string', // Assuming 'client_id' is required
+        'part_payment' => 'required|numeric', // Assuming part_payment should be numeric
+    ]);
+    
+    $retrive_payment_detail = Payments::where('id', $validated['id'])->first();
+    
+    if (!$retrive_payment_detail) {
+        return response()->json(['error' => 'Payment not found'], 404);
+    }
+    
+    $previous_balance = $retrive_payment_detail->part_payment;
+    
+    // Ensure part_payment is numeric before adding
+    $validated['part_payment'] += $previous_balance;
+    
+    $updated = Payments::where('id', $validated['id'])
+                ->update(['part_payment' => $validated['part_payment'], 'client_id' => $validated['client_id']]);
     
 
-    // $payments = Payments::create($validated);
 
-    // $validated = $request->validate([
-    //     'file' => 'required|file|mimes:png,jpg,jpeg,JPG,pdf,doc,docx|max:1024', // Adjust validation rules as needed
-    // ]);
+                $payment_id = $retrive_payment_detail->id;
 
-    // if ($request->file('file')) {
-    //     $file = $request->file('file');
-    //     $path = $file->store('documents', 'public'); // Store in the 'public/documents' directory
+$part_payments = new PartPayments();
+$part_payments->client_id = $request->client_id;
+$part_payments->payment_id = $payment_id;
+$part_payments->amount = $request->part_payment;
+$part_payments->save();
 
-    //     $validated['file_path'] = $path;
-    //     $validated['client_id'] = auth()->user()->client_id;
-    //     $validated['other_reference']=$other_reference;
-    //     // Save the file path or other related information to the database if needed
-    //     $save = ProofOfPayment::create($validated);
-   
-        
 
-    //     return response()->json([
-    //         'message' => $payments
-    //     ], 200); // HTTP success code 200: Internal Server Error
-    // }
+    if ($updated) {
+        return response()->json(['message' => 'Payment updated successfully']);
+    } else {
+        return response()->json(['error' => 'Update failed'], 500);
+    }
+    
+
+
+
+
+
 }
+
 
     public function registeredCourses()
     {

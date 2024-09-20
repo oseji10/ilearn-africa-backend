@@ -13,7 +13,8 @@ class Admissions extends Model
         'admission_number',
         'client_id',
         'status',
-        'admitted_by'
+        'admitted_by',
+        'cohort_id',
     ];
 
 

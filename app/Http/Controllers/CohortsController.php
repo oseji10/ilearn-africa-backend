@@ -19,6 +19,15 @@ class CohortsController extends Controller
         ]);
     }
 
+    public function activeCohorts()
+    {
+        $cohorts = Cohorts::with('cohort_courses')->where('status', 'active')->get();
+        return response()->json([
+            'message' => 'Cohorts retrieved successfully',
+            'cohorts' => $cohorts,
+        ]);
+    }
+
     public function showCohortsCourses(Request $request, $cohort_id)
     {
         $cohort_courses = CohortsCourses::with('course_list')->where('cohort_id', $cohort_id)->get();

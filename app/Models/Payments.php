@@ -9,7 +9,7 @@ class Payments extends Model
 {
     use HasFactory, softDeletes;
     public $table = 'payments';
-    protected $fillable = ['client_id', 'payment_for', 'course_id', 'payment_gateway', 'payment_method', 'amount', 'transaction_reference', 'other_reference','status', 'created_by', 'admission_number'];
+    protected $fillable = ['client_id', 'payment_for', 'course_id', 'payment_gateway', 'payment_method', 'amount', 'transaction_reference', 'other_reference','status', 'created_by', 'admission_number', 'cohort_id', 'part_payment'];
 
     public function clients()
     {
@@ -35,5 +35,10 @@ class Payments extends Model
     public function admissions()
     {
         return $this->belongsTo(Admissions::class, 'client_id', 'client_id');
+    }
+
+    public function part_payments()
+    {
+        return $this->hasMany(PartPayments::class, 'payment_id', 'id');
     }
 }

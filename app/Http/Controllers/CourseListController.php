@@ -26,13 +26,13 @@ class CourseListController extends Controller
        
     }
 
-    public function showMyRegisterableCourses()
+    public function showMyRegisterableCourses(Request $request, $cohort_id)
 {
     // Get the logged-in user's ID
     $userId = auth()->user()->client_id;
 
     // Fetch all courses
-    $courses = CohortsCourses::with('course_list')->get();
+    $courses = CohortsCourses::with('course_list')->where('cohort_id', $cohort_id)->get();
 
     // Iterate through each course and check if the user has paid for it
     $coursesWithStatus = $courses->map(function ($course) use ($userId) {

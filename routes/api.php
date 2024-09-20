@@ -88,12 +88,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('cohorts/add-cohort-courses', [CohortsController::class, 'addCohortCourses']);
     Route::patch('cohorts/update-cohort/{cohort_id}', [CohortsController::class, 'updateCohort']);
     
+    Route::get('cohorts/active-cohorts', [CohortsController::class, 'activeCohorts']);
+    
     Route::get('payments', [PaymentsController::class, 'show']);
     Route::get('pending-payments', [PaymentsController::class, 'pendingPayments']);
     Route::put('confirm-payment', [PaymentsController::class, 'confirmPayment']);
     Route::get('proof-of-payment/{other_reference}', [PaymentsController::class, 'fetchProof']);
 
     Route::get('my-payments', [PaymentsController::class, 'myPayments'])->name('my-payments');
+    Route::post('top-up-payment', [PaymentsController::class, 'topUpPayment']);
+    Route::get('my-part-payment-history/{id}', [PaymentsController::class, 'myPaymentPartPaymentHistory']);
     
     Route::get('/verified-payments', [PaymentsController::class, 'verifiedPayments']);
     Route::post('store-payment', [PaymentsController::class, 'storePayment']);
@@ -101,7 +105,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-courses', [PaymentsController::class, 'registeredCourses'])->name('payment.my-courses');
     // Route::get('/my-registerable-courses', [CourseListController::class, 'showMyRegisterableCourses'])->name('payment.my-registerable-courses');
     
-    Route::get('/my-registerable-courses', [CourseListController::class, 'showMyRegisterableCourses'])->name('payment.my-registerable-courses');
+    Route::get('/my-registerable-courses/{cohort_id}', [CourseListController::class, 'showMyRegisterableCourses'])->name('payment.my-registerable-courses');
     
 
     Route::get('states', [StatesController::class, 'show']);
