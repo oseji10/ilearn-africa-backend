@@ -124,7 +124,7 @@ public function generateAdmissionLetter(Request $request)
         ]);
     
         // Fetch the payment data based on the transaction_reference
-        $admission = Admissions::with("clients",  "users", "payments.courses.centers")->where('admission_number', $request->admission_number)->first();
+        $admission = Admissions::with("clients",  "users", "payments.courses.centers", 'cohorts')->where('admission_number', $request->admission_number)->first();
      
         
         // Check if payment exists
@@ -151,6 +151,7 @@ public function generateAdmissionLetter(Request $request)
             'admission_date' => $admission->created_at,
             'admission_number' => $admission->admission_number,
             'center_name' => $admission->payments->courses->centers->center_name ?? '',
+            'start_date' => $admission->cohorts->start_date ?? '',
             // Add other necessary fields
         ];
 
@@ -168,6 +169,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
 
 // Optionally, return or output the PDF
 return $pdf->download('admission_letter.pdf');
+
 
             
         

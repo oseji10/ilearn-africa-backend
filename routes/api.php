@@ -89,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('cohorts/update-cohort/{cohort_id}', [CohortsController::class, 'updateCohort']);
     
     Route::get('cohorts/active-cohorts', [CohortsController::class, 'activeCohorts']);
+    Route::patch('cohorts/change-cohort-status', [CohortsController::class, 'changeCohortStatus']);
     
     Route::get('payments', [PaymentsController::class, 'show']);
     Route::get('pending-payments', [PaymentsController::class, 'pendingPayments']);

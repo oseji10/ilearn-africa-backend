@@ -121,7 +121,7 @@
 
             <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLEARN AFRICA has granted you admission into the <b style="text-transform:uppercase;">{{$course_name}} program</b> of its affiliated institute; <b style="text-transform:uppercase;">{{$center_name}}</b>. </p>
        
-            <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$professional_certification_name}}</b> from our esteemed partner institution and a <b style="text-transform:uppercase;">{{$certification_name}}</b> from iLEARN AFRICA. This course is slated to commence on the <b>12th of September, 2024.</b> </p>
+            <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$professional_certification_name}}</b> from our esteemed partner institution and a <b style="text-transform:uppercase;">{{$certification_name}}</b> from iLEARN AFRICA. This course is slated to commence on the <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b> </p>
             
             <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
             <p>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once. </p>

@@ -92,6 +92,8 @@ class PaymentsController extends Controller
         'other_reference' => 'nullable|string',
         'status' => 'nullable|integer',
         'payment_method' => 'nullable|string',
+        'cohort_id' => 'nullable|string',
+        'part_payment' => 'nullable|string',
     ]);
     
     // Start a database transaction
@@ -118,6 +120,7 @@ class PaymentsController extends Controller
         // Add the created_by field with the authenticated user's ID
         $validated['created_by'] = auth()->id();
         $validated['client_id'] = auth()->user()->client_id;
+        $validated['part_payment'] = $request->amount;
 
         // Create a new payment with the validated data
         $admission_number = mt_rand(1000000, 9999999);
@@ -126,6 +129,7 @@ class PaymentsController extends Controller
         $admissions->client_id = auth()->user()->client_id;
         $admissions->admission_number = $admission_number;
         $admissions->status = "pending";
+        $admissions->cohort_id = $request->cohort_id;
         $admissions->save();
         
         $validated['admission_number'] = $admission_number;

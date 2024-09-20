@@ -19,6 +19,32 @@ class CohortsController extends Controller
         ]);
     }
 
+
+    public function changeCohortStatus(Request $request)
+{
+    // Update the cohort's status based on what the frontend sends
+    $cohort_status = Cohorts::where('cohort_id', $request->cohort_id)
+        ->update(['status' => $request->status]);
+
+    // Check if the update was successful
+    if ($cohort_status) {
+        // Fetch the updated cohort to confirm the new status
+        $updatedCohort = Cohorts::where('cohort_id', $request->cohort_id)->first();
+
+        return response()->json([
+            'message' => 'Cohort status updated successfully',
+            'new_status' => $updatedCohort->status,  // Return the confirmed updated status
+        ], 200);
+    } else {
+        return response()->json([
+            'message' => 'Failed to update cohort status',
+        ], 500);
+    }
+}
+
+    
+
+
     public function activeCohorts()
     {
         $cohorts = Cohorts::with('cohort_courses')->where('status', 'active')->get();

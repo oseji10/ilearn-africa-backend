@@ -37,4 +37,9 @@ class Admissions extends Model
     {
         return $this->belongsTo(User::class, 'client_id', 'client_id');
     }
+
+    public function cohorts()
+    {
+        return $this->belongsTo(Cohorts::class, 'cohort_id', 'cohort_id');
+    }
 }
