@@ -12,7 +12,7 @@ class AdmissionController extends Controller
 {
     public function show(){
         $admissions = Admissions::with(['clients.user', 'payments.courses'])
-            // ->where('status', 'pending')
+            ->where('status', 'pending')
             ->whereHas('payments', function ($query) {
                 $query->where('status', 1);
             })
