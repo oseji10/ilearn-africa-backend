@@ -27,75 +27,90 @@ class AuthController extends Controller
 {
 
     public function register(Request $request)
-{
-    $randomString = strtoupper(Str::random(10));
-    $auto_password = strtoupper(Str::random(7));
-
-    try {
-        $request->validate([
-            'email' => 'required|string|email|max:255|unique:users',
-            'phone_number' => 'required|string|max:11|unique:users',
-            'firstname' => 'string',
-             'surname' => 'string',
-              'othernames' => 'string|nullable'
-            // 'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        // Create the client record
-        $client = Client::create([
-            'client_id' => $randomString,
-            'firstname' => $request->firstname,
-            'surname' => $request->surname,
-            'othernames' => $request->othernames,
-        ]);
-
-        // Create the user record
-        $user = User::create([
-            // 'firstname' => $request->firstname,
-            // 'surname' => $request->surname,
-            // 'othernames' => $request->othernames,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'password' => Hash::make($auto_password),
-            'client_id' => $randomString,
-            'role_id' => 3
-        ]);
-
-        // Create the educational details record
-        Educationaldetails::create([
-            'client_id' => $randomString,
-        ]);
-
-        // Assign the role to the user
-        $userRole = User::where('client_id', $randomString)->first();
-        if ($userRole) {
-            $userRole->assignRole('client');
-        }
-
-        // Send the welcome email
-        Mail::to($user->email)->send(new WelcomeEmail($user, $auto_password));
-
-        // Create and return the API token
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'message' => 'Success! Your signup was successful. Please check your email for login details',
-            'user' => $user, // Include user details if needed
-        ]);
-    } catch (ValidationException $e) {
-        // Check if the validation error is for the unique email or phone number constraint
-        if ($e->validator->errors()->has('email') || $e->validator->errors()->has('phone_number')) {
-            return response()->json([
-                'message' => 'A user with this email or phone number has already been created',
-            ], 409); // HTTP status code 409: Conflict
-        }
+    {
+        $randomString = strtoupper(Str::random(10));
+        $auto_password = strtoupper(Str::random(7));
     
-        throw $e;
+        try {
+            $request->validate([
+                'email' => 'required|string|email|max:255|unique:users',
+                'phone_number' => [
+                    'required',
+                    'string',
+                    'unique:users',
+                    function ($attribute, $value, $fail) {
+                        // Custom validation for phone number length
+                        if (strlen($value) > 11) {
+                            $fail('The phone number must not exceed 11 digits.');
+                        }
+    
+                        // Custom validation for phone numbers starting with +
+                        if (strpos($value, '+') === 0) {
+                            $fail('The phone number must not start with "+".');
+                        }
+    
+                        // Custom validation for Nigerian phone numbers (optional)
+                        if (substr($value, 0, 4) === '234') {
+                            $fail('The phone number must not start with the country code.');
+                        }
+                    },
+                ],
+                'firstname' => 'string',
+                'surname' => 'string',
+                'othernames' => 'string|nullable'
+            ], [
+                'email.unique' => 'The email address has already been taken.',
+                'phone_number.unique' => 'The phone number has already been taken.',
+            ]);
+    
+            // Create the client record
+            $client = Client::create([
+                'client_id' => $randomString,
+                'firstname' => $request->firstname,
+                'surname' => $request->surname,
+                'othernames' => $request->othernames,
+            ]);
+    
+            // Create the user record
+            $user = User::create([
+                'email' => $request->email,
+                'phone_number' => $request->phone_number,
+                'password' => Hash::make($auto_password),
+                'client_id' => $randomString,
+                'role_id' => 3
+            ]);
+    
+            // Create the educational details record
+            Educationaldetails::create([
+                'client_id' => $randomString,
+            ]);
+    
+            // Assign the role to the user
+            $userRole = User::where('client_id', $randomString)->first();
+            if ($userRole) {
+                $userRole->assignRole('client');
+            }
+    
+            // Send the welcome email
+            Mail::to($user->email)->send(new WelcomeEmail($user, $auto_password));
+    
+            // Create and return the API token
+            $token = $user->createToken('auth_token')->plainTextToken;
+    
+            return response()->json([
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'message' => 'Success! Your signup was successful. Please check your email for login details',
+                'user' => $user,
+            ]);
+        } catch (ValidationException $e) {
+            // Return the detailed validation error messages
+            return response()->json([
+                'errors' => $e->validator->errors(),
+            ], 422); // HTTP status code 422: Unprocessable Entity
+        }
     }
     
-}
 
     // Login Method
     public function login(Request $request)

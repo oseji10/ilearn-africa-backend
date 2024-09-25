@@ -184,6 +184,73 @@ return $pdf->download('admission_letter.pdf');
 
 
 
+    public function emailAdmissionLetter(Request $request)
+    {
+        // Validate the request
+        $request->validate([
+            'admission_number' => 'required',
+        ]);
+    
+        // Fetch the payment data based on the transaction_reference
+        $admission = Admissions::with("clients",  "users", "payments.courses.centers", 'cohorts')->where('admission_number', $request->admission_number)->first();
+     
+        
+        // Check if payment exists
+        if (!$admission) {
+            return response()->json(['error' => 'Admission not found'], 404);
+        }
+    
+        // Prepare the data for the PDF
+        $admission_data = [
+            'client_id' => $admission->client_id,
+            'amount' => $admission->amount,
+            'created_at' => $admission->created_at->format('Y-m-d'),
+            'firstname' => $admission->clients->firstname,
+            'surname' => $admission->clients->surname,
+            'othernames' => $admission->clients->othernames,
+            'phone_number' => $admission->users->phone_number,
+            'email' => $admission->users->email,
+            'payment_method' => $admission->payment_method,
+            'transaction_reference' => $admission->transaction_reference,
+            'course_name' => $admission->payments->courses->course_name ?? '',
+            'certification_name' => $admission->payments->courses->certification_name ?? '',
+            'professional_certification_name' => $admission->payments->courses->professional_certification_name ?? '',
+            'course_id' => $admission->payments->courses->course_id ?? '',
+            'admission_date' => $admission->created_at,
+            'admission_number' => $admission->admission_number,
+            'center_name' => $admission->payments->courses->centers->center_name ?? '',
+            'start_date' => $admission->cohorts->start_date ?? '',
+            // Add other necessary fields
+        ];
+
+        
+
+      // Assuming you have the necessary data in $admission_data
+$centerName = $admission->payments->courses->centers->center_name;
+
+// Determine which PDF view to load based on the center name
+if (strpos($centerName, 'iLearn Africa') !== false) {
+    $pdf = Pdf::loadView('pdf.ilearn_admission_letter', $admission_data);
+} else {
+    $pdf = Pdf::loadView('pdf.partner_admission_letter', $admission_data);
+}
+
+// // Optionally, return or output the PDF
+// return $pdf->download('admission_letter.pdf');
+
+
+            
+        
+        Mail::to($admission->users->email)->send(new EmailAdmission($admission_data));
+        
+        
+        // Return the generated PDF
+        return $pdf->download("admission-{$admission->admission_number}.pdf");
+    }
+
+
+
+
     public function generateCertificate(Request $request)
     {
         // Validate the request

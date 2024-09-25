@@ -31,34 +31,41 @@ class EmailAdmission extends Mailable
      * @return $this
      */
     public function build()
-    {
-        // Generate the PDF
-        $pdf = Pdf::loadView('pdf.admission_letter', $this->admission_data); // Use Pdf (imported correctly at the top)
+{
+    // Retrieve center name from admission data
+    $centerName = $this->admission_data['center_name'];
 
-
-        return $this->view('emails.email-admission')
-                    ->subject('iLearn Africa - Admission Letter')
-                    ->attachData($pdf->output(), 'admission.pdf', [
-                        'mime' => 'application/pdf',
-                    ])
-                    ->with([
-                        
-                        'firstname' => $this->admission_data['firstname'], // Accessing the client's firstname
-                        'client_id' => $this->admission_data['client_id'],
-                        'amount' => $this->admission_data['amount'],
-                        'surname' => $this->admission_data['surname'],
-                        'othernames' => $this->admission_data['othernames'],
-                        'phone_number' => $this->admission_data['phone_number'],
-                        'email' => $this->admission_data['email'],
-                        'payment_method' => $this->admission_data['payment_method'],
-                        'transaction_reference' => $this->admission_data['transaction_reference'],
-                        'course_name' => $this->admission_data['course_name'],
-                        'course_id' => $this->admission_data['course_id'],
-                        'support_email' => "support@ilearnafricaedu.com",
-                        'admission_number' => $this->admission_data['admission_number'],
-                        'admission_date' => $this->admission_data['admission_date'],
-                    ]);
+    // Determine which PDF view to load based on the center name
+    if (strpos($centerName, 'iLearn Africa') !== false) {
+        $pdf = Pdf::loadView('pdf.ilearn_admission_letter', $this->admission_data);
+    } else {
+        $pdf = Pdf::loadView('pdf.partner_admission_letter', $this->admission_data);
     }
+
+    // Attach the generated PDF to the email
+    return $this->view('emails.email-admission')
+                ->subject('iLearn Africa - Admission Letter')
+                ->attachData($pdf->output(), 'admission.pdf', [
+                    'mime' => 'application/pdf',
+                ])
+                ->with([
+                    'firstname' => $this->admission_data['firstname'],
+                    'client_id' => $this->admission_data['client_id'],
+                    'amount' => $this->admission_data['amount'],
+                    'surname' => $this->admission_data['surname'],
+                    'othernames' => $this->admission_data['othernames'],
+                    'phone_number' => $this->admission_data['phone_number'],
+                    'email' => $this->admission_data['email'],
+                    'payment_method' => $this->admission_data['payment_method'],
+                    'transaction_reference' => $this->admission_data['transaction_reference'],
+                    'course_name' => $this->admission_data['course_name'],
+                    'course_id' => $this->admission_data['course_id'],
+                    'support_email' => "support@ilearnafricaedu.com",
+                    'admission_number' => $this->admission_data['admission_number'],
+                    'admission_date' => $this->admission_data['admission_date'],
+                ]);
+}
+
 
 
 
