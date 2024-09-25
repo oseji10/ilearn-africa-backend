@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Good+Vibes&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
 
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -51,7 +52,7 @@
         }
 
         .signature {
-            margin-top: 50px;
+            margin-top: 40px;
             text-align: left;
         }
 
@@ -63,16 +64,16 @@
 
         .signature span {
             display: block;
-            margin-top: 10px;
+            margin-top: 5px;
         }
 
         .footer {
             position: fixed;
-            bottom: -50;
+            bottom: -40;
             left: -50;
             right: -300;
             width: 150%;
-            height: 150px;
+            height: 100px;
             background-color: #d8e4f4; /* Change this to your desired footer color */
             color: #000;
             text-align: center;
@@ -103,21 +104,22 @@
     <img src="images/edge.png" alt="Right Edge Design" class="right-edge-image">
     <div class="container">
         <div class="header">
-            <img src="images/ilearn-logo.png" alt="Logo" align="left"><br/><br/><br/>
+            <img src="images/ilearn-logo.png" alt="Logo" align="left"><br/>
             <img src="images/redefining.png" style="margin-right:30;" />
             <!-- <p style="margin-right:30; font-size: 34px;" class="good-vibration">Redefining Learning</p> -->
         </div>
         <hr style="margin-right:30;"/>
         <p align="right" style="margin-right:30; margin-top:-10">{{ \Carbon\Carbon::parse($admission_date)->format('F jS, Y') }}.</p>
-        <p align="center" style="color:blue;">RE: ACCEPTANCE LETTER</p>
+        <p align="center" style="color:blue;">ADMISSION LETTER</p>
         <div class="content">
-            <b>Dear {{$firstname}} {{$othernames}} {{$surname}},</b><br/><br/>
-            <!-- <i>Congratulations!</i><br/><br/>
-            <i>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of ILEARN AFRICA has granted you admission into the {{$certification_name}} program of its affiliated institute; {{$center_name}}.</i>
+            <b>Dear {{$firstname}} {{$othernames}} {{$surname}},</b><br/>
+            <p>Congratulations!</p>
+            
+            <!-- <i>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of ILEARN AFRICA has granted you admission into the {{$certification_name}} program of its affiliated institute; {{$center_name}}.</i>
             <i>This program will lead to the prestigious award of a {{$course_name}} from our esteemed partner institution and a proficiency certificate in SEND from ILEARN AFRICA.</p>
             <i>This course is slated to commence on the 10th of May, 2024, and will run for a duration of 5 weekends (Fridays only). You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course.</i>
-            <i>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once.</i>
-            <i>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</i> -->
+            <i>Kindly note that a penalty fee of ₦10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once.</i>
+            <i>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</i> --> 
         
             <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of ILEARN AFRICA has granted you admission into her <b style="text-transform:uppercase;">{{$course_name}} program.</b></p>
 
@@ -129,9 +131,9 @@
         </div>
 
         <div class="signature">
-            <i>Yours Sincerely,</i><br/><br/>
+            <i>Yours Sincerely,</i><br/>
             <u style="margin:0;"><img src="images/cd-sign.png" /><br/>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u><br/>
             <i>Nwude Ifeoma Grace<br>Country Director<br>iLearn Africa</i>
         </div>
 
@@ -148,7 +150,7 @@
     </div>
     <footer class="footer">
         <!-- <p>Redefining Learning</p> -->
-        <table  width="80%" style="top: 20px; padding-left: -20px">
+        <table  width="80%" style="top:15px; padding-left: -20px">
             <tr>
                 <td align="right" width="20%">+2349160913155</td>
                 <td align="center">admin@ilearnafricaedu.com</td>
