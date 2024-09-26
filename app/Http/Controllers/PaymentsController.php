@@ -193,6 +193,11 @@ public function storeManualPayment(Request $request)
 
     public function uploadProofOfPayment(Request $request)
     {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:png,jpg,jpeg,JPG,pdf,doc,docx|max:2048', // Make 'id' required for the update
+            'client_id' => 'required|string', // Assuming 'client_id' is required
+           
+        ]);
     $admission_number = mt_rand(1000000, 9999999);
     $admissions = new Admissions();
     $admissions->client_id = auth()->user()->client_id;
@@ -229,7 +234,22 @@ public function storeManualPayment(Request $request)
     $part_payments->amount = $request->part_payment;
     $part_payments->save();
    
+    if ($request->file('file')) {
+        $file = $request->file('file');
+        $path = $file->store('receipts', 'public'); // Store in the 'public/documents' directory
+    
+        $validated['file_path'] = $path;
+        $validated['client_id'] = auth()->user()->client_id;
+    
+        // Save the file path or other related information to the database if needed
+        $save = ProofOfPayment::create($validated);
+    
+    }
 
+    return response()->json([
+        'message' => 'Payment uploaded successfully',
+        // 'path' => $path
+    ], 200);
   
 }
 
@@ -242,6 +262,8 @@ public function topUpPayment(Request $request)
         'id' => 'required|integer',  // Make 'id' required for the update
         'client_id' => 'required|string', // Assuming 'client_id' is required
         'part_payment' => 'required|numeric', // Assuming part_payment should be numeric
+        'file' => 'required|file|mimes:png,jpg,jpeg,JPG,pdf,doc,docx|max:2048', // Make 'id' required for the update
+            'client_id' => 'required|string', // Assuming 'client_id' is required
     ]);
     
     $retrive_payment_detail = Payments::where('id', $validated['id'])->first();
@@ -268,6 +290,17 @@ $part_payments->payment_id = $payment_id;
 $part_payments->amount = $request->part_payment;
 $part_payments->save();
 
+if ($request->file('file')) {
+    $file = $request->file('file');
+    $path = $file->store('receipts', 'public'); // Store in the 'public/documents' directory
+
+    $validated['file_path'] = $path;
+    $validated['client_id'] = auth()->user()->client_id;
+
+    // Save the file path or other related information to the database if needed
+    $save = ProofOfPayment::create($validated);
+
+}
 
     if ($updated) {
         return response()->json(['message' => 'Payment updated successfully']);
