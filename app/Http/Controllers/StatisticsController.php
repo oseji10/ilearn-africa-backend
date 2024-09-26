@@ -38,7 +38,11 @@ class StatisticsController extends Controller
 
     public function pendingAdmissions()
     {
-        $pendingAdmissions = Admissions::where('status', 'pending')->get();
+        $pendingAdmissions = Admissions::where('status', 'pending')
+        ->whereHas('payments', function ($query) {
+            $query->where('status', 1);
+        })
+        ->get();
         return response()->json([
             'message' => 'Pending admissions retrieved successfully',
             'pendingAdmissions' => $pendingAdmissions,
