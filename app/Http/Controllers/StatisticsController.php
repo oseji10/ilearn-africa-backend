@@ -13,7 +13,9 @@ class StatisticsController extends Controller
 {
     public function incompleteApplications()
     {
-        $incompleteApplications = Client::with('user')->where('status', 'profile_created')->get();
+        $incompleteApplications = Client::with('user')->where('status', 'profile_created')
+        ->whereHas('user', function ($query) {$query->where('role_id', 3);})
+        ->get();
         return response()->json([
             'message' => 'Incomplete applications retrieved successfully',
             'incompleteApplications' => $incompleteApplications,
@@ -24,7 +26,9 @@ class StatisticsController extends Controller
 
     public function registeredClients()
     {
-        $registeredClients = Client::with('user')->where('status', 'registered')->get();
+        $registeredClients = Client::with('user')->where('status', 'registered')
+        ->whereHas('user', function ($query) {$query->where('role_id', 3);})
+        ->get();
         return response()->json([
             'message' => 'Registered clients retrieved successfully',
             'registeredClients' => $registeredClients,

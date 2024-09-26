@@ -12,6 +12,7 @@ use App\Models\Admissions;
 use App\Models\ProfileImage;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Models\User;
 
 class ClientController extends Controller
 {
@@ -27,7 +28,12 @@ class ClientController extends Controller
     // ->groupBy('clients.client_id', 'users.email', 'users.phone_number', 'country.country_name', 'nationality.nationality', 'qualifications.qualification_name')
     // ->get();
 
-    $clients = Client::with(['user', 'nationality', 'country', 'workDetails', 'educationalDetails.grade', 'educationalDetails.qualification', 'documents'])->get();
+    // $clients = Client::with(['user', 'nationality', 'country', 'workDetails', 'educationalDetails.grade', 'educationalDetails.qualification', 'documents'])->get();
+    $clients = Client::with(['user', 'nationality', 'country', 'workDetails', 'educationalDetails.grade', 'educationalDetails.qualification', 'documents'])
+    // ->where('status', 'registered')
+    ->whereHas('user', function ($query) {$query->where('role_id', 3);})
+    ->get();
+
 
     
         return response()->json(['clients' => $clients]);
@@ -187,8 +193,18 @@ class ClientController extends Controller
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
         
-        $incomplete_applications = Client::where('status', 'profile_created')->count();
-        $registered_clients = Client::where('status', 'registered')->count();
+        $incomplete_applications = Client::where('status', 'profile_created')
+        ->whereHas('user', function ($query) {$query->where('role_id', 3);})
+        ->count();
+        
+       
+            $registered_clients = Client::with('user')
+                ->where('status', 'registered')
+                ->whereHas('user', function ($query) {$query->where('role_id', 3);})->count();
+        
+        
+        
+
         $pending_admissions = Admissions::where('status', 'pending')->count();
         $currently_admitted_clients = Admissions::where('status', 'ADMITTED')->count();
         $all_graduated_clients = Admissions::where('status', 'COMPLETED')->count();
