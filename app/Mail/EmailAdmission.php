@@ -60,7 +60,7 @@ class EmailAdmission extends Mailable
                     'transaction_reference' => $this->admission_data['transaction_reference'],
                     'course_name' => $this->admission_data['course_name'],
                     'course_id' => $this->admission_data['course_id'],
-                    'support_email' => "support@ilearnafricaedu.com",
+                    'support_email' => "info@ilearnafricaedu.com",
                     'admission_number' => $this->admission_data['admission_number'],
                     'admission_date' => $this->admission_data['admission_date'],
                 ]);
