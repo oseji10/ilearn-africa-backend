@@ -84,10 +84,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('cohorts/courses', [CohortsController::class, 'showCohortsAllcourses']);
     Route::get('cohorts/{cohort_id}/courses', [CohortsController::class, 'showCohortsCourses']);
     
+    
     Route::post('cohorts/add-cohort', [CohortsController::class, 'addCohort']);
     Route::post('cohorts/add-cohort-courses', [CohortsController::class, 'addCohortCourses']);
     Route::patch('cohorts/update-cohort/{cohort_id}', [CohortsController::class, 'updateCohort']);
+    Route::delete('cohorts/delete-cohort/{cohort_id}', [CohortsController::class, 'deleteCohort']);
     
+
     Route::get('cohorts/active-cohorts', [CohortsController::class, 'activeCohorts']);
     Route::patch('cohorts/change-cohort-status', [CohortsController::class, 'changeCohortStatus']);
     
@@ -181,3 +184,5 @@ Route::get('/qr-codes', [PdfController::class, 'generate']);
 Route::post('forgot-password', [AuthController::class, 'sendResetLinkEmail']);
 Route::post('/reset-password', [AuthController::class, 'reset']);
 // Auth::routes(['verify' => true]);
+
+Route::post('cohorts/delete-cohort-course', [CohortsController::class, 'deleteCohortCourse']);

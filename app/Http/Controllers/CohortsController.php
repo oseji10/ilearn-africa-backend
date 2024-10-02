@@ -172,5 +172,45 @@ class CohortsController extends Controller
     
         return response()->json(['message' => 'Cohort updated successfully.']);
     }
+
+
+    public function deleteCohort($cohort_id)
+{
+    // Find the client using the unique client_id field
+    $model = Cohorts::where('cohort_id', $cohort_id)->first();
+    // return $model->created_at;
+    // Check if the model was found
+    if ($model) {
+        $model->delete();
+        return response()->json(['message' => 'Cohort successfully deleted.']);
+    } else {
+        return response()->json(['message' => 'Cohort not found.'], 404);
+    }
+}
+
+public function deleteCohortCourse(Request $request)
+{
+    // Validate the incoming request
+    // $request->validate([
+    //     'cohort_id' => 'required|exists:cohorts,id', // Adjust table name and column as necessary
+    //     'course_id' => 'required|exists:courses,id', // Adjust table name and column as necessary
+    // ]);
+
+    // Find the course in the cohort
+    $model = CohortsCourses::where('course_id', "=", $request->cohort_id)
+        ->where('cohort_id', "=", $request->course_id)
+        ->first();
+        
+      
+        
+        // Check if the model was found
+        if ($model) {
+            $model->delete();
+        return response()->json(['message' => 'Course successfully deleted from cohort.']);
+    } else {
+        return response()->json(['message' => 'Course not found.'], 404);
+    }
+}
+
     
 }
