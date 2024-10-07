@@ -50,15 +50,15 @@
         <td colspan="2"><h4>PERSONAL INFORMATION</b></h4></td>
         
     </tr>
-    <tr colspan="2">
+    <tr >
         <!-- <td><h4>Client ID: <b>{{ $client_id }}</b></h4></td> -->
-        <td align="right"><h4>Receipt # <b style="font-size:20px;">{{ $client_id ?? ''}}</b></h4></td>
+        <td colspan="2" align="right"><h4>Receipt # <b style="font-size:20px;">{{ $client_id ?? ''}}</b></h4></td>
     </tr>
     <tr>
     <td colspan="2"><h4>Client Name: <b style="font-size:20px;">{{ $surname ?? ''}}, {{ $firstname ?? ''}} {{ $othernames ?? ''}}</b></h4></td>
     </tr>  
 
-    <tr colspan="2">
+    <tr>
         <td><h4>Email: <b style="font-size:20px;">{{ $email ?? '' }}</b></h4></td>
         <td><h4>Phone Number: <b style="font-size:20px;">{{ $phone_number ?? ''}}</b></h4></td>
         <!-- <td><h4>Receipt # <b>{{ $client_id }}</b></h4></td> -->
