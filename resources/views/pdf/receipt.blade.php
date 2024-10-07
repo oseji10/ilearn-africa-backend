@@ -58,7 +58,7 @@
     <td colspan="2"><h4>Client Name: <b style="font-size:20px;">{{ $surname ?? ''}}, {{ $firstname ?? ''}} {{ $othernames ?? ''}}</b></h4></td>
     </tr>  
 
-    <tr>
+    <tr colspan="2">
         <td><h4>Email: <b style="font-size:20px;">{{ $email ?? '' }}</b></h4></td>
         <td><h4>Phone Number: <b style="font-size:20px;">{{ $phone_number ?? ''}}</b></h4></td>
         <!-- <td><h4>Receipt # <b>{{ $client_id }}</b></h4></td> -->
