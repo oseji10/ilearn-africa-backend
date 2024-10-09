@@ -388,6 +388,25 @@ if ($request->file('file')) {
 
         // return $confirm_payment;
     }
+
+
+
+
+    public function rejectPayment(Request $request)
+    {
+        $validated = $request->validate([
+            'transaction_reference' => 'string',
+            'status' => 'string',
+        ]);
+    
+      
+        $status = "2";
+        $validated['status'] = $status;
+        // $validated['transaction_reference'] = $transaction_reference;
+        $confirm_payment = Payments::where('transaction_reference', $validated['transaction_reference'])
+            ->update($validated);
+
+    }
     
     public function viewReceipt(Request $request){
         $view_receipt = Documents::where('transaction_reference', $request->transaction_reference)

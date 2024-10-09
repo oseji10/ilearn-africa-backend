@@ -97,6 +97,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('payments', [PaymentsController::class, 'show']);
     Route::get('pending-payments', [PaymentsController::class, 'pendingPayments']);
     Route::put('confirm-payment', [PaymentsController::class, 'confirmPayment']);
+    Route::put('reject-payment', [PaymentsController::class, 'rejectPayment']);
     Route::get('proof-of-payment/{other_reference}', [PaymentsController::class, 'fetchProof']);
 
     Route::get('my-payments', [PaymentsController::class, 'myPayments'])->name('my-payments');
