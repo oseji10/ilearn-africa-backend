@@ -25,7 +25,7 @@ class PaymentsController extends Controller
     {
        
         // $payments = Payments::with(['clients'])->orderBy('updated_at', 'desc')->get();
-        $payments = Payments::with(['clients', 'proof'])->where('status', '1')->orderBy('created_at', 'desc')->get();
+        $payments = Payments::with(['clients', 'proof', 'part_payments'])->where('status', '1')->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'message' => 'Payments retrieved successfully',
