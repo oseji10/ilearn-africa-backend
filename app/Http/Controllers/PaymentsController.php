@@ -55,6 +55,19 @@ class PaymentsController extends Controller
         ]);
     }
 
+
+    public function rejectedPayments()
+    {
+       
+        $payments = Payments::with(['clients', 'proof'])->where('status', '2')->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'message' => 'Payments retrieved successfully',
+            'payments' => $payments,
+        ]);
+    }
+
+
     public function myPayments()
     {
        
