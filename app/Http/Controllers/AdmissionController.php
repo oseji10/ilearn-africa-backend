@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class AdmissionController extends Controller
 {
     public function show(){
-        $admissions = Admissions::with(['clients.user', 'payments.courses'])
+        $admissions = Admissions::with(['clients.user', 'payments.courses', 'clients.documents'])
             ->where('status', 'pending')
             ->whereHas('payments', function ($query) {
                 $query->where('status', 1);
