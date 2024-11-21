@@ -148,6 +148,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/upload-document', [UploadDocumentController::class, 'uploadDocument']);
     Route::post('/proof-of-payment', [PaymentsController::class, 'uploadProofOfPayment']);
+    Route::post('/edit_payment', [PaymentsController::class, 'updateAmount']);
 
     Route::get('/course_materials', [CourseMaterialController::class, 'showMaterials']);
     Route::post('/upload-profile-image', [ClientController::class, 'profileImage']);

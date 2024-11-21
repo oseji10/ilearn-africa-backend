@@ -436,6 +436,32 @@ if ($request->file('file')) {
         'proof' => $view_proof,
         ]);
     }
+
+
+
+
+    public function updateAmount(Request $request){
+        $validated = $request->validate([
+            'edited_payment' => 'required|integer',
+            'client_id' => 'string',
+            'transaction_id' => 'string',
+            'id' => 'required|integer',
+        ]);
+        
+        $retrive_payment_detail = Payments::where('id', $validated['id'])->first();
+        
+        if (!$retrive_payment_detail) {
+            return response()->json(['error' => 'Payment not found'], 404);
+        }
+        
+        
+        $updated = Payments::where('id', $validated['id'])
+                    ->update(['part_payment' => $validated['edited_payment']]);
+        
+                    PartPayments::where('client_id', $validated['client_id'])
+                    ->where('payment_id', $validated['id'])
+                    ->update(['amount' => $validated['edited_payment']]);
+    }
 }
 
 
