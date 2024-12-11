@@ -18,6 +18,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\EmailReceipt;
 use App\Models\PartPayments;
+use Illuminate\Support\Facades\Http;
 
 class PaymentsController extends Controller
 {
@@ -462,6 +463,134 @@ if ($request->file('file')) {
                     ->where('payment_id', $validated['id'])
                     ->update(['amount' => $validated['edited_payment']]);
     }
+
+
+
+
+
+
+    public function initializePayment(Request $request)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric',
+            'email' => 'required|email',
+            'tx_ref' => 'required|string',
+            'redirect_url' => 'required|url',
+        ]);
+
+        $flutterwaveUrl = env('FLUTTERWAVE_URL', 'https://api.flutterwave.com/v3/payments');
+        $secretKey = env('FLUTTERWAVE_SECRET_KEY');
+
+        $payload = [
+            'tx_ref' => $validated['tx_ref'],
+            'amount' => $validated['amount'],
+            'currency' => 'NGN',
+            'redirect_url' => $validated['redirect_url'],
+            'customer' => [
+                'email' => $validated['email'],
+            ],
+        ];
+
+        $response = Http::withToken($secretKey)
+            ->post($flutterwaveUrl, $payload);
+
+        if ($response->successful()) {
+            return response()->json($response->json(), 200);
+        }
+
+        return response()->json([
+            'error' => 'Payment initialization failed',
+            'details' => $response->json(),
+        ], 400);
+    }
+
+
+
+    public function verifyAndStorePayment(Request $request)
+    {
+        // Validate the incoming request data
+        $validated = $request->validate([
+            'tx_ref' => 'required|string',
+            'amount' => 'required|numeric',
+            'course_id' => 'required|string',
+            'cohort_id' => 'required|string',
+            'payment_gateway' => 'required|string',
+            'payment_method' => 'required|string',
+        ]);
+    
+        // Get the transaction reference from the request
+        // $transactionReference = $request->input('tx_ref');
+        $transactionReference = $validated['tx_ref'];
+        $amount = $validated['amount'];
+        $courseId = $validated['course_id'];
+        $cohortId = $validated['cohort_id'];
+    
+        // Flutterwave API credentials (get from your .env file)
+        $flutterwaveSecretKey = env('FLUTTERWAVE_SECRET_KEY');
+    
+        try {
+            // Step 1: Verify the payment with Flutterwave
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $flutterwaveSecretKey,
+            ])->get("https://api.flutterwave.com/v3/charges?tx_ref={$transactionReference}");
+    
+            $paymentData = $response->json();
+    
+            if ($response->successful() && isset($paymentData['status']) && $paymentData['status'] === 'success') {
+                // Step 2: Check if the payment already exists in the database
+                $existingPayment = Payments::where('transaction_reference', $transactionReference)->first();
+    
+                if ($existingPayment) {
+                    // If the payment already exists, proceed as successful
+                    return response()->json([
+                        'message' => 'Payment already exists, proceeding as successful.',
+                        'payments' => $existingPayment,
+                    ], 200); // HTTP status code 200: OK
+                }
+    
+                // Step 3: Proceed to store the payment if it's verified
+                // Generate a 7-digit random number for payment_id
+                $validated['payment_id'] = mt_rand(1000000, 9999999);
+                $validated['created_by'] = auth()->id();
+                $validated['client_id'] = auth()->user()->client_id;
+                $validated['amount'] = $amount;
+                $validated['status'] = 1; // Payment verified, set status to 'success'
+    
+                // Create a new admission record
+                $admission_number = mt_rand(1000000, 9999999);
+                $admissions = new Admissions();
+                $admissions->client_id = auth()->user()->client_id;
+                $admissions->admission_number = $admission_number;
+                $admissions->status = "pending";
+                $admissions->cohort_id = $cohortId;
+                $admissions->save();
+    
+                // Save the payment record
+                $validated['admission_number'] = $admission_number;
+                $payments = Payments::create($validated);
+    
+                // Step 4: Return a response, indicating success
+                return response()->json([
+                    'message' => 'Payment successfully verified and created',
+                    'payments' => $payments,
+                ], 201); // HTTP status code 201: Created
+            } else {
+                // Step 5: Handle payment verification failure
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'Payment verification failed',
+                ], 400); // HTTP status code 400: Bad Request
+            }
+        } catch (\Exception $e) {
+            // Handle any exceptions that might occur during the verification process
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred during payment verification',
+                'error' => $e->getMessage(),
+            ], 500); // HTTP status code 500: Internal Server Error
+        }
+    }
+    
 }
 
 

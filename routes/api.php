@@ -19,6 +19,7 @@ use App\Http\Controllers\CertificatesController;
 use App\Http\Controllers\CourseMaterialController;
 use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\CohortsController;
+use App\Http\Controllers\CBTController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -189,3 +190,15 @@ Route::post('/reset-password', [AuthController::class, 'reset']);
 // Auth::routes(['verify' => true]);
 
 Route::post('cohorts/delete-cohort-course', [CohortsController::class, 'deleteCohortCourse']);
+
+Route::post('/initialize-payment', [PaymentsController::class, 'initializePayment']);
+Route::get('/verify-payment', [PaymentsController::class, 'verifyAndStorePayment']);
+
+
+// CBT Routes
+Route::get('cbt-exams', [CBTController::class, 'RetrieveAll']);
+Route::post('cbt-exams', [CBTController::class, 'store']);
+Route::put('cbt-exams/{examId}', [CBTController::class, 'updateCBT']);
+Route::get('cbt-exams/questions', [CBTController::class, 'RetrieveAllQuestions']);
+Route::post('cbt-exams/question', [CBTController::class, 'storeQuestion']);
+
