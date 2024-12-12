@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\CBT;
 use App\Models\Questions;
 use App\Models\QuestionOptions;
-
+use DB;
 class CBTController extends Controller
 {
     public function RetrieveAll()
@@ -117,5 +117,25 @@ class CBTController extends Controller
     // Return the updated question with its options
     return response()->json($question->load('options'), 200);
 }
+
+
+public function deleteQuestion($questionId)
+{
+    try {
+        
+        DB::transaction(function () use ($questionId) {
+            
+            QuestionOptions::where('questionId', $questionId)->delete();
+
+            
+            Questions::where('questionId', $questionId)->delete();
+        });
+
+        return response()->json(['message' => 'Question and its options deleted successfully.'], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to delete question.'], 500);
+    }
+}
+
 
 }

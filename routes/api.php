@@ -202,5 +202,6 @@ Route::put('cbt-exams/{examId}', [CBTController::class, 'updateCBT']);
 Route::get('cbt-exams/questions', [CBTController::class, 'RetrieveAllQuestions']);
 Route::post('cbt-exams/question', [CBTController::class, 'storeQuestion']);
 Route::put('cbt-exams/question/{questionId}', [CBTController::class, 'updateQuestion']);
+Route::delete('cbt-exams/question/{questionId}', [CBTController::class, 'deleteQuestion']);
 
 
