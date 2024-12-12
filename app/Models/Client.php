@@ -66,5 +66,10 @@ class Client extends Model
     {
         return $this->belongsTo(Documents::class, 'client_id', 'client_id');
     }
+
+    public function admissions()
+    {
+        return $this->belongsTo(Admissions::class, 'client_id', 'client_id');
+    }
   
 }

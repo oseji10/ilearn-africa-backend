@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('status')->nullable();
             $table->string('courseId')->nullable();
             $table->string('cohortId')->nullable();
+            $table->string('timeAllowed');
             $table->unsignedBigInteger('addedBy')->nullable();
             $table->timestamps();
             $table->softDeletes();

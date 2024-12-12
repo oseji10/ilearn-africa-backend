@@ -41,4 +41,5 @@ class Payments extends Model
     {
         return $this->hasMany(PartPayments::class, 'payment_id', 'id');
     }
+
 }

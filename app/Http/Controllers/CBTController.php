@@ -6,12 +6,56 @@ use Illuminate\Http\Request;
 use App\Models\CBT;
 use App\Models\Questions;
 use App\Models\QuestionOptions;
+use App\Models\Client;
+use App\Models\Admissions;
+use App\Models\ExamQuestions;
 use DB;
 class CBTController extends Controller
 {
     public function RetrieveAll()
     {
         $cbt = CBT::with('course', 'cohort')->get();
+        return response()->json($cbt);
+    }
+
+    public function RetrieveClientWithCohort($client_id)
+    {
+        // Retrieve the client with their admissions relationship
+        // $client = Client::with('admissions')->where('client_id', $client_id)->first();
+    
+        // // Handle the case where the client is not found
+        // if (!$client) {
+        //     return response()->json(['message' => 'Client not found'], 404);
+        // }
+    
+        // // Assuming admissions is a single relationship (not a collection)
+        // $admission = $client->admissions->first(); // Use ->first() if admissions is a collection
+    
+        // // Handle the case where no admission is associated
+        // if (!$admission) {
+        //     return response()->json(['message' => 'No admissions found for this client'], 404);
+        // }
+    
+     // Retrieve CBT records matching the cohort_id
+$cbts = CBT::with('course', 'cohort', 'clientCohort')
+// ->where('cohortId', $admission->cohort_id)
+->whereHas('clientCohort', function ($query) use ($client_id) {
+    $query->where('status', '=', 'pending')
+          ->where('client_id', $client_id); // Assuming $admission->client_id is correct.
+})
+->get();
+
+    
+    
+        return response()->json($cbts);
+    }
+    
+
+    public function RetrieveCBT(Request $request)
+    {
+        $cbt = CBT::with('course', 'cohort', 'clientCohort')
+        ->where('cohortId', '=', $request->cohort_id)
+        ->get();
         return response()->json($cbt);
     }
 
@@ -55,20 +99,62 @@ class CBTController extends Controller
         return response()->json($questions);
     }
 
+    public function loadQuestions($examId)
+    {
+        $questions = ExamQuestions::with('questions', 'questions.options')->where('examId', $examId)->get();
+        return response()->json($questions);
+
+//         $cbts = CBT::with('questions', 'cohort', 'clientCohort')
+// // ->where('cohortId', $admission->cohort_id)
+// ->whereHas('clientCohort', function ($query) use ($client_id) {
+//     $query->where('status', '=', 'pending')
+//           ->where('client_id', $client_id); // Assuming $admission->client_id is correct.
+// })
+// ->get();
+    }
+
+
     public function storeQuestion(Request $request)
     {
-        $data = $request->all();
-        $question = Questions::create($data);
-
-        foreach ($data['options'] as $index => $optionText) {
-            QuestionOptions::create([
-                'questionId' => $question->questionId, // Ensure this matches your table schema
-                'optionDetail' => $optionText,
-                'isCorrect' => ($index === (int)$data['correctOptionIndex']) ? 1 : 0,
+        DB::beginTransaction(); // Start the transaction
+    
+        try {
+            $data = $request->all();
+    
+            // Create the question and save it to the questions table
+            $question = Questions::create($data);
+    
+            // Create the exam_question record
+            $exam_question = ExamQuestions::create([
+                'examId' => $data['examId'], // Pass the correct examId
+                'questionId' => $question->questionId,
+                'score' => $data['score'], // Ensure 'score' is passed
             ]);
+    
+            // Add options to the question
+            foreach ($data['options'] as $index => $optionText) {
+                QuestionOptions::create([
+                    'questionId' => $question->questionId, // Ensure this matches your table schema
+                    'optionDetail' => $optionText,
+                    'isCorrect' => ($index === (int)$data['correctOptionIndex']) ? 1 : 0,
+                ]);
+            }
+    
+            // If everything is successful, commit the transaction
+            DB::commit();
+            
+            return response()->json($question, 201); // Return success response
+        } catch (\Exception $e) {
+            // If there is any exception, rollback the transaction
+            DB::rollBack();
+    
+            // Log the error for debugging purposes (optional)
+            \Log::error('Error storing question: ' . $e->getMessage());
+    
+            // Return error response
+            return response()->json(['error' => 'Failed to store question.'], 500);
         }
-        return response()->json($question, 201); 
-    } 
+    }
 
 
     public function updateQuestion(Request $request, $questionId)

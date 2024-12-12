@@ -10,7 +10,7 @@ class CBT extends Model
     use HasFactory;
     public $table = 'cbt_exams';
     protected $primaryKey = 'examId';
-    protected $fillable = ['examName', 'details', 'examDate', 'examTime', 'isShuffle', 'isRandom', 'canRetake', 'canSeeResult', 'status', 'courseId', 'cohortId', 'addedBy'];
+    protected $fillable = ['examName', 'details', 'examDate', 'examTime', 'isShuffle', 'isRandom', 'canRetake', 'canSeeResult', 'status', 'courseId', 'cohortId', 'addedBy', 'timeAllowed'];
     
    
 
@@ -23,4 +23,11 @@ class CBT extends Model
     {
         return $this->hasOne(CourseList::class, 'course_id', 'courseId');
     }
+
+    public function clientCohort()
+    {
+        return $this->belongsTo(Admissions::class, 'cohortId', 'cohort_id');
+    }
+
+    
 }
