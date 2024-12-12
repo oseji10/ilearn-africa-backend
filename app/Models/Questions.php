@@ -9,7 +9,7 @@ class Questions extends Model
 {
     use HasFactory;
     public $table = 'cbt_questions';
-    protected $primaryKey = 'examQuestionId';
+    protected $primaryKey = 'questionId';
     protected $fillable = ['question', 'questionCategoryId', 'score']; 
 
     public function options()

@@ -10,7 +10,7 @@ class QuestionOptions extends Model
     use HasFactory;
     public $table = 'cbt_question_options';
     protected $primaryKey = 'optionId';
-    protected $fillable = ['questionId', 'optionName', 'optionDetail']; 
+    protected $fillable = ['questionId', 'optionName', 'optionDetail', 'isCorrect']; 
 
     // public function options()
     // {
