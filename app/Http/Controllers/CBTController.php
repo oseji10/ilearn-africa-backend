@@ -10,6 +10,8 @@ use App\Models\Client;
 use App\Models\Admissions;
 use App\Models\ExamQuestions;
 use DB;
+use App\Models\ExamResult;
+
 class CBTController extends Controller
 {
     public function RetrieveAll()
@@ -101,16 +103,8 @@ $cbts = CBT::with('course', 'cohort', 'clientCohort')
 
     public function loadQuestions($examId)
     {
-        $questions = ExamQuestions::with('questions', 'questions.options')->where('examId', $examId)->get();
+        $questions = ExamQuestions::with('exams', 'questions', 'questions.options')->where('examId', $examId)->get();
         return response()->json($questions);
-
-//         $cbts = CBT::with('questions', 'cohort', 'clientCohort')
-// // ->where('cohortId', $admission->cohort_id)
-// ->whereHas('clientCohort', function ($query) use ($client_id) {
-//     $query->where('status', '=', 'pending')
-//           ->where('client_id', $client_id); // Assuming $admission->client_id is correct.
-// })
-// ->get();
     }
 
 
@@ -221,6 +215,76 @@ public function deleteQuestion($questionId)
     } catch (\Exception $e) {
         return response()->json(['error' => 'Failed to delete question.'], 500);
     }
+}
+
+
+public function submitExam(Request $request)
+{
+    // Validate the incoming request
+    $request->validate([
+        'clientId' => 'required|string',
+        'examId' => 'required|integer',
+        'answers' => 'required|array',
+        'answers.*.questionId' => 'required|integer',
+        'answers.*.optionSelected' => 'required|integer',
+    ]);
+
+    $examId = $request->input('examId');
+    $answers = $request->input('answers');
+    $clientId = $request->input('clientId');
+
+    $results = [];
+    $totalScore = 0;
+
+    foreach ($answers as $answer) {
+        $questionId = $answer['questionId'];
+        $optionSelected = $answer['optionSelected'];
+
+        // Fetch the question
+        $question = Questions::find($questionId);
+
+        if (!$question) {
+            return response()->json([
+                'message' => "Question with ID $questionId not found."
+            ], 404);
+        }
+
+        // Fetch the correct option for the question
+        $correctOption = QuestionOptions::where('questionId', $questionId)
+                                ->where('isCorrect', 1)
+                                ->first();
+
+        if (!$correctOption) {
+            // Handle missing correct option scenario
+            return response()->json([
+                'message' => "No correct option set for question with ID $questionId."
+            ], 500);
+        }
+
+        // Determine if the selected option is correct
+        $isCorrect = $correctOption->optionId === $optionSelected;
+        $score = $isCorrect ? $question->score : 0;
+
+        // Save the result to the database
+        $result = ExamResult::create([
+            'clientId' => $clientId,
+            'examId' => $examId,
+            'questionId' => $questionId,
+            'optionSelected' => $optionSelected,
+            'isCorrect' => $isCorrect,
+            'score' => $score,
+        ]);
+
+        $results[] = $result;
+        $totalScore += $score;
+    }
+
+    // Return the response
+    return response()->json([
+        'message' => 'Exam submitted successfully.',
+        'totalScore' => $totalScore,
+        'results' => $results,
+    ]);
 }
 
 

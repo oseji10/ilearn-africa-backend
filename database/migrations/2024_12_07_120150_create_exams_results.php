@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('cbt_exams_results', function (Blueprint $table) {
             $table->id('resultId');
+            $table->string('clientId')->nullable();
             $table->unsignedBigInteger('examId')->nullable();
             $table->string('courseId')->nullable();
             $table->unsignedBigInteger('questionId')->nullable();
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->string('score')->nullable();
             $table->timestamps();
 
+            $table->foreign('clientId')->references('client_id')->on('clients')->onDelete('cascade');
             $table->foreign('examId')->references('examId')->on('cbt_exams')->onDelete('cascade');
             $table->foreign('courseId')->references('course_id')->on('course_list')->onDelete('cascade');
             $table->foreign('questionId')->references('questionId')->on('cbt_questions')->onDelete('cascade');

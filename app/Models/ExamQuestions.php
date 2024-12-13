@@ -16,4 +16,9 @@ class ExamQuestions extends Model
     {
         return $this->hasMany(Questions::class, 'questionId', 'questionId');
     }
+
+    public function exams()
+    {
+        return $this->belongsTo(CBT::class, 'examId', 'examId');
+    }
 }

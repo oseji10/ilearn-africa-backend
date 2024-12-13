@@ -207,3 +207,4 @@ Route::get('my-cbt-exams', [CBTController::class, 'RetrieveCBT']);
 Route::get('client-cohort/{client_id}', [CBTController::class, 'RetrieveClientWithCohort']);
 
 Route::get('questions/{examId}', [CBTController::class, 'loadQuestions']);
+Route::post('exam-result', [CBTController::class, 'submitExam']);
