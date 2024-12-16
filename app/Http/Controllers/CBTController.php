@@ -42,7 +42,7 @@ class CBTController extends Controller
 $cbts = CBT::with('course', 'cohort', 'clientCohort')
 // ->where('cohortId', $admission->cohort_id)
 ->whereHas('clientCohort', function ($query) use ($client_id) {
-    $query->where('status', '=', 'pending')
+    $query->where('status', '=', 'ADMITTED')
           ->where('client_id', $client_id); // Assuming $admission->client_id is correct.
 })
 ->get();
