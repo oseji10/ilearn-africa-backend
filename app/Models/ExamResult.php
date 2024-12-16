@@ -16,4 +16,9 @@ class ExamResult extends Model
     {
         return $this->belongsTo(CBT::class, 'examId', 'examId');
     }
+
+    public function clients()
+    {
+        return $this->belongsTo(Client::class, 'clientId', 'client_id');
+    }
 }

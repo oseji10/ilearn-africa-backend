@@ -287,5 +287,38 @@ public function submitExam(Request $request)
     ]);
 }
 
+// // Exam Results
+// public function ExamResults()
+// {
+//     $results = ExamResult::with('clients')->get();
+//     return response()->json($results);
+// }
+// public function ExamResults()
+// {
+//     $results = ExamResult::with('clients')->get();
+
+//     // Add total score to each result
+//     $results = $results->map(function ($result) use ($results) {
+//         $result->total_score = $results->where('client_id', $result->client_id)->sum('score');
+//         return $result;
+//     });
+
+//     return response()->json($results);
+// }
+public function ExamResults()
+{
+    // Fetch all results with client relationships
+    $results = ExamResult::with('clients')->get();
+
+    // Make the results distinct by client_id
+    $distinctResults = $results->unique('client_id')->map(function ($result) use ($results) {
+        // Calculate the total score for each client
+        $result->total_score = $results->where('client_id', $result->client_id)->sum('score');
+        return $result;
+    });
+
+    return response()->json($distinctResults->values()); // Reset array keys and return as JSON
+}
+
 
 }
