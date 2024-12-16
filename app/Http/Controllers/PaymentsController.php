@@ -18,6 +18,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\EmailReceipt;
 use App\Models\PartPayments;
+use App\Models\Cohorts;
 use Illuminate\Support\Facades\Http;
 
 class PaymentsController extends Controller
@@ -332,7 +333,7 @@ if ($request->file('file')) {
 
     public function registeredCourses()
     {
-        $my_courses = Payments::with(['admissions', 'courses.centers'])->where('client_id', '=', auth()->user()->client_id)->get();
+        $my_courses = Payments::with(['admissions', 'courses.centers', 'cohorts'])->where('client_id', '=', auth()->user()->client_id)->get();
         return response()->json(['my_courses' => $my_courses]);
     }
 

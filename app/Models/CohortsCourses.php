@@ -15,4 +15,11 @@ class CohortsCourses extends Model
     {
         return $this->belongsTo(CourseList::class, 'course_id', 'course_id');
     }
+
+    public function cohorts()
+    {
+        return $this->belongsTo(Cohort::class, 'cohort_id', 'cohort_id');
+    }
+
+    
 }

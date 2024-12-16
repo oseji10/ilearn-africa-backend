@@ -42,4 +42,9 @@ class Payments extends Model
         return $this->hasMany(PartPayments::class, 'payment_id', 'id');
     }
 
+    public function cohorts()
+    {
+        return $this->belongsTo(Cohorts::class, 'cohort_id', 'cohort_id');
+    }
+
 }
