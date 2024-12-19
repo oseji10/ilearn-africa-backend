@@ -379,29 +379,31 @@ if ($request->file('file')) {
             'transaction_date' => $my_data->created_at,
             ]);
 
-            $numberToWords = new NumberToWords();
-            $numberTransformer = $numberToWords->getNumberTransformer('en');
-            $word_amount = $numberTransformer->toWords($user_data['amount'], 'NGN');
+    //         $numberToWords = new NumberToWords();
+    //         $numberTransformer = $numberToWords->getNumberTransformer('en');
+    //         $word_amount = $numberTransformer->toWords($user_data['amount'], 'NGN');
         
-        // Optionally, add the word amount back into the $data array
-            $user_data['amount_in_words'] = $word_amount;  
+    //     // Optionally, add the word amount back into the $data array
+    //         $user_data['amount_in_words'] = $word_amount;  
         
-            $verificationUrl = route('pdf.verify', ['reference' => $my_data->transaction_reference]);
-            $qrCode = Builder::create()
-            ->writer(new PngWriter())
-            ->data(route('pdf.verify', ['reference' => $my_data->transaction_reference]))
-            ->size(200)
-            ->build();
+    //         $verificationUrl = route('verify-payment', ['reference' => $my_data->transaction_reference]);
+    //         $qrCode = Builder::create()
+    //         ->writer(new PngWriter())
+    //         ->data(route('pdf.verify', ['reference' => $my_data->transaction_reference]))
+    //         ->size(200)
+    //         ->build();
 
-    // Save the QR code to a file or directly use it in the PDF
-        $user_data['qr_code'] = $qrCode->getDataUri();
+    // // Save the QR code to a file or directly use it in the PDF
+    //     $user_data['qr_code'] = $qrCode->getDataUri();
 
-            $pdf = Pdf::loadView('pdf.receipt', $user_data);
-            Mail::to($my_data->users->email)->send(new EmailReceipt($user_data));
+    //         $pdf = Pdf::loadView('pdf.receipt', $user_data);
+    //         Mail::to($my_data->users->email)->send(new EmailReceipt($user_data));
             
             // return $user_data;
 
-        // return $confirm_payment;
+            return response()->json([
+                'message' => 'Payment successfully confirmed'
+            ], 201);
     }
 
 
@@ -463,6 +465,11 @@ if ($request->file('file')) {
                     PartPayments::where('client_id', $validated['client_id'])
                     ->where('payment_id', $validated['id'])
                     ->update(['amount' => $validated['edited_payment']]);
+
+                    return response()->json([
+                        'message' => 'Payment successfully verified and created',
+                        'updated' => $updated,
+                    ], 201);
     }
 
 
