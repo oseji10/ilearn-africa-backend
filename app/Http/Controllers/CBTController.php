@@ -321,4 +321,23 @@ public function ExamResults()
 }
 
 
+public function MyExamResult(Request $request)
+{
+    // Fetch the most recent exam result for the client in the specified exam
+    $result = ExamResult::join('clients', 'clients.client_id', '=', 'cbt_exams_results.clientId')
+        ->join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_exams_results.examId')
+        ->where('cbt_exams_results.clientId', $request->client_id)
+        ->where('cbt_exams_results.examId', $request->examId)
+        ->orderBy('cbt_exams_results.created_at', 'desc')  // Sort by exam_date (assuming you have this column)
+        ->select('cbt_exams.examName', 'clients.firstname', 'clients.surname', DB::raw('SUM(cbt_exams_results.score) as total_score'))
+        ->groupBy('cbt_exams.examName', 'clients.client_id', 'clients.firstname', 'clients.surname', 'cbt_exams_results.created_at')
+        ->first();
+
+    // Return the most recent result
+    return response()->json($result);
+}
+
+
+
+
 }
