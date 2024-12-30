@@ -94,7 +94,7 @@ public function verifyCertificate(Request $request){
     }
 
     $admission_data = [
-        'id' => $admission->clients->id,
+        'id' => $admission->id,
         'client_id' => $admission->client_id,
         'amount' => $admission->amount,
         'created_at' => $admission->created_at->format('Y-m-d'),
