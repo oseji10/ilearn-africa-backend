@@ -8,6 +8,7 @@
         "php": "^8.1",
         "barryvdh/laravel-dompdf": "^3.0",
         "endroid/qr-code": "^5.0",
+        "flutterwavedev/flutterwave-v3": "^1.0",
         "guzzlehttp/guzzle": "^7.2",
         "kwn/number-to-words": "^2.9",
         "laravel/framework": "^10.10",

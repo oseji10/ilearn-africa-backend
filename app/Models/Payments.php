@@ -9,7 +9,7 @@ class Payments extends Model
 {
     use HasFactory, softDeletes;
     public $table = 'payments';
-    protected $fillable = ['client_id', 'payment_for', 'course_id', 'payment_gateway', 'payment_method', 'amount', 'transaction_reference', 'other_reference','status', 'created_by', 'admission_number', 'cohort_id', 'part_payment'];
+    protected $fillable = ['client_id', 'payment_for', 'course_id', 'payment_gateway', 'payment_method', 'amount', 'transaction_reference', 'other_reference','status', 'created_by', 'admission_number', 'cohort_id', 'part_payment', 'transaction_id'];
 
     public function clients()
     {

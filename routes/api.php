@@ -180,8 +180,10 @@ Route::middleware('auth:sanctum')->get('/client-id', [AuthController::class, 'ge
 
 // In routes/web.php
 
-Route::get('/verify-payment', [PdfController::class, 'verify'])->name('pdf.verify');
+Route::get('/verify-payment-receipt', [PdfController::class, 'verify'])->name('pdf.verify');
 Route::get('/verify_certificate', [PdfController::class, 'verifyCertificate'])->name('pdf.verify_certificate');
+Route::post('/download_receipt', [PdfController::class, 'downloadReceipt'])->name('pdf.downloadReceipt');
+
 
 Route::get('/qr-codes', [PdfController::class, 'generate']);
 

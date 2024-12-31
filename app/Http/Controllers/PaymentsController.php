@@ -20,6 +20,8 @@ use App\Mail\EmailReceipt;
 use App\Models\PartPayments;
 use App\Models\Cohorts;
 use Illuminate\Support\Facades\Http;
+use Flutterwave\Flutterwave;
+use Flutterwave\Rave;
 
 class PaymentsController extends Controller
 {
@@ -516,38 +518,124 @@ if ($request->file('file')) {
 
     public function verifyAndStorePayment(Request $request)
     {
+        // Retrieve transaction reference from the query string
+        $txRef = $request->query('transaction_id');
+        
+        if (!$txRef) {
+            return response()->json([
+                'error' => 'Transaction reference missing',
+            ], 400);
+        }
+        
+        // Flutterwave verification endpoint
+        $flutterwaveUrl = env('FLUTTERWAVE_VERIFY_TRANSACTION') . "/{$txRef}/verify";
+        $secretKey = env('FLUTTERWAVE_SECRET_KEY');
+        
+        // Make a request to verify the payment
+        $response = Http::withToken($secretKey)->get($flutterwaveUrl);
+        
+        if ($response->successful()) {
+            $responseData = $response->json();
+            
+            // Check if the payment was successful
+            if ($responseData['data']['status'] === 'successful') {
+                // Handle successful payment, e.g., update the database
+                $paymentData = $responseData['data'];
+              
+                // Generate a 7-digit random number for payment_id
+                $validated['payment_id'] = mt_rand(1000000, 9999999);
+                $validated['created_by'] = auth()->id();
+                // $validated['client_id'] = auth()->user()->client_id;
+                $validated['client_id'] = $request->clientId;
+                $validated['amount'] = $paymentData['amount'];
+                $validated['part_payment'] = $paymentData['amount'];
+                $validated['payment_method'] = "Online";
+                $validated['payment_gateway'] = "FLUTTERWAVE";
+                $validated['transaction_reference'] = $paymentData['id'];
+                $validated['transaction_id'] = $txRef;
+                $validated['other_reference'] = $paymentData['id'];
+                $validated['payment_gateway'] = "FLUTTERWAVE";
+                $validated['status'] = 1; 
+                $validated['cohort_id'] = $request->cohort_id;
+                $validated['course_id'] = $request->course_id;
+    
+                // Create a new admission record
+                $admission_number = mt_rand(1000000, 9999999);
+                $admissions = new Admissions();
+                $admissions->client_id = $request->clientId;
+                $admissions->admission_number = $admission_number;
+                $admissions->status = "pending";
+                $admissions->cohort_id = $request->cohort_id;
+                $admissions->save();
+    
+                // Save the payment record
+                $validated['admission_number'] = $admission_number;
+                $payments = Payments::create($validated);
+    
+    
+                $redirectUrl = env('FRONTEND_PAYMENT_SUCCESS_URL') . "?tx_ref={$paymentData['tx_ref']}&status=success";
+                return redirect()->away($redirectUrl);
+                return response()->json([
+                    'message' => 'Payment verified successfully',
+                    'data' => $paymentData,
+                    'redirect_url' => $redirectUrl,
+                ], 200);
+            }
+    
+            // Handle unsuccessful payment
+            return response()->json([
+                'error' => 'Payment was not successful',
+                'details' => $responseData,
+            ], 400);
+        }
+    
+        // Handle verification failure
+        return response()->json([
+            'error' => 'Payment verification failed',
+            'details' => $response->json(),
+        ], 400);
+    }
+    
+
+
+    public function verifyAndStorePayment2(Request $request)
+    {
+        // return $trxRef;
         // Validate the incoming request data
-        $validated = $request->validate([
-            'tx_ref' => 'required|string',
-            'amount' => 'required|numeric',
-            'course_id' => 'required|string',
-            'cohort_id' => 'required|string',
-            'payment_gateway' => 'required|string',
-            'payment_method' => 'required|string',
-        ]);
+        // $validated = $request->validate([
+        //     // 'tx_ref' => 'required|string',
+        //     // 'amount' => 'required|numeric',
+        //     'course_id' => 'required|string',
+        //     'cohort_id' => 'required|string',
+        //     // 'payment_gateway' => 'required|string',
+        //     // 'payment_method' => 'required|string',
+        // ]);
     
-        // Get the transaction reference from the request
-        // $transactionReference = $request->input('tx_ref');
-        $transactionReference = $validated['tx_ref'];
-        $amount = $validated['amount'];
-        $courseId = $validated['course_id'];
-        $cohortId = $validated['cohort_id'];
-    
-        // Flutterwave API credentials (get from your .env file)
+        
+        $transactionReference = $request->tx_ref;
+        $transaction_id = $request->transaction_id;
+        // $amount = $request['amount'];
+        $courseId = $request->course_id;
+        $cohortId = $request->cohort_id;    
+        
         $flutterwaveSecretKey = env('FLUTTERWAVE_SECRET_KEY');
+        // $flutterwaveSecretKey = "FLWPUBK_TEST-b6b497fa28aa6cfa4988650d59c87096-X";
     
         try {
             // Step 1: Verify the payment with Flutterwave
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $flutterwaveSecretKey,
-            ])->get("https://api.flutterwave.com/v3/charges?tx_ref={$transactionReference}");
-    
+            ])->get(env('FLUTTERWAVE_VERIFY_TRANSACTION') . "/{$transaction_id}/verify");
+            
             $paymentData = $response->json();
-    
-            if ($response->successful() && isset($paymentData['status']) && $paymentData['status'] === 'success') {
+            
+            return $paymentData;
+            if ($response->successful() && isset($paymentData['status']) && $paymentData['status'] === 'successful') {
                 // Step 2: Check if the payment already exists in the database
-                $existingPayment = Payments::where('transaction_reference', $transactionReference)->first();
+                $existingPayment = Payments::where('transaction_reference', $transaction_id)->first();
     
+              
+
                 if ($existingPayment) {
                     // If the payment already exists, proceed as successful
                     return response()->json([
@@ -558,24 +646,24 @@ if ($request->file('file')) {
     
                 // Step 3: Proceed to store the payment if it's verified
                 // Generate a 7-digit random number for payment_id
-                $validated['payment_id'] = mt_rand(1000000, 9999999);
-                $validated['created_by'] = auth()->id();
-                $validated['client_id'] = auth()->user()->client_id;
-                $validated['amount'] = $amount;
-                $validated['status'] = 1; // Payment verified, set status to 'success'
+                // $validated['payment_id'] = mt_rand(1000000, 9999999);
+                // $validated['created_by'] = auth()->id();
+                // $validated['client_id'] = auth()->user()->client_id;
+                // $validated['amount'] = $amount;
+                // $validated['status'] = 1; // Payment verified, set status to 'success'
     
-                // Create a new admission record
-                $admission_number = mt_rand(1000000, 9999999);
-                $admissions = new Admissions();
-                $admissions->client_id = auth()->user()->client_id;
-                $admissions->admission_number = $admission_number;
-                $admissions->status = "pending";
-                $admissions->cohort_id = $cohortId;
-                $admissions->save();
+                // // Create a new admission record
+                // $admission_number = mt_rand(1000000, 9999999);
+                // $admissions = new Admissions();
+                // $admissions->client_id = auth()->user()->client_id;
+                // $admissions->admission_number = $admission_number;
+                // $admissions->status = "pending";
+                // $admissions->cohort_id = $cohortId;
+                // $admissions->save();
     
-                // Save the payment record
-                $validated['admission_number'] = $admission_number;
-                $payments = Payments::create($validated);
+                // // Save the payment record
+                // $validated['admission_number'] = $admission_number;
+                // $payments = Payments::create($validated);
     
                 // Step 4: Return a response, indicating success
                 return response()->json([
