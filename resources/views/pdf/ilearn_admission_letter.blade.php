@@ -124,8 +124,8 @@
             <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of ILEARN AFRICA has granted you admission into her <b style="text-transform:uppercase;">{{$course_name}} program.</b></p>
 
             <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$certification_name}}</b>. This course is slated to commence on the <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b></p>
-            <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
-<p>Kindly note that a minimum mandatory participation attendance of 75% is required for certification. </p>
+            <!-- <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
+<p>Kindly note that a minimum mandatory participation attendance of 75% is required for certification. </p> -->
 <p>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</p>
 
         </div>
@@ -134,7 +134,13 @@
             <i>Yours Sincerely,</i><br/>
             <u style="margin:0;"><img src="images/cd-sign.png" /><br/>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u><br/>
-            <i>Nwude Ifeoma Grace<br>Country Director<br>iLearn Africa</i>
+            <i>
+            <!-- Nwude Ifeoma Grace -->
+            <br> 
+            Academic Director
+             <br>
+            iLearn Africa 
+            </i>
         </div>
 
       

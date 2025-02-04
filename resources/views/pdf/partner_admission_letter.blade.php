@@ -123,8 +123,8 @@
        
             <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$professional_certification_name}}</b> from our esteemed partner institution and a <b style="text-transform:uppercase;">{{$certification_name}}</b> from iLEARN AFRICA. This course is slated to commence on the <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b> </p>
             
-            <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
-            <p>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once. </p>
+            <!-- <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
+            <p>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once. </p> -->
             <p>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</p>
         </div>
 
@@ -132,7 +132,9 @@
             <i>Yours Sincerely,</i><br/>
             <u style="margin:0;"><img src="images/cd-sign.png" /><br/>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u><br/>
-            <p>Nwude Ifeoma Grace<br>Country Director<br>iLearn Africa</p>
+            <p>Academic Director
+            <br>iLearn Africa 
+            </p>
         </div>
 
       

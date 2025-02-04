@@ -179,11 +179,11 @@
                 <img src="images/cd-sign.png" alt="Signature"><br/>
             <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>
             </div>
-            <div class="signatory-name">
+            {{-- <div class="signatory-name">
                 Nwude Ifeoma Grace
-            </div>
+            </div> --}}
             <div class="signatory-title">
-                Programme Director/iLearn Africa
+                Academy Director
             </div>
         </div>
         <div class="qr-code">
