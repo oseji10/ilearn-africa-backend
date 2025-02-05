@@ -137,7 +137,7 @@
             <i>
             <!-- Nwude Ifeoma Grace -->
             <br> 
-            Academic Director
+            Programs Director
              <br>
             iLearn Africa 
             </i>
