@@ -111,9 +111,40 @@ class CBTController extends Controller
 
     public function loadQuestions($examId)
     {
-        $questions = ExamQuestions::with('exams', 'questions', 'questions.options')->where('examId', $examId)->get();
+        // Fetch the CBT exam details
+        $cbtExam = CBT::find($examId);
+    
+        if (!$cbtExam) {
+            return response()->json(['error' => 'Exam not found'], 404);
+        }
+    
+        // Retrieve questions based on the examId
+        $questions = ExamQuestions::with(['exams', 'questions.options'])
+            ->where('examId', $examId)
+            ->get();
+    
+        // Shuffle the questions if isShuffle is set to 1
+        if ($cbtExam->isShuffle == 1) {
+            $questions = $questions->shuffle();
+        }
+    
+        // Check if isRandom is set to 1 and shuffle options inside each question
+        if ($cbtExam->isRandom == 1) {
+            $questions->transform(function ($examQuestion) {
+                $examQuestion->questions->transform(function ($question) {
+                    if ($question->relationLoaded('options')) {
+                        $question->setRelation('options', $question->options->shuffle());
+                    }
+                    return $question;
+                });
+    
+                return $examQuestion;
+            });
+        }
+    
         return response()->json($questions);
     }
+    
 
 
     public function storeQuestion(Request $request)
@@ -356,16 +387,23 @@ public function MyExamResult(Request $request)
 }
 
 public function MyCBTExamResult($client_id) {
-    
     $results = ExamResultMaster::where('clientId', $client_id)
-    ->with(['exam' => function ($query) {
-        $query->select('examId', 'examName', 'examDate'); // Include 'id' to maintain relationship
-    }])
-    ->select('masterId', 'clientId', 'total_score', 'examId') // Ensure 'examId' is selected for relationship
-    ->get();
+        ->with(['exam' => function ($query) {
+            $query->select('examId', 'examName', 'examDate', 'canSeeResult'); // Include canSeeResult for validation
+        }])
+        ->select('masterId', 'clientId', 'total_score', 'examId') // Ensure examId is selected for relationship
+        ->get();
 
-return response()->json($results);
+    // Modify results based on canSeeResult
+    $results->transform(function ($result) {
+        if ($result->exam && $result->exam->canSeeResult == 0) {
+            unset($result->total_score); // Remove total_score if canSeeResult is 0
+        }
+        return $result;
+    });
 
+    return response()->json($results);
 }
+
 
 }
