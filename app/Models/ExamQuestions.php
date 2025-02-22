@@ -21,4 +21,11 @@ class ExamQuestions extends Model
     {
         return $this->belongsTo(CBT::class, 'examId', 'examId');
     }
+
+    public function exam_results()
+{
+    return $this->hasMany(ExamResult::class, 'examId', 'examId'); // Exam can have many results
+}
+
+    
 }

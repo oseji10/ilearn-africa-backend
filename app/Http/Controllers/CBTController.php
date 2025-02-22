@@ -11,6 +11,7 @@ use App\Models\Admissions;
 use App\Models\ExamQuestions;
 use DB;
 use App\Models\ExamResult;
+use App\Models\ExamResultMaster;
 
 class CBTController extends Controller
 {
@@ -22,34 +23,31 @@ class CBTController extends Controller
 
     public function RetrieveClientWithCohort($client_id)
     {
-        // Retrieve the client with their admissions relationship
-        // $client = Client::with('admissions')->where('client_id', $client_id)->first();
-    
-        // // Handle the case where the client is not found
-        // if (!$client) {
-        //     return response()->json(['message' => 'Client not found'], 404);
-        // }
-    
-        // // Assuming admissions is a single relationship (not a collection)
-        // $admission = $client->admissions->first(); // Use ->first() if admissions is a collection
-    
-        // // Handle the case where no admission is associated
-        // if (!$admission) {
-        //     return response()->json(['message' => 'No admissions found for this client'], 404);
-        // }
-    
-     // Retrieve CBT records matching the cohort_id
+        
 $cbts = CBT::with('course', 'cohort', 'clientCohort')
-// ->where('cohortId', $admission->cohort_id)
-->whereHas('clientCohort', function ($query) use ($client_id) {
-    $query->where('status', '=', 'ADMITTED')
-          ->where('client_id', $client_id); // Assuming $admission->client_id is correct.
-})
-->get();
+    ->where('status', 'active')
+    ->whereHas('clientCohort', function ($query) use ($client_id) {
+        $query->where('status', '=', 'ADMITTED')
+              ->where('client_id', $client_id);
+    })
+    ->get()
+    ->filter(function ($cbt) use ($client_id) {
+        // Check if the client has taken this exam
+        $hasTakenExam = ExamResultMaster::where('clientId', $client_id)
+            ->where('examId', $cbt->id)
+            ->exists();
+
+        // Allow the exam only if it hasn't been taken OR if retakes are allowed
+        return !$hasTakenExam || $cbt->canRetake == 1;
+    });
+
+// Return the filtered exams
+return response()->json($cbts->values()); // Reset array keys
+
 
     
     
-        return response()->json($cbts);
+        // return response()->json($cbts);
     }
     
 
@@ -100,6 +98,25 @@ $cbts = CBT::with('course', 'cohort', 'clientCohort')
         $questions = Questions::with('options')->get();
         return response()->json($questions);
     }
+
+    public function RetrieveExamQuestions($examId)
+    {
+        $questions = Questions::
+        with('options')
+        ->whereHas('questions', function ($query) use ($examId) {
+            $query->where('examId', $examId);
+        })
+        ->get();
+        return response()->json($questions);
+
+        // $doctors = User::where('role', 2)
+        //     ->whereHas('hospital_admins', function ($query) use ($hospitalId) { // Pass hospitalId into closure
+        //         $query->where('hospitalId', $hospitalId);
+        //     })
+        //     ->get();
+    }
+
+    
 
     public function loadQuestions($examId)
     {
@@ -232,9 +249,15 @@ public function submitExam(Request $request)
     $examId = $request->input('examId');
     $answers = $request->input('answers');
     $clientId = $request->input('clientId');
-
-    $results = [];
     $totalScore = 0;
+    $results = [];
+
+    // Create a master record for the exam submission
+    $masterResult = ExamResultMaster::create([
+        'examId' => $examId,
+        'clientId' => $clientId, // Assuming clientId should also be stored in ExamResultMaster
+        'total_score' => 0, // Initialize score, will update later
+    ]);
 
     foreach ($answers as $answer) {
         $questionId = $answer['questionId'];
@@ -255,7 +278,6 @@ public function submitExam(Request $request)
                                 ->first();
 
         if (!$correctOption) {
-            // Handle missing correct option scenario
             return response()->json([
                 'message' => "No correct option set for question with ID $questionId."
             ], 500);
@@ -265,8 +287,9 @@ public function submitExam(Request $request)
         $isCorrect = $correctOption->optionId === $optionSelected;
         $score = $isCorrect ? $question->score : 0;
 
-        // Save the result to the database
+        // Save the result to ExamResult table with masterId reference
         $result = ExamResult::create([
+            'masterId' => $masterResult->id, // Store reference to ExamResultMaster
             'clientId' => $clientId,
             'examId' => $examId,
             'questionId' => $questionId,
@@ -279,10 +302,14 @@ public function submitExam(Request $request)
         $totalScore += $score;
     }
 
+    // Update the total score in the ExamResultMaster record
+    $masterResult->update(['total_score' => $totalScore]);
+
     // Return the response
     return response()->json([
         'message' => 'Exam submitted successfully.',
         'totalScore' => $totalScore,
+        'masterId' => $masterResult->masterId,
         'results' => $results,
     ]);
 }
@@ -337,7 +364,17 @@ public function MyExamResult(Request $request)
     return response()->json($result);
 }
 
+public function MyCBTExamResult($client_id) {
+    
+    $results = ExamResultMaster::where('clientId', $client_id)
+    ->with(['exam' => function ($query) {
+        $query->select('examId', 'examName', 'examDate'); // Include 'id' to maintain relationship
+    }])
+    ->select('masterId', 'clientId', 'total_score', 'examId') // Ensure 'examId' is selected for relationship
+    ->get();
 
+return response()->json($results);
 
+}
 
 }

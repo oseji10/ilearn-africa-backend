@@ -517,7 +517,7 @@
                         </table>
                         <p>We hope you are able to quickly complete your application so you can get started immediately.</p>
                   
-                        <p>If you have any questions, feel free to <a href="mailto:{{$support_email}}">email our customer success team</a>. </p>
+                        <p>If you have any questions, feel free to <a href="mailto:{{$support_email}}">email our customer service team</a>. </p>
                         <p>Thanks,
                           <br>iLearn Africa Team</p>
                         

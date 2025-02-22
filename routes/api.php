@@ -76,11 +76,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('course_material', [CourseMaterialController::class, 'uploadCourseMaterial']);
     Route::delete('delete_course/{course_id}', [CourseListController::class, 'deleteCourse']);
     Route::patch('update_course/{course_id}', [CourseListController::class, 'updateCourse']);
-
+    
     Route::get('centers', [CentersController::class, 'show']);
     Route::post('centers', [CentersController::class, 'store']);
     Route::patch('centers/update/{center_id}', [CentersController::class, 'updateCenter']);
-
+    
+    Route::get('cohorts-courses', [CoursesController::class, 'cohortCourses']);
     Route::get('cohorts', [CohortsController::class, 'showCohorts']);
     Route::get('cohorts/courses', [CohortsController::class, 'showCohortsAllcourses']);
     Route::get('cohorts/{cohort_id}/courses', [CohortsController::class, 'showCohortsCourses']);
@@ -202,6 +203,7 @@ Route::get('cbt-exams', [CBTController::class, 'RetrieveAll']);
 Route::post('cbt-exams', [CBTController::class, 'store']);
 Route::put('cbt-exams/{examId}', [CBTController::class, 'updateCBT']);
 Route::get('cbt-exams/questions', [CBTController::class, 'RetrieveAllQuestions']);
+Route::get('cbt-exams/questions/{examId}', [CBTController::class, 'RetrieveExamQuestions']);
 Route::post('cbt-exams/question', [CBTController::class, 'storeQuestion']);
 Route::put('cbt-exams/question/{questionId}', [CBTController::class, 'updateQuestion']);
 Route::delete('cbt-exams/question/{questionId}', [CBTController::class, 'deleteQuestion']);
@@ -212,3 +214,4 @@ Route::get('questions/{examId}', [CBTController::class, 'loadQuestions']);
 Route::post('exam-result', [CBTController::class, 'submitExam']);
 Route::get('exam-result', [CBTController::class, 'ExamResults']);
 Route::post('cbt-exam-result', [CBTController::class, 'MyExamResult']);
+Route::get('my-cbt-exam-results/{client_id}', [CBTController::class, 'MyCBTExamResult']);

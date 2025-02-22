@@ -147,7 +147,7 @@ class ClientController extends Controller
         $workDetails = $request->validate([
         'workDetails' => 'required|array',
         'workDetails.*.start_date' => 'required|date_format:Y-m-d',
-        'workDetails.*.end_date' => 'required|date_format:Y-m-d',
+        // 'workDetails.*.end_date' => 'required|date_format:Y-m-d',
         'workDetails.*.organization' => 'required|string',
         'workDetails.*.job_title' => 'required|string',
         ]);

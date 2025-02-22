@@ -34,6 +34,14 @@ class CBT extends Model
         return $this->hasMany(Questions::class, 'questionId', 'questionId');
     }
 
-  
+    public function cbt_exam_result()
+    {
+        return $this->hasMany(ExamResult::class, 'examId', 'examId');
+    }
+    
+    public function cbt_exam_questions()
+    {
+        return $this->hasMany(ExamQuestions::class, 'examId', 'examId');
+    }
     
 }
