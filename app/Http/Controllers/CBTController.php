@@ -23,32 +23,23 @@ class CBTController extends Controller
 
     public function RetrieveClientWithCohort($client_id)
     {
-        
-$cbts = CBT::with('course', 'cohort', 'clientCohort')
-    ->where('status', 'active')
-    ->whereHas('clientCohort', function ($query) use ($client_id) {
-        $query->where('status', '=', 'ADMITTED')
-              ->where('client_id', $client_id);
-    })
-    ->get()
-    ->filter(function ($cbt) use ($client_id) {
-        // Check if the client has taken this exam
-        $hasTakenExam = ExamResultMaster::where('clientId', $client_id)
-            ->where('examId', $cbt->id)
-            ->exists();
-
-        // Allow the exam only if it hasn't been taken OR if retakes are allowed
-        return !$hasTakenExam || $cbt->canRetake == 1;
-    });
-
-// Return the filtered exams
-return response()->json($cbts->values()); // Reset array keys
-
-
+        $cbts = CBT::with('course', 'cohort', 'clientCohort')
+            ->where('status', 'active')
+            ->whereHas('clientCohort', function ($query) use ($client_id) {
+                $query->where('status', '=', 'ADMITTED')
+                      ->where('client_id', $client_id);
+            })
+            ->where(function ($query) use ($client_id) {
+                $query->whereDoesntHave('cbt_exam_result', function ($subQuery) use ($client_id) {
+                    $subQuery->where('clientId', $client_id);
+                })
+                ->orWhere('canRetake', 1); // Allow if retakes are allowed
+            })
+            ->get();
     
-    
-        // return response()->json($cbts);
+        return response()->json($cbts);
     }
+    
     
 
     public function RetrieveCBT(Request $request)
