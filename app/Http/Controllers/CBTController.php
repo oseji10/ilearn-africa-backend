@@ -23,8 +23,13 @@ class CBTController extends Controller
 
     public function RetrieveClientWithCohort($client_id)
     {
+        $now = Carbon::now(); // Get the current timestamp
+        $midnight = Carbon::today()->endOfDay();
         $cbts = CBT::with('course', 'cohort', 'clientCohort')
             ->where('status', 'active')
+            ->whereDate('examDate', Carbon::today()->toDateString()) // Ensure exam is today
+            ->whereTime('examTime', '>=', $now->toTimeString()) // Ensure exam time is now or later
+            ->whereTime('examTime', '<=', $midnight->toTimeString())
             ->whereHas('clientCohort', function ($query) use ($client_id) {
                 $query->where('status', '=', 'ADMITTED')
                       ->where('client_id', $client_id);
