@@ -212,7 +212,7 @@ Route::get('client-cohort/{client_id}', [CBTController::class, 'RetrieveClientWi
 
 Route::get('questions/{examId}', [CBTController::class, 'loadQuestions']);
 Route::post('exam-result', [CBTController::class, 'submitExam']);
-Route::get('exam-result', [CBTController::class, 'ExamResults']);
+Route::get('exam-result/{examId}', [CBTController::class, 'ExamResults']);
 Route::post('cbt-exam-result', [CBTController::class, 'MyExamResult']);
 Route::get('my-cbt-exam-results/{client_id}', [CBTController::class, 'MyCBTExamResult']);
 Route::get('examination-results', [CBTController::class, 'CBTExamResults']);

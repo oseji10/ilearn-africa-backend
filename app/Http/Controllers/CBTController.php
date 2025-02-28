@@ -418,34 +418,44 @@ public function submitExam(Request $request)
 
 //     return response()->json($results);
 // }
-public function ExamResults()
+public function ExamResults($examId)
 {
     // Fetch all results with client relationships
-    $results = ExamResult::with('clients')->get();
-
+    // $results = ExamResult::with('clients')->get();
+    $results = ExamResultMaster::
+    join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
+    ->join('clients', 'clients.client_id', '=', 'cbt_master_results.clientId')
+    ->where('cbt_master_results.examId', $examId)->get();
+    return response()->json($results);
     // Make the results distinct by client_id
-    $distinctResults = $results->unique('client_id')->map(function ($result) use ($results) {
-        // Calculate the total score for each client
-        $result->total_score = $results->where('client_id', $result->client_id)->sum('score');
-        return $result;
-    });
+    // $distinctResults = $results->unique('client_id')->map(function ($result) use ($results) {
+    //     // Calculate the total score for each client
+    //     $result->total_score = $results->where('client_id', $result->client_id)->sum('score');
+    //     return $result;
+    // });
 
-    return response()->json($distinctResults->values()); // Reset array keys and return as JSON
+    // return response()->json($distinctResults->values()); // Reset array keys and return as JSON
 }
 
 
 public function MyExamResult(Request $request)
 {
     // Fetch the most recent exam result for the client in the specified exam
-    $result = ExamResult::join('clients', 'clients.client_id', '=', 'cbt_exams_results.clientId')
-        ->join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_exams_results.examId')
-        ->where('cbt_exams_results.clientId', $request->client_id)
-        ->where('cbt_exams_results.examId', $request->examId)
-        ->orderBy('cbt_exams_results.created_at', 'desc')  // Sort by exam_date (assuming you have this column)
-        ->select('cbt_exams.examName', 'clients.firstname', 'clients.surname', DB::raw('SUM(cbt_exams_results.score) as total_score'))
-        ->groupBy('cbt_exams.examName', 'clients.client_id', 'clients.firstname', 'clients.surname', 'cbt_exams_results.created_at')
+    // $result = ExamResult::join('clients', 'clients.client_id', '=', 'cbt_exams_results.clientId')
+    //     ->join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_exams_results.examId')
+    //     ->where('cbt_exams_results.clientId', $request->client_id)
+    //     ->where('cbt_exams_results.examId', $request->examId)
+    //     ->orderBy('cbt_exams_results.created_at', 'desc')  // Sort by exam_date (assuming you have this column)
+    //     ->select('cbt_exams.examName', 'clients.firstname', 'clients.surname', DB::raw('SUM(cbt_exams_results.score) as total_score'))
+    //     ->groupBy('cbt_exams.examName', 'clients.client_id', 'clients.firstname', 'clients.surname', 'cbt_exams_results.created_at')
+    //     ->first();
+$result = ExamResultMaster::
+        // join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
+        join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
+        ->join('clients', 'clients.client_id', '=', 'cbt_master_results.clientId')
+        ->where('clientId', $request->client_id)
+        ->where('cbt_master_results.examId', $request->examId)
         ->first();
-
     // Return the most recent result
     return response()->json($result);
 }
