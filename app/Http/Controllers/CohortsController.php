@@ -56,7 +56,11 @@ class CohortsController extends Controller
 
     public function showCohortsCourses(Request $request, $cohort_id)
     {
-        $cohort_courses = CohortsCourses::with('course_list')->where('cohort_id', $cohort_id)->get();
+        // $cohort_courses = CohortsCourses::with('course_list')->where('cohort_id', $cohort_id)->get();
+        $cohort_courses = CohortsCourses::join('course_list', 'course_list.course_id', '=', 'cohorts_courses.course_id')
+    ->where('cohort_id', $cohort_id)
+    ->select('course_list.*')
+    ->get();
         return response()->json([
             'message' => 'Courses for this Cohort retrieved successfully',
             'courses' => $cohort_courses,
