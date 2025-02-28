@@ -470,4 +470,25 @@ public function MyCBTExamResult($client_id) {
 }
 
 
+// See all results for an exam
+public function CBTExamResults() {
+    // $results = ExamResultMaster::with(['exam' => function ($query) {
+    //         $query->select('examId', 'examName', 'examDate', 'canSeeResult'); // Include canSeeResult for validation
+    //     }])
+    //     ->select('masterId', 'clientId', 'total_score', 'examId') // Ensure examId is selected for relationship
+    //     ->get();
+
+    // // Modify results based on canSeeResult
+    // $results->transform(function ($result) {
+    //     if ($result->exam && $result->exam->canSeeResult == 0) {
+    //         unset($result->total_score); // Remove total_score if canSeeResult is 0
+    //     }
+    //     return $result;
+    // });
+    $results = CBT::orderBy('examDate', 'desc')->get();
+    return response()->json($results);
+    
+}
+
+
 }

@@ -32,8 +32,11 @@ class CourseListController extends Controller
     $userId = auth()->user()->client_id;
 
     // Fetch all courses
-    $courses = CohortsCourses::with('course_list')->where('cohort_id', $cohort_id)->get();
-
+    // $courses = CohortsCourses::with('course_list')->where('cohort_id', $cohort_id)->get();
+    $courses = CohortsCourses::join('course_list', 'course_list.course_id', '=', 'cohorts_courses.course_id')
+    ->where('cohort_id', $cohort_id)
+    ->select('course_list.*')
+    ->get();
     // Iterate through each course and check if the user has paid for it
     $coursesWithStatus = $courses->map(function ($course) use ($userId) {
         // Check if a payment exists for this course by this user

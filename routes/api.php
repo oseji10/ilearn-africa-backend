@@ -215,3 +215,4 @@ Route::post('exam-result', [CBTController::class, 'submitExam']);
 Route::get('exam-result', [CBTController::class, 'ExamResults']);
 Route::post('cbt-exam-result', [CBTController::class, 'MyExamResult']);
 Route::get('my-cbt-exam-results/{client_id}', [CBTController::class, 'MyCBTExamResult']);
+Route::get('examination-results', [CBTController::class, 'CBTExamResults']);
