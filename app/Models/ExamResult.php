@@ -10,7 +10,7 @@ class ExamResult extends Model
     use HasFactory;
     public $table = 'cbt_exams_results';
     protected $primaryKey = 'resultId';
-    protected $fillable = ['examId', 'questionId', 'optionSelected', 'score', 'clientId']; 
+    protected $fillable = ['examId', 'questionId', 'optionSelected', 'score', 'clientId', 'masterId']; 
 
     public function exams()
     {
