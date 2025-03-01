@@ -455,7 +455,7 @@ $result = ExamResultMaster::
         ->join('clients', 'clients.client_id', '=', 'cbt_master_results.clientId')
         ->where('clientId', $request->client_id)
         ->where('cbt_master_results.examId', $request->examId)
-        ->latest('created_at')->first();
+        ->latest('cbt_master_results.created_at')->first();
     // Return the most recent result
     return response()->json($result);
 }
