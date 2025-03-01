@@ -375,7 +375,7 @@ public function submitExam(Request $request)
 
         // Save the result to ExamResult table with masterId reference
         $result = ExamResult::create([
-            'masterId' => $masterResult->id, // Store reference to ExamResultMaster
+            'masterId' => $masterResult->masterId, // Store reference to ExamResultMaster
             'clientId' => $clientId,
             'examId' => $examId,
             'questionId' => $questionId,
