@@ -19,7 +19,7 @@ class ExamResultMaster extends Model
 
     public function clients()
     {
-        return $this->belongsTo(Client::class, 'clientId', 'client_id');
+        return $this->hasMany(Client::class, 'client_id', 'clientId');
     }
 
     public function exam_questions()
@@ -33,4 +33,8 @@ public function exam()
     return $this->belongsTo(CBT::class, 'examId', 'examId'); // ExamResult is linked to multiple questions
 }
 
+public function examResults()
+    {
+        return $this->hasMany(ExamResult::class, 'masterId', 'masterId');
+    }
 }

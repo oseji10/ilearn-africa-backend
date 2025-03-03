@@ -420,21 +420,17 @@ public function submitExam(Request $request)
 // }
 public function ExamResults($examId)
 {
-    // Fetch all results with client relationships
-    // $results = ExamResult::with('clients')->get();
-    $results = ExamResultMaster::
-    join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
+    
+    $results = ExamResultMaster::join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
     ->join('clients', 'clients.client_id', '=', 'cbt_master_results.clientId')
-    ->where('cbt_master_results.examId', $examId)->get();
-    return response()->json($results);
-    // Make the results distinct by client_id
-    // $distinctResults = $results->unique('client_id')->map(function ($result) use ($results) {
-    //     // Calculate the total score for each client
-    //     $result->total_score = $results->where('client_id', $result->client_id)->sum('score');
-    //     return $result;
-    // });
+    // ->where('cbt_master_results.examId', $examId)
+    ->select('cbt_master_results.*', 'cbt_exams.*', 'clients.*') // Explicitly select fields
+    ->get();
 
-    // return response()->json($distinctResults->values()); // Reset array keys and return as JSON
+    // return $results = ExamResultMaster::with('exam', 'clients')
+    // ->where('examId', $examId)
+    // ->get();
+    return response()->json($results);
 }
 
 
@@ -500,5 +496,15 @@ public function CBTExamResults() {
     
 }
 
+
+// Delete Exam
+public function deleteStudentExamResult($masterId){
+    $examResultMaster = ExamResultMaster::find($masterId);
+if ($examResultMaster) {
+    $examResultMaster->examResults()->delete(); // Delete child records
+    $examResultMaster->delete(); // Delete parent record
+}
+
+}
 
 }

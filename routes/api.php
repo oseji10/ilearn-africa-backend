@@ -216,3 +216,5 @@ Route::get('exam-result/{examId}', [CBTController::class, 'ExamResults']);
 Route::post('cbt-exam-result', [CBTController::class, 'MyExamResult']);
 Route::get('my-cbt-exam-results/{client_id}', [CBTController::class, 'MyCBTExamResult']);
 Route::get('examination-results', [CBTController::class, 'CBTExamResults']);
+
+Route::delete('cbt-exam-result/{masterId}', [CBTController::class, 'deleteStudentExamResult']);
