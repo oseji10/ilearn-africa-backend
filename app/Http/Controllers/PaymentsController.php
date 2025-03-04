@@ -59,6 +59,24 @@ class PaymentsController extends Controller
         ]);
     }
 
+    public function pendingPartPayments()
+{
+    $payments = Payments::with([
+        'clients',
+        'proof',
+        'part_payments'
+    ])
+    ->whereHas('part_payments', function ($query) {
+        $query->where('status', 'pending');
+    })
+    ->orderBy('created_at', 'desc')
+    ->get();
+
+    return response()->json([
+        'message' => 'Payments retrieved successfully',
+        'payments' => $payments,
+    ]);
+}
 
     public function rejectedPayments()
     {
@@ -208,6 +226,7 @@ public function storeManualPayment(Request $request)
         ], 200); // HTTP success code 200: Internal Server Error
     }
 
+    // Assuming a client is making a manual payment, use this endpoint to store that payment
     public function uploadProofOfPayment(Request $request)
     {
         $validated = $request->validate([
@@ -226,7 +245,7 @@ public function storeManualPayment(Request $request)
     
     $other_reference = mt_rand(1000000, 9999999);
     $payment_gateway = "SELF";
-    $payment_method = "Mobile Transefer";
+    $payment_method = "Mobile Transfer";
     $check_course_amount = CourseList::select('cost')->where('course_id', $request->course_id)->first();
     $payments = new Payments();
     $payments->client_id = $request->client_id;
@@ -249,6 +268,7 @@ public function storeManualPayment(Request $request)
     $part_payments->client_id = $request->client_id;
     $part_payments->payment_id = $payment_id;
     $part_payments->amount = $request->part_payment;
+    $part_payments->status = 'pending';
     $part_payments->save();
    
     if ($request->file('file')) {
@@ -305,6 +325,7 @@ $part_payments = new PartPayments();
 $part_payments->client_id = $request->client_id;
 $part_payments->payment_id = $payment_id;
 $part_payments->amount = $request->part_payment;
+$part_payments->status = 'pending';
 $part_payments->save();
 
 if ($request->file('file')) {
@@ -340,74 +361,82 @@ if ($request->file('file')) {
     }
 
     public function confirmPayment(Request $request)
-    {
-        $validated = $request->validate([
-            'transaction_reference' => 'string',
-            'client_id' => 'string',
-            'other_reference' => 'string',
-            'status' => 'string',
-            'updated_by'
-        ]);
-    
-      
-        // Use the where clause first to get the query builder instance
-        $status = "1";
-        $other_reference = $validated['other_reference'];
-        $validated['status'] = $status;
-        $validated['updated_by'] = auth()->id();
-        $validated['transaction_reference'] = $other_reference;
-        $confirm_payment = Payments::where('other_reference', $validated['other_reference'])
-            ->update($validated);
-    
-            $my_data = Payments::with('users', 'courses', 'clients')->where('transaction_reference', $request->transaction_reference)
-            ->orWhere('other_reference', $request->other_reference)
-            ->first();
-            // $email = $user_data->user->email;
-            // $amount = $user_data->amount;
+{
+    $validated = $request->validate([
+        'transaction_reference' => 'string',
+        'client_id' => 'string',
+        'other_reference' => 'string',
+        'status' => 'string',
+        'updated_by'
+    ]);
 
-            $user_data = ([
-            'client_id' => $my_data->client_id,
-            'amount' => $my_data->amount,
-            'created_at' => $my_data->created_at->format('Y-m-d'),
-            'firstname' => $my_data->clients->firstname,
-            'surname' => $my_data->clients->surname,
-            'othernames' => $my_data->clients->othernames,
-            'phone_number' => $my_data->users->phone_number,
-            'email' => $my_data->users->email,
-            'payment_method' => $my_data->payment_method,
-            'transaction_reference' => $my_data->transaction_reference,
-            'course_name' => $my_data->courses->course_name,
-            'course_id' => $my_data->courses->course_id,
-            'transaction_date' => $my_data->created_at,
-            ]);
+    // Fetch the payment details
+    $payment = Payments::where('other_reference', $validated['other_reference'])->first();
 
-    //         $numberToWords = new NumberToWords();
-    //         $numberTransformer = $numberToWords->getNumberTransformer('en');
-    //         $word_amount = $numberTransformer->toWords($user_data['amount'], 'NGN');
-        
-    //     // Optionally, add the word amount back into the $data array
-    //         $user_data['amount_in_words'] = $word_amount;  
-        
-    //         $verificationUrl = route('verify-payment', ['reference' => $my_data->transaction_reference]);
-    //         $qrCode = Builder::create()
-    //         ->writer(new PngWriter())
-    //         ->data(route('pdf.verify', ['reference' => $my_data->transaction_reference]))
-    //         ->size(200)
-    //         ->build();
-
-    // // Save the QR code to a file or directly use it in the PDF
-    //     $user_data['qr_code'] = $qrCode->getDataUri();
-
-    //         $pdf = Pdf::loadView('pdf.receipt', $user_data);
-    //         Mail::to($my_data->users->email)->send(new EmailReceipt($user_data));
-            
-            // return $user_data;
-
-            return response()->json([
-                'message' => 'Payment successfully confirmed'
-            ], 201);
+    if (!$payment) {
+        return response()->json([
+            // $payment->course_id,
+            'message' => 'Payment not found'
+        ], 404);
     }
 
+    $course = DB::table('course_list')->where('course_id', $payment->course_id)->first();
+
+    // Retrieve the course price from CourseList model
+    // $course = CourseList::where('course_id', '=', $payment->course_id)->get();
+
+    if (!$course) {
+        return response()->json([
+            'message' => 'Course not found'
+        ], 404);
+    }
+
+    // Compare payment amount with course price
+    if ($payment->amount < $course->cost) {
+        $part_payment_status = 'incomplete';
+    } else {
+        $part_payment_status = 'complete';
+    }
+
+    // Update the payment status
+    $validated['status'] = "1";  // Assuming '1' means confirmed
+    $validated['updated_by'] = auth()->id();
+    $validated['transaction_reference'] = $validated['other_reference'];
+    $validated['part_payment_status'] = $part_payment_status;
+
+    $payment->update($validated);
+
+    // Fetch updated payment data with relationships
+    $my_data = Payments::with('users', 'courses', 'clients')
+        ->where('transaction_reference', $request->transaction_reference)
+        ->orWhere('other_reference', $request->other_reference)
+        ->first();
+
+        // Update Part payments table
+        PartPayments::where('payment_id', $payment->id)->update(['status' => 'paid']);
+
+    $user_data = [
+        'client_id' => $my_data->client_id,
+        'amount' => $my_data->amount,
+        'created_at' => $my_data->created_at->format('Y-m-d'),
+        'firstname' => $my_data->clients->firstname,
+        'surname' => $my_data->clients->surname,
+        'othernames' => $my_data->clients->othernames,
+        'phone_number' => $my_data->users->phone_number,
+        'email' => $my_data->users->email,
+        'payment_method' => $my_data->payment_method,
+        'transaction_reference' => $my_data->transaction_reference,
+        'course_name' => $my_data->course->course_name ?? '',
+        'course_id' => $my_data->course->course_id ?? '',
+        'transaction_date' => $my_data->created_at,
+        'part_payment_status' => $part_payment_status
+    ];
+
+    return response()->json([
+        'message' => 'Payment successfully confirmed',
+        'data' => $user_data
+    ], 201);
+}
 
 
 

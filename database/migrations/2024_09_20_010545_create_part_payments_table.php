@@ -19,6 +19,7 @@ return new class extends Migration
             $table->id();
             $table->string('client_id')->nullable();
             $table->string('amount')->nullable();
+            $table->string('status')->nullable();
             $table->unsignedBigInteger('payment_id')->nullable();
             $table->timestamps();
             $table->softDeletes();

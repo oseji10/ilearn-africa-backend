@@ -9,7 +9,7 @@ class PartPayments extends Model
 {
     use HasFactory;
     public $table = 'part_payments';
-    protected $fillable = ['client_id', 'payment_id', 'client_id'];
+    protected $fillable = ['client_id', 'payment_id', 'client_id', 'status'];
     
    
 

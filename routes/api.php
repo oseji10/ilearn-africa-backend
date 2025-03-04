@@ -98,6 +98,8 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('payments', [PaymentsController::class, 'show']);
     Route::get('pending-payments', [PaymentsController::class, 'pendingPayments']);
+    Route::get('pending-part-payments', [PaymentsController::class, 'pendingPartPayments']);
+    
     Route::get('rejected-payments', [PaymentsController::class, 'rejectedPayments']);
     Route::put('confirm-payment', [PaymentsController::class, 'confirmPayment']);
     Route::put('reject-payment', [PaymentsController::class, 'rejectPayment']);
@@ -216,5 +218,6 @@ Route::get('exam-result/{examId}', [CBTController::class, 'ExamResults']);
 Route::post('cbt-exam-result', [CBTController::class, 'MyExamResult']);
 Route::get('my-cbt-exam-results/{client_id}', [CBTController::class, 'MyCBTExamResult']);
 Route::get('examination-results', [CBTController::class, 'CBTExamResults']);
+Route::get('/detailed-exam-results/{masterId}', [CBTController::class, 'getUserExamResults']);
 
 Route::delete('cbt-exam-result/{masterId}', [CBTController::class, 'deleteStudentExamResult']);

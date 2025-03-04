@@ -22,6 +22,11 @@ class ExamResultMaster extends Model
         return $this->hasMany(Client::class, 'client_id', 'clientId');
     }
 
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'clientId', 'client_id');
+    }
+
     public function exam_questions()
 {
     return $this->hasMany(ExamQuestions::class, 'examId', 'examId'); // ExamResult is linked to multiple questions

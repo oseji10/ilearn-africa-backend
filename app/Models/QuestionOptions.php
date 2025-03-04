@@ -12,8 +12,5 @@ class QuestionOptions extends Model
     protected $primaryKey = 'optionId';
     protected $fillable = ['questionId', 'optionName', 'optionDetail', 'isCorrect']; 
 
-    // public function options()
-    // {
-    //     return $this->hasMany(CourseList::class, 'course_id', 'courseId');
-    // }
+ 
 }

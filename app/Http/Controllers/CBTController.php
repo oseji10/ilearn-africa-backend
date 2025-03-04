@@ -423,7 +423,7 @@ public function ExamResults($examId)
     
     $results = ExamResultMaster::join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
     ->join('clients', 'clients.client_id', '=', 'cbt_master_results.clientId')
-    ->where('cbt_master_results.examId', $examId)
+    // ->where('cbt_master_results.examId', $examId)
     ->select('cbt_master_results.*', 'cbt_exams.*', 'clients.*') // Explicitly select fields
     ->get();
 
@@ -506,5 +506,32 @@ if ($examResultMaster) {
 }
 
 }
+
+
+public function getUserExamResults($masterId)
+{
+    $results = ExamResultMaster::where('masterId', $masterId)
+        ->with(
+            'client',
+            'exam', 
+            'exam_questions.questions.options',
+            'cbt_results'
+        )
+        ->first();
+
+    // Check if results exist
+    if (!$results) {
+        return response()->json(['message' => 'No exam results found'], 404);
+    }
+
+    // Calculate total score from exam_questions
+    $totalScore = $results->exam_questions->sum('score');
+
+    // Append total score to response
+    $results->total_score2 = $totalScore;
+
+    return response()->json($results);
+}
+
 
 }
