@@ -423,7 +423,7 @@ public function ExamResults($examId)
     
     $results = ExamResultMaster::join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
     ->join('clients', 'clients.client_id', '=', 'cbt_master_results.clientId')
-    // ->where('cbt_master_results.examId', $examId)
+    ->where('cbt_master_results.examId', $examId)
     ->select('cbt_master_results.*', 'cbt_exams.*', 'clients.*') // Explicitly select fields
     ->get();
 

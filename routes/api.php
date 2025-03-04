@@ -221,3 +221,23 @@ Route::get('examination-results', [CBTController::class, 'CBTExamResults']);
 Route::get('/detailed-exam-results/{masterId}', [CBTController::class, 'getUserExamResults']);
 
 Route::delete('cbt-exam-result/{masterId}', [CBTController::class, 'deleteStudentExamResult']);
+
+Route::get('/test_result', function () {
+    return view('pdf.test_report', [
+        'candidate_number' => '24NG501458IDUE448G',
+        'centre_number' => '22/JUL/2024NG448',
+        'first_name' => 'ESEOSA',
+        'surname' => 'IDUSERI',
+        'dob' => '25/07/1988',
+        'country_origin' => 'NIGERIA',
+        'country_nationality' => 'NIGERIA',
+        'first_language' => 'ENGLISH',
+        'listening_score' => 8.0,
+        'reading_score' => 6.5,
+        'writing_score' => 5.0,
+        'speaking_score' => 6.0,
+        'overall_band_score' => 6.5,
+        'cefr_level' => 'B2',
+        'test_date' => '24/07/2024'
+    ]);
+});
