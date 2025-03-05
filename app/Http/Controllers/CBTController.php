@@ -534,4 +534,38 @@ public function getUserExamResults($masterId)
 }
 
 
+// Download Exam Results
+public function downloadExamResults($masterId)
+{
+    $results = ExamResultMaster::where('masterId', $masterId)
+        ->with(
+            'client.admissions',
+            'exam.course', 
+            'exam_questions',
+            'cbt_results',
+            'client.passport'
+        )
+        ->first();
+
+    // Check if results exist
+    if (!$results) {
+        return response()->json(['message' => 'No exam results found'], 404);
+    }
+
+    // Calculate total score from exam_questions
+    $totalScore = $results->exam_questions->sum('score');
+
+    // Append total score to response
+    $results->total_score2 = $totalScore;
+// return $results;
+    // Generate and return PDF
+    // return view ('pdf.test_report', compact('results'));
+     $pdf = \PDF::loadView('pdf.test_report', compact('results'));
+    return $pdf->setPaper('undefined')->stream('result-slip.pdf');
+    // return $pdf->setPaper('undefined')->download('invoice.pdf');
+
+    // return $pdf->download('exam-results.pdf');
+
+}
+
 }

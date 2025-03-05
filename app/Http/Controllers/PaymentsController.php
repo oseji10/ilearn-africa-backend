@@ -61,14 +61,16 @@ class PaymentsController extends Controller
 
     public function pendingPartPayments()
 {
-    $payments = Payments::with([
+    $payments = PartPayments::with([
         'clients',
         'proof',
-        'part_payments'
+        // 'part_payments.clients',
+        'payment'
     ])
-    ->whereHas('part_payments', function ($query) {
-        $query->where('status', 'pending');
-    })
+    ->where('status', 'pending')
+    // ->whereHas('part_payments', function ($query) {
+    //     $query->where('status', 'pending');
+    // })
     ->orderBy('created_at', 'desc')
     ->get();
 

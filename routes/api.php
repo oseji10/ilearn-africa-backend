@@ -222,6 +222,7 @@ Route::get('/detailed-exam-results/{masterId}', [CBTController::class, 'getUserE
 
 Route::delete('cbt-exam-result/{masterId}', [CBTController::class, 'deleteStudentExamResult']);
 
+Route::get('/test_result/{masterId}', [CBTController::class, 'downloadExamResults']);
 Route::get('/test_result', function () {
     return view('pdf.test_report', [
         'candidate_number' => '24NG501458IDUE448G',

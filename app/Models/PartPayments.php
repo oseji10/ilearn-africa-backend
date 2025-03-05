@@ -12,6 +12,18 @@ class PartPayments extends Model
     protected $fillable = ['client_id', 'payment_id', 'client_id', 'status'];
     
    
-
+    public function clients()
+    {
+        return $this->belongsTo(Client::class, 'client_id', 'client_id');
+    }
    
+    public function proof()
+    {
+        return $this->belongsTo(ProofOfPayment::class, 'client_id', 'client_id');
+    }
+
+    public function payment()
+    {
+        return $this->hasMany(Payments::class, 'id', 'payment_id');
+    }
 }

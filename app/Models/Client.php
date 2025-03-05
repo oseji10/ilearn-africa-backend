@@ -45,7 +45,11 @@ class Client extends Model
         return $this->belongsTo(Nationality::class, 'nationality');
     }
 
-  
+    public function passport()
+    {
+        return $this->hasOne(ProfileImage::class, 'client_id', 'client_id');
+    }
+    
 
     public function educationalDetails()
     {
