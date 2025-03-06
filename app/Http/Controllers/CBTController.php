@@ -15,6 +15,9 @@ use App\Models\ExamResult;
 use App\Models\ExamResultMaster;
 use Carbon\Carbon;
 
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\QuestionsImport;
+
 class CBTController extends Controller
 {
     public function RetrieveAll()
@@ -567,5 +570,21 @@ public function downloadExamResults($masterId)
     // return $pdf->download('exam-results.pdf');
 
 }
+
+
+// Bulk import questions
+public function importQuestions(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,csv',
+        // 'examId' => 'required|exists:exams,id', // Ensure examId is valid
+    ]);
+
+    Excel::import(new QuestionsImport($request->examId), $request->file('file'));
+
+    return response()->json(['message' => 'Questions uploaded successfully!']);
+}
+
+
 
 }

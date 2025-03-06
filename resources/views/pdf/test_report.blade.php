@@ -219,7 +219,7 @@
                 <td><strong>{{$results->total_score}}/{{$results->total_score2}}</strong></td>
                 <td>{{ round(($results->total_score / $results->total_score2) * 100, 2) }}%
                 </td>
-                <td>{{ ($results->total_score2 != 0 && ($results->total_score / $results->total_score2) * 100 >= 50) ? 'PASS' : 'FAIL' }}
+                <td>{{ ($results->total_score2 != 0 && ($results->total_score / $results->total_score2) * 100 >= 50) ? 'PASS' : 'ADVISED TO RESIT' }}
                 </td>
             </tr>
         </tbody>

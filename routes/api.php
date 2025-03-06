@@ -21,6 +21,7 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\CohortsController;
 use App\Http\Controllers\CBTController;
 
+
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 
@@ -242,3 +243,5 @@ Route::get('/test_result', function () {
         'test_date' => '24/07/2024'
     ]);
 });
+
+Route::post('/upload-questions', [CBTController::class, 'importQuestions']);
