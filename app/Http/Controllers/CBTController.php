@@ -22,7 +22,9 @@ class CBTController extends Controller
 {
     public function RetrieveAll()
     {
-        $cbt = CBT::with('course', 'cohort')->get();
+        $cbt = CBT::with('course', 'cohort')
+        ->orderBy('created_at', 'desc')
+        ->get();
         return response()->json($cbt);
     }
 
@@ -65,6 +67,7 @@ class CBTController extends Controller
             $query->where('status', '=', 'ADMITTED')
                   ->where('client_id', $client_id);
         })
+        ->orderBy('created_at', 'desc')
         ->get();
 
     // $cbts = CBT::
