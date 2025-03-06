@@ -57,15 +57,28 @@ class CBTController extends Controller
     $midnight = Carbon::today()->endOfDay();
     
     // Fetch all exams for the client
-    $cbts = CBT::with('course', 'cohort', 'clientCohort')
-        ->where('status', 'active')
-        ->whereDate('examDate', Carbon::today()->toDateString()) // Ensure exam is today
-        ->whereTime('examTime', '<=', $midnight->toTimeString())
-        ->whereHas('clientCohort', function ($query) use ($client_id) {
-            $query->where('status', '=', 'ADMITTED')
-                  ->where('client_id', $client_id);
-        })
-        ->get();
+    // $cbts = CBT::with('course', 'cohort', 'clientCohort')
+    //     ->where('status', 'active')
+    //     ->whereDate('examDate', Carbon::today()->toDateString()) // Ensure exam is today
+    //     ->whereTime('examTime', '<=', $midnight->toTimeString())
+    //     ->whereHas('clientCohort', function ($query) use ($client_id) {
+    //         $query->where('status', '=', 'ADMITTED')
+    //               ->where('client_id', $client_id);
+    //     })
+    //     ->get();
+
+    $cbts = CBT::with(['course' => function ($query) {
+        $query->select('courseId');
+    }, 'cohort', 'clientCohort'])
+    ->where('status', 'active')
+    ->whereDate('examDate', Carbon::today()->toDateString())
+    ->whereTime('examTime', '<=', $midnight->toTimeString())
+    ->whereHas('clientCohort', function ($query) use ($client_id) {
+        $query->where('status', 'ADMITTED')
+              ->where('client_id', $client_id);
+    })
+    ->get();
+
 
     $client_status = 'not eligible'; // Default status
     $eligible_for_exam = false; // Flag to check if any exam is available now
