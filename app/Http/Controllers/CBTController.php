@@ -68,7 +68,7 @@ class CBTController extends Controller
     //     ->get();
 
     $cbts = CBT::with(['course' => function ($query) {
-        $query->select('courseId');
+        $query->select('course_id');
     }, 'cohort', 'clientCohort'])
     ->where('status', 'active')
     ->whereDate('examDate', Carbon::today()->toDateString())
