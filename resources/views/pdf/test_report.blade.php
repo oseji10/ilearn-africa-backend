@@ -136,8 +136,8 @@
      <img src="{{ public_path('images/ilearn-logo.png') }}" alt="iLearn Africa Logo" width="150px">
 
      <div>
-    <h3 style="float: left; margin: 0;">Test Report Form</h3>
-    <span class="sub-header2" style="float: right;">GENERAL TRAINING</span>
+    <h3 style="float: left; margin: 0;">Examination</h3>
+    <span class="sub-header2" style="float: right; text-transform:uppercase;">{{$results->exam->course->course_name}}</span>
     <div style="clear: both;"></div> <!-- Ensures elements below don’t get affected -->
 </div>
 
@@ -145,8 +145,8 @@
 <div></div>
 <table style="width: 100%; border-collapse: collapse;">
     <tr>
-        <td style="text-align: left; width: 50%;">Date <span class="blocks">{{\Carbon\Carbon::parse($results->created_at)->format('d/M/Y')}}</span></td>
-        <td style="text-align: right; width: 50%;">Admission Number <span class="blocks">{{$results->client->admissions->admission_number}}</span></td>
+        <td style="text-align: left; width: 50%;">Date <span class="blocks">{{\Carbon\Carbon::parse($results->created_at ?? '')->format('d/M/Y')}}</span></td>
+        <td style="text-align: right; width: 50%;">Admission Number <span class="blocks">{{$results->client->admissions->admission_number ?? ''}}</span></td>
     </tr>
 </table><br/>
 <hr/>
@@ -158,8 +158,8 @@
 <table style="width: 100%; border-collapse: collapse;" >
     <tr>
         <td style=" padding-bottom: 25px; text-align: left; width: 15%;">First Name </td> 
-        <td class="blocks2" style="text-transform: uppercase;">{{$results->client->firstname}}</td>
-        <td rowspan="4" style="width: 25%"><img src="{{ Storage::url('profile_images/' . $results->client->passport->image_url) }}" alt="Candidate Passport">
+        <td class="blocks2" style="text-transform: uppercase;">{{$results->client->firstname ?? ''}}</td>
+        <td rowspan="4" style="width: 25%"><img src="{{ Storage::url('profile_images/' . $results->client->passport->image_url ?? '') }}" alt="Candidate Passport">
 
         <!-- {{ $results->client->passport->image_url }}     -->
     </td>
@@ -226,9 +226,9 @@
     </table>
     
     <div class="footer">
-        Recognising organisations are advised to verify this score at <a href="https://ilearnafricaedu.com/verify" target="_blank">ilearnafricaedu.com/verify</a>
-        <br>
-        Kindly reach out if you have any questions or concerns.
+    This document is a Result Slip and is issued for informational purposes only. It is not an official certificate and should not be used as a substitute for an officially issued certificate.
+        <!-- <br>
+        Kindly reach out if you have any questions or concerns. -->
         <br>
         <!-- <strong>Test Date:</strong> 24/07/2024 -->
     </div>
