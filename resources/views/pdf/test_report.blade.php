@@ -132,8 +132,9 @@
 </head>
 <body>
     <!-- <div class="header">Test Report Form</div> -->
-     <!-- <img src="/images/ilearn-logo.png" alt="iLearn Africa Logo" align="left" width="200px"><br/><br/><br/><br/><br/><br/> -->
+     <!-- <img src="{{Storage::url('/ilearn-logo.png')}}" alt="iLearn Africa Logo" align="left" width="200px"><br/><br/><br/><br/><br/><br/> -->
      <img src="{{ public_path('images/ilearn-logo.png') }}" alt="iLearn Africa Logo" width="150px">
+     <img src="{{ asset('storage/ilearn-logo.png') }}" alt="Logo">
 
      <div>
     <h3 style="float: left; margin: 0;">Examination</h3>
@@ -160,6 +161,7 @@
         <td style=" padding-bottom: 25px; text-align: left; width: 15%;">First Name </td> 
         <td class="blocks2" style="text-transform: uppercase;">{{$results->client->firstname ?? ''}}</td>
         <td rowspan="4" style="width: 25%"><img src="{{ Storage::url('profile_images/' . $results->client->passport->image_url ?? '') }}" alt="Candidate Passport">
+        <!-- <td rowspan="4" style="width: 25%"><img src="{{ Storage::url('profile_images/' . $results->client->passport->image_url ?? '') }}" alt="Candidate Passport"> -->
 
         <!-- {{ $results->client->passport->image_url }}     -->
     </td>
