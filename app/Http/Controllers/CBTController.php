@@ -57,31 +57,31 @@ class CBTController extends Controller
     $midnight = Carbon::today()->endOfDay();
     
     // Fetch all exams for the client
-    // $cbts = CBT::with('course', 'cohort', 'clientCohort')
-    //     ->where('status', 'active')
-    //     ->whereDate('examDate', Carbon::today()->toDateString()) // Ensure exam is today
-    //     ->whereTime('examTime', '<=', $midnight->toTimeString())
-    //     ->whereHas('clientCohort', function ($query) use ($client_id) {
-    //         $query->where('status', '=', 'ADMITTED')
-    //               ->where('client_id', $client_id);
-    //     })
-    //     ->get();
+    $cbts = CBT::with('course', 'cohort', 'clientCohort')
+        ->where('status', 'active')
+        ->whereDate('examDate', Carbon::today()->toDateString()) // Ensure exam is today
+        ->whereTime('examTime', '<=', $midnight->toTimeString())
+        ->whereHas('clientCohort', function ($query) use ($client_id) {
+            $query->where('status', '=', 'ADMITTED')
+                  ->where('client_id', $client_id);
+        })
+        ->get();
 
-    $cbts = CBT::
-    // with(['course' => function ($query) {
-    //     $query->select('course_id');
-    // }, 'cohort', 'clientCohort'])
-    join('course_list', 'course_list.course_id', '=', 'cbt_exams.courseId')
-    ->join('cohorts', 'cohorts.cohort_id', '=', 'cbt_exams.cohortId')
-    ->join('cohorts_clients', 'cohorts_clients.cohort_id', '=', 'cohorts.cohort_id')
-    ->where('cbt_exams.status', 'active')
-    ->whereDate('examDate', Carbon::today()->toDateString())
-    ->whereTime('examTime', '<=', $midnight->toTimeString())
-    ->whereHas('clientCohort', function ($query) use ($client_id) {
-        $query->where('status', 'ADMITTED')
-              ->where('client_id', $client_id);
-    })
-    ->get();
+    // $cbts = CBT::
+    // // with(['course' => function ($query) {
+    // //     $query->select('course_id');
+    // // }, 'cohort', 'clientCohort'])
+    // join('course_list', 'course_list.course_id', '=', 'cbt_exams.courseId')
+    // ->join('cohorts', 'cohorts.cohort_id', '=', 'cbt_exams.cohortId')
+    // ->join('cohorts_clients', 'cohorts_clients.cohort_id', '=', 'cohorts.cohort_id')
+    // ->where('cbt_exams.status', 'active')
+    // ->whereDate('examDate', Carbon::today()->toDateString())
+    // ->whereTime('examTime', '<=', $midnight->toTimeString())
+    // ->whereHas('clientCohort', function ($query) use ($client_id) {
+    //     $query->where('status', 'ADMITTED')
+    //           ->where('client_id', $client_id);
+    // })
+    // ->get();
 
 
     $client_status = 'not eligible'; // Default status
