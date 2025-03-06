@@ -67,10 +67,14 @@ class CBTController extends Controller
     //     })
     //     ->get();
 
-    $cbts = CBT::with(['course' => function ($query) {
-        $query->select('course_id');
-    }, 'cohort', 'clientCohort'])
-    ->where('status', 'active')
+    $cbts = CBT::
+    // with(['course' => function ($query) {
+    //     $query->select('course_id');
+    // }, 'cohort', 'clientCohort'])
+    join('course_list', 'course_list.course_id', '=', 'cbt_exams.courseId')
+    ->join('cohorts', 'cohorts.cohort_id', '=', 'cbt_exams.cohortId')
+    ->join('cohorts_clients', 'cohorts_clients.cohort_id', '=', 'cohorts.cohort_id')
+    ->where('cbt_exams.status', 'active')
     ->whereDate('examDate', Carbon::today()->toDateString())
     ->whereTime('examTime', '<=', $midnight->toTimeString())
     ->whereHas('clientCohort', function ($query) use ($client_id) {
