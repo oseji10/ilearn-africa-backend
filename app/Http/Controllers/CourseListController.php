@@ -110,6 +110,13 @@ public function store(Request $request)
         ], 409); // HTTP status code 409: Conflict
     }
 
+    // Check if the course_name already exists
+    if (CourseList::where('course_name', $validated['course_name'])->exists()) {
+        return response()->json([
+            'message' => 'A course with this name already exists',
+        ], 409); // HTTP status code 409: Conflict
+    }
+
     // Add the created_by field with the authenticated user's ID
     $validated['created_by'] = auth()->id();
 
@@ -122,7 +129,6 @@ public function store(Request $request)
         'course' => $course,
     ], 201); // HTTP status code 201: Created
 }
-
 
 
     public function deleteCourse($course_id)

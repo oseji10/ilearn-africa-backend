@@ -359,6 +359,14 @@ if ($request->file('file')) {
     public function registeredCourses()
     {
         $my_courses = Payments::with(['admissions', 'courses.centers', 'cohorts'])->where('client_id', '=', auth()->user()->client_id)->get();
+        
+        //  $my_courses = Payments::rightjoin('admissions', 'admissions.client_id', '=', 'payments.client_id')
+        // ->rightjoin('course_list', 'course_list.course_id', '=', 'payments.course_id')
+        // ->rightjoin('centers', 'centers.center_id', '=', 'course_list.center_id')
+        // ->rightjoin('cohorts', 'cohorts.cohort_id', '=', 'payments.cohort_id')
+        // ->where('payments.client_id', '=', auth()->user()->client_id)
+        // ->select('course_list.course_id', 'course_list.course_name', 'cohorts.cohort_name', 'centers.center_name', 'payments.status')
+        // ->get();
         return response()->json(['my_courses' => $my_courses]);
     }
 
