@@ -26,4 +26,9 @@ class PartPayments extends Model
     {
         return $this->hasMany(Payments::class, 'id', 'payment_id');
     }
+
+    public function courses()
+    {
+        return $this->belongsTo(CourseList::class, 'course_id', 'course_id');
+    }
 }
