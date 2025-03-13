@@ -203,6 +203,7 @@ Route::get('/verify-payment', [PaymentsController::class, 'verifyAndStorePayment
 
 // CBT Routes
 Route::get('cbt-exams', [CBTController::class, 'RetrieveAll']);
+Route::post('cbt-exams/{examId}/clone', [CBTController::class, 'cloneCBT']);
 Route::post('cbt-exams', [CBTController::class, 'store']);
 Route::put('cbt-exams/{examId}', [CBTController::class, 'updateCBT']);
 Route::get('cbt-exams/questions', [CBTController::class, 'RetrieveAllQuestions']);
