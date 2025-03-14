@@ -19,6 +19,11 @@ class CBT extends Model
         return $this->hasOne(Cohorts::class, 'cohort_id', 'cohortId');
     }
 
+    public function retakes()
+    {
+        return $this->hasOne(ExamRetake::class, 'examId', 'examId');
+    }
+
     public function course()
     {
         return $this->hasOne(CourseList::class, 'course_id', 'courseId');

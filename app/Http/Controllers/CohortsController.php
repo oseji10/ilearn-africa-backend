@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Cohorts;
+use App\Models\Client;
+use App\Models\Admissions;
+use App\Models\Payments;
 use App\Models\CohortsCourses;
+use DB;
 
 class CohortsController extends Controller
 {
@@ -20,6 +24,80 @@ class CohortsController extends Controller
     }
 
 
+    public function cohortsClients(Request $request, $cohort_id)
+    {
+        $cohort_clients = Cohorts::join('admissions', 'admissions.cohort_id', '=', 'cohorts.cohort_id')
+            ->join('clients', 'clients.client_id', '=', 'admissions.client_id')
+            ->leftJoin('payments', function ($join) {
+                $join->on('payments.client_id', '=', 'clients.client_id');
+            })
+            ->leftJoin('course_list', 'course_list.course_id', '=', 'payments.course_id')
+            ->where('cohorts.cohort_id', $cohort_id)
+            ->select('clients.*', 'cohorts.cohort_id', 'cohorts.cohort_name', 'course_list.course_id', 'course_list.course_name')
+            ->distinct() // Prevents duplicate clients
+            ->get();
+    
+        return response()->json([
+            'message' => 'Clients for this Cohort retrieved successfully',
+            'clients' => $cohort_clients,
+        ]);
+    }
+    
+    public function updateClientCohort(Request $request, $client_id)
+    {
+        // Validate request
+        // $request->validate([
+        //     'old_cohort_id' => 'required|exists:cohorts,id',
+        //     'old_course_id' => 'required|exists:courses,id',
+        //     'new_cohort_id' => 'required|exists:cohorts,id',
+        //     'new_course_id' => 'required|exists:courses,id',
+        // ]);
+    
+        // Begin transaction
+        DB::beginTransaction();
+    
+        try {
+            // Find the client
+            $client = Client::where('client_id', $client_id);
+    
+            // Update client's cohort
+            // $client->update([
+            //     'cohort_id' => $request->new_cohort_id,
+            // ]);
+    
+            // Update Payments only if old cohort/course match
+            Payments::where('client_id', $client_id)
+                ->where('cohort_id', $request->old_cohort_id)
+                ->where('course_id', $request->old_course_id)
+                ->update([
+                    'cohort_id' => $request->new_cohort_id,
+                    'course_id' => $request->new_course_id,
+                ]);
+    
+            // Update Admissions only if old cohort matches
+            Admissions::where('client_id', $client_id)
+                ->where('cohort_id', $request->old_cohort_id)
+                ->update([
+                    'cohort_id' => $request->new_cohort_id,
+                ]);
+    
+            // Commit transaction
+            DB::commit();
+    
+            return response()->json([
+                'message' => 'Client cohort updated successfully!',
+                'client' => $client,
+            ], 200);
+    
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Failed to update client cohort',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+     
     public function changeCohortStatus(Request $request)
 {
     // Update the cohort's status based on what the frontend sends

@@ -204,6 +204,7 @@ Route::get('/verify-payment', [PaymentsController::class, 'verifyAndStorePayment
 // CBT Routes
 Route::get('cbt-exams', [CBTController::class, 'RetrieveAll']);
 Route::post('cbt-exams/{examId}/clone', [CBTController::class, 'cloneCBT']);
+Route::post('cbt-exams/retake', [CBTController::class, 'retakeExam']);
 Route::post('cbt-exams', [CBTController::class, 'store']);
 Route::put('cbt-exams/{examId}', [CBTController::class, 'updateCBT']);
 Route::get('cbt-exams/questions', [CBTController::class, 'RetrieveAllQuestions']);
@@ -213,6 +214,9 @@ Route::put('cbt-exams/question/{questionId}', [CBTController::class, 'updateQues
 Route::delete('cbt-exams/question/{questionId}', [CBTController::class, 'deleteQuestion']);
 Route::get('my-cbt-exams', [CBTController::class, 'RetrieveCBT']);
 Route::get('client-cohort/{client_id}', [CBTController::class, 'RetrieveClientWithCohort']);
+
+Route::get('cohort/{cohort_id}/clients', [CohortsController::class, 'cohortsClients']);
+Route::put('clients/{client_id}/update-cohort', [CohortsController::class, 'updateClientCohort']);
 
 Route::get('questions/{examId}', [CBTController::class, 'loadQuestions']);
 Route::post('exam-result', [CBTController::class, 'submitExam']);
