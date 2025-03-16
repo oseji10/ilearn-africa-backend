@@ -24,13 +24,20 @@ class ExamResultMaster extends Model
 
     public function client()
     {
-        return $this->belongsTo(Client::class, 'clientId', 'client_id');
+        return $this->hasOne(Client::class, 'client_id', 'clientId');
     }
 
     public function admission()
     {
         return $this->belongsTo(Admissions::class, 'client_id', 'client_id');
     }
+
+    public function exam_retake_with_exam($examId)
+{
+    return $this->hasOne(ExamRetake::class, 'client_id', 'clientId')
+                ->where('examId', $examId);
+}
+
 
     public function exam_questions()
 {

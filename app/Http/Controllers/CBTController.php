@@ -589,16 +589,16 @@ public function submitExam(Request $request)
 public function ExamResults($examId)
 {
     
-    $results = ExamResultMaster::join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
-    ->join('clients', 'clients.client_id', '=', 'cbt_master_results.clientId')
-    ->join('cbt_exams_retake', 'cbt_exams_retake.examId', '=', 'cbt_master_results.examId')
-    ->where('cbt_master_results.examId', $examId)
-    ->select('cbt_master_results.*', 'cbt_exams.*', 'clients.*', 'cbt_exams_retake.*') // Explicitly select fields
-    ->get();
-
-    // return $results = ExamResultMaster::with('exam', 'clients')
-    // ->where('examId', $examId)
+    // $results = ExamResultMaster::join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
+    // ->join('clients', 'clients.client_id', '=', 'cbt_master_results.clientId')
+    // ->join('cbt_exams_retake', 'cbt_exams_retake.examId', '=', 'cbt_master_results.examId')
+    // ->where('cbt_master_results.examId', $examId)
+    // ->select('cbt_master_results.*', 'cbt_exams.*', 'clients.*', 'cbt_exams_retake.*') // Explicitly select fields
     // ->get();
+
+     $results = ExamResultMaster::with('exam', 'client')
+    ->where('examId', $examId)
+    ->get();
     return response()->json($results);
 }
 
