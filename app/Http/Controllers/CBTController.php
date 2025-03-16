@@ -660,7 +660,7 @@ public function CBTExamResults() {
     //     }
     //     return $result;
     // });
-    $results = CBT::orderBy('examDate', 'desc')->get();
+    $results = CBT::with('cohort')->orderBy('examDate', 'desc')->get();
     return response()->json($results);
     
 }
