@@ -88,76 +88,75 @@ class CBTController extends Controller
     //     return response()->json($cbts);
     // }
 
-    public function RetrieveClientWithCohort($client_id)
-    {
-        $now = Carbon::now();
-        $midnight = Carbon::today()->endOfDay();
+
+ public function RetrieveClientWithCohort($client_id)
+{
+    $now = Carbon::now(); // Get the current timestamp
+    $midnight = Carbon::today()->endOfDay();
     
-        // Fetch all exams for the client
-        $cbts = CBT::join('admissions', 'admissions.cohort_id', '=', 'cbt_exams.cohortId')
-            ->join('course_list', 'course_list.course_id', '=', 'cbt_exams.courseId') // Ensure course data is included
-            ->where('admissions.client_id', $client_id)
-            ->where('admissions.status', '=', 'ADMITTED')
-            ->where('cbt_exams.status', 'active')
-            ->whereDate('cbt_exams.examDate', Carbon::today()->toDateString())
-            ->whereTime('cbt_exams.examTime', '<=', $midnight->toTimeString())
-            ->orderBy('cbt_exams.created_at', 'desc')
-            ->select([
-                'cbt_exams.*',
-                'course_list.course_id', // Include course_id for payment verification
-            ])
-            ->get();
-    
-        $client_status = 'not eligible';
-        $eligible_for_exam = false;
-    
-        // Process each exam
-        $cbts = $cbts->map(function ($exam) use ($client_id, $now, &$eligible_for_exam, &$client_status) {
-            $course_id = $exam->course_id; // Use directly from the selected data
-    
-            // Retrieve payment record for the course
-             $payment = Payments::where('client_id', $client_id)
-                ->where('course_id', "$course_id")
-                ->first();
-    
-            // Count how many times the client has taken this exam
-            $examAttempts = ExamResultMaster::where('clientId', $client_id)
-                ->where('examId', $exam->examId)
-                ->count();
-    
-            // Retrieve retake record
-            $examRetake = ExamRetake::where('clientId', $client_id)
-                ->where('examId', $exam->examId)
-                ->first();
-    
-            $retakeCount = $examRetake ? $examRetake->retake_count : 0;
-    
-            // Determine eligibility status
-            if (!$payment || $payment->part_payment < $payment->amount) {
-                $exam->status2 = 'incomplete payment';
-            } elseif ($now->lt(Carbon::parse($exam->examTime))) {
-                $exam->status2 = 'not yet available';
-            } elseif ($examAttempts > 0 && (!$examRetake || $examAttempts > $retakeCount)) {
-                $exam->status2 = 'cannot retake exam';
-            } else {
-                $exam->status2 = 'eligible for exam';
-                $eligible_for_exam = true;
-            }
-    
-            return $exam;
-        });
-    
-        // Update client status if at least one exam is available
-        if ($eligible_for_exam) {
-            $client_status = 'eligible for exam';
+    // Fetch all exams for the client
+   return $cbts = CBT::with('course', 'cohort', 'admission_status', 'retakes')
+        ->where('status', 'active')
+        ->whereDate('examDate', Carbon::today()->toDateString()) // Ensure exam is today
+        ->whereTime('examTime', '<=', $midnight->toTimeString())
+        ->whereHas('admission_status', function ($query) use ($client_id) {
+            $query->where('status', '=', 'ADMITTED')
+                  ->where('client_id', $client_id);
+        })
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    $client_status = 'not eligible'; // Default status
+    $eligible_for_exam = false; // Flag to check if any exam is available now
+
+    // Process each exam
+    $cbts = $cbts->map(function ($exam) use ($client_id, $now, &$eligible_for_exam, &$client_status) {
+        $course_id = $exam->course->course_id;
+
+        // Retrieve payment record for the course
+        $payment = Payments::where('client_id', $client_id)
+            ->where('course_id', $course_id)
+            ->first();
+
+        // Count how many times the client has taken this exam
+        $examAttempts = ExamResultMaster::where('clientId', $client_id)
+            ->where('examId', $exam->examId)
+            ->count();
+
+        // Check if the client has a retake record and retrieve retake count
+        $examRetake = ExamRetake::where('clientId', $client_id)
+            ->where('examId', $exam->examId)
+            ->first();
+
+        $retakeCount = $examRetake ? $examRetake->retake_count : 0;
+
+        // Determine status
+        if (!$payment || $payment->part_payment < $payment->amount) {
+            $exam->status2 = 'incomplete payment';
+        } elseif ($now->lt(Carbon::parse($exam->examTime))) {
+            $exam->status2 = 'not yet available';
+        } elseif ($examAttempts > 0 && (!$examRetake || $examAttempts > $retakeCount)) {
+            // Client has taken the exam but has no more allowed retakes
+            $exam->status2 = 'cannot retake exam';
+        } else {
+            $exam->status2 = 'eligible for exam';
+            $eligible_for_exam = true;
         }
-    
-        return response()->json([
-            'client_status' => $client_status,
-            'exams' => $cbts
-        ]);
+
+        return $exam;
+    });
+
+    // If at least one exam is available now, update client status
+    if ($eligible_for_exam) {
+        $client_status = 'eligible for exam';
     }
-    
+
+    return response()->json([
+        'client_status' => $client_status,
+        'exams' => $cbts
+    ]);
+}
+
 
 // public function RetrieveClientWithCohort($client_id)
 // {
