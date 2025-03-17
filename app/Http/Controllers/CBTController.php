@@ -105,6 +105,7 @@ class CBTController extends Controller
         ->select([
             'cbt_exams.*',
             'course_list.course_id', // Include course_id for payment verification
+            'course_list.course_name', // Include course_name for display
         ])
         ->get();
 
