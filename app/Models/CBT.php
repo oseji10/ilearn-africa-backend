@@ -34,6 +34,11 @@ class CBT extends Model
         return $this->belongsTo(Admissions::class, 'cohortId', 'cohort_id');
     }
 
+    public function admission_status()
+    {
+        return $this->belongsTo(Admissions::class, 'cohortId', 'cohort_id');
+    }
+
     public function questions()
     {
         return $this->hasMany(Questions::class, 'questionId', 'questionId');
