@@ -279,8 +279,8 @@ public function deleteCohortCourse(Request $request)
     // ]);
 
     // Find the course in the cohort
-    $model = CohortsCourses::where('course_id', "=", $request->cohort_id)
-        ->where('cohort_id', "=", $request->course_id)
+    $model = CohortsCourses::where('cohort_id', "=", $request->cohort_id)
+        ->where('course_id', "=", $request->course_id)
         ->first();
         
       

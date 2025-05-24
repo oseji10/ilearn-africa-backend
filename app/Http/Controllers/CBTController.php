@@ -99,8 +99,8 @@ class CBTController extends Controller
         ->where('admissions.client_id', $client_id)
         ->where('admissions.status', '=', 'ADMITTED')
         ->where('cbt_exams.status', 'active')
-        ->whereDate('cbt_exams.examDate', Carbon::today()->toDateString())
-        ->whereTime('cbt_exams.examTime', '<=', $midnight->toTimeString())
+        // ->whereDate('cbt_exams.examDate', Carbon::today()->toDateString())
+        // ->whereTime('cbt_exams.examTime', '<=', $midnight->toTimeString())
         ->orderBy('cbt_exams.created_at', 'desc')
         ->select([
             'cbt_exams.*',
