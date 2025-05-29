@@ -21,6 +21,7 @@ class CoursesController extends Controller
             ->whereHas('cohorts', function ($query) {
                 $query->where('status', 'active');
             })
+            ->orderBy('created_at', 'desc')
             ->get();
         return response()->json([
             'message' => 'Cohorts retrieved successfully',
