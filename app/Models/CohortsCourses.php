@@ -18,7 +18,7 @@ class CohortsCourses extends Model
 
     public function cohorts()
     {
-        return $this->belongsTo(Cohort::class, 'cohort_id', 'cohort_id');
+        return $this->belongsTo(Cohorts::class, 'cohort_id', 'cohort_id');
     }
 
     

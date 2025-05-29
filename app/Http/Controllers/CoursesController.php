@@ -4,12 +4,28 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Courses;
+use App\Models\CourseList;
+use App\Models\CohortsCourses;
+use App\Models\Cohorts;
 class CoursesController extends Controller
 {
     public function show()
     {
         $courses = Courses::all();
         return response()->json(['courses' => $courses]);
+    }
+
+    public function activeCourses()
+    {
+        $cohorts = CohortsCourses::with('course_list', 'cohorts')
+            ->whereHas('cohorts', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->get();
+        return response()->json([
+            'message' => 'Cohorts retrieved successfully',
+            'cohorts' => $cohorts,
+        ]);
     }
 
     public function store(Request $request)

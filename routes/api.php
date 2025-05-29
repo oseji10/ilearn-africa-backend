@@ -250,3 +250,5 @@ Route::get('/test_result', function () {
 });
 
 Route::post('/upload-questions', [CBTController::class, 'importQuestions']);
+
+Route::get('courses/active', [CoursesController::class, 'activeCourses']);
