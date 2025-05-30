@@ -21,6 +21,10 @@ class CoursesController extends Controller
             ->whereHas('cohorts', function ($query) {
                 $query->where('status', 'active');
             })
+            ->whereHas('course_list', function ($query) {
+                $query->where('center_id', '849933');
+            })
+            
             ->orderBy('created_at', 'desc')
             ->get();
         return response()->json([

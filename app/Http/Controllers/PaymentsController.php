@@ -23,6 +23,14 @@ use Illuminate\Support\Facades\Http;
 use Flutterwave\Flutterwave;
 use Flutterwave\Rave;
 use Illuminate\Support\Facades\Log; 
+use App\Models\Educationaldetails;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Cache;
+
 
 class PaymentsController extends Controller
 {
@@ -520,14 +528,16 @@ if ($request->file('file')) {
 
 
 
-
     public function initializePayment(Request $request)
     {
         $validated = $request->validate([
-            'amount' => 'required|numeric',
-            'email' => 'required|email',
-            'tx_ref' => 'required|string',
+            'amount' => 'required|numeric|min:100',
+            'customer.email' => 'required|email|max:255',
+            'customer.phonenumber' => 'nullable|string|max:15',
+            'customer.name' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
+            'tx_ref' => 'required|string|max:100',
             'redirect_url' => 'required|url',
+            'customer.secret' => 'nullable|string|max:255', // Optional password for the customer
         ]);
 
         $flutterwaveUrl = env('FLUTTERWAVE_URL', 'https://api.flutterwave.com/v3/payments');
@@ -539,18 +549,39 @@ if ($request->file('file')) {
             'currency' => 'NGN',
             'redirect_url' => $validated['redirect_url'],
             'customer' => [
-                'email' => $validated['email'],
+                'email' => $validated['customer']['email'],
+                'phonenumber' => $validated['customer']['phonenumber'] ?? null,
+                'name' => $validated['customer']['name'],
+                'secret' => $validated['customer']['secret'] ?? null, // Optional password
+            ],
+            'customizations' => [
+                'title' => 'iLearn Africa Course Payment',
             ],
         ];
 
         try {
-            Log::info('Sending payment request to Flutterwave:', ['url' => $flutterwaveUrl, 'payload' => $payload]);
+            Log::info('Sending payment request to Flutterwave:', [
+                'url' => $flutterwaveUrl,
+                'payload' => $payload,
+                'headers' => ['Authorization' => 'Bearer [REDACTED]'],
+            ]);
+
+            // Store original customer data in cache for verification
+            Cache::put("payment_{$validated['tx_ref']}", [
+                'email' => $validated['customer']['email'],
+                'name' => $validated['customer']['name'],
+                'phonenumber' => $validated['customer']['phonenumber'],
+                'secret' => $validated['customer']['secret'],
+            ], now()->addHours(24));
 
             $response = Http::withToken($secretKey)
                 ->withOptions(['verify' => false]) // Disable SSL verification (local dev only)
                 ->post($flutterwaveUrl, $payload);
 
-            Log::info('Flutterwave response:', ['status' => $response->status(), 'body' => $response->json()]);
+            Log::info('Flutterwave response:', [
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
 
             if ($response->successful()) {
                 return response()->json($response->json(), 200);
@@ -659,92 +690,363 @@ if ($request->file('file')) {
     }
     
 
+
     public function verifyAndStorePaymentForiLearnCoursesOnly(Request $request)
     {
-        // Retrieve transaction reference from the query string
-        // $txRef = $request->query('tx_ref');
+        $request->validate([
+            'transaction_id' => 'required',
+            'tx_ref' => 'required',
+            'course_id' => 'required',
+            'cohort_id' => 'required',
+        ]);
+    
         $txRef = $request->query('transaction_id');
-        
-        if (!$txRef) {
-            return response()->json([
-                'error' => 'Transaction reference missing',
-            ], 400);
-        }
-        
-        // Flutterwave verification endpoint
-        $flutterwaveUrl = env('FLUTTERWAVE_VERIFY_TRANSACTION') . "/{$txRef}/verify";
+        $flutterwaveUrl = env('FLUTTERWAVE_VERIFY_TRANSACTION', 'https://api.flutterwave.com/v3/transactions') . "/{$txRef}/verify";
         $secretKey = env('FLUTTERWAVE_SECRET_KEY');
-        
-        // Make a request to verify the payment
-        // $response = Http::withToken($secretKey)->get($flutterwaveUrl);
-        $response = Http::withToken($secretKey)
-                ->withOptions(['verify' => false]) // Disable SSL verification (local dev only)
+    
+        try {
+            Log::info('Verifying payment:', ['tx_ref' => $txRef, 'url' => $flutterwaveUrl]);
+    
+            $response = Http::withToken($secretKey)
+                ->withOptions(['verify' => false])
                 ->get($flutterwaveUrl);
-        
-        if ($response->successful()) {
-            $responseData = $response->json();
-            
-            // Check if the payment was successful
-            if ($responseData['data']['status'] === 'successful') {
-                // Handle successful payment, e.g., update the database
-                $paymentData = $responseData['data'];
-              
-                // Generate a 7-digit random number for payment_id
-                $validated['payment_id'] = mt_rand(1000000, 9999999);
-                $validated['created_by'] = auth()->id();
-                // $validated['client_id'] = auth()->user()->client_id;
-                $validated['client_id'] = $request->clientId;
-                $validated['amount'] = $paymentData['amount'];
-                $validated['part_payment'] = $paymentData['amount'];
-                $validated['payment_method'] = "Online";
-                $validated['payment_gateway'] = "FLUTTERWAVE";
-                $validated['transaction_reference'] = $paymentData['id'];
-                $validated['transaction_id'] = $txRef;
-                $validated['other_reference'] = $paymentData['id'];
-                $validated['payment_gateway'] = "FLUTTERWAVE";
-                $validated['status'] = 1; 
-                $validated['cohort_id'] = $request->cohort_id;
-                $validated['course_id'] = $request->course_id;
     
-                // Create a new admission record
-                $admission_number = mt_rand(1000000, 9999999);
-                $admissions = new Admissions();
-                $admissions->client_id = $request->clientId;
-                $admissions->admission_number = $admission_number;
-                $admissions->status = "pending";
-                $admissions->cohort_id = $request->cohort_id;
-                $admissions->save();
-    
-                // Save the payment record
-                $validated['admission_number'] = $admission_number;
-                $payments = Payments::create($validated);
-    
-    
-                $redirectUrl = env('FRONTEND_PAYMENT_SUCCESS_URL') . "?tx_ref={$paymentData['tx_ref']}&status=success";
-                return redirect()->away($redirectUrl);
+            if (!$response->successful()) {
+                Log::error('Payment verification failed:', ['response' => $response->json()]);
                 return response()->json([
-                    'message' => 'Payment verified successfully',
-                    'data' => $paymentData,
-                    'redirect_url' => $redirectUrl,
-                ], 200);
+                    'error' => 'Payment verification failed',
+                    'details' => $response->json(),
+                ], 400);
             }
     
-            // Handle unsuccessful payment
+            $responseData = $response->json();
+            if ($responseData['data']['status'] !== 'successful') {
+                Log::error('Payment not successful:', ['data' => $responseData]);
+                return response()->json([
+                    'error' => 'Payment was not successful',
+                    'details' => $responseData,
+                ], 400);
+            }
+    
+            $paymentData = $responseData['data'];
+    
+            // Check for duplicate payment
+            if (Payments::where('transaction_id', $txRef)
+                ->orWhere('transaction_reference', $request->query('tx_ref'))
+                ->orWhere('other_reference', $paymentData['id'])
+                ->exists()) {
+                Log::warning('Payment already processed:', ['tx_ref' => $txRef]);
+                $redirectUrl = env('FRONTEND_PAYMENT_SUCCESS_URL') . "?tx_ref={$paymentData['tx_ref']}&status=success";
+                return redirect()->away($redirectUrl);
+            }
+    
+            // Retrieve cached customer data
+            $cachedCustomer = Cache::get("payment_{$paymentData['tx_ref']}");
+            if (empty($cachedCustomer)) {
+                Log::error('Cached customer data not found for tx_ref:', ['tx_ref' => $paymentData['tx_ref']]);
+                return response()->json([
+                    'error' => 'Cached customer data not found',
+                ], 400);
+            }
+    
+            // Use cached data to override Flutterwave data
+            $customerEmail = str_contains($paymentData['customer']['email'], 'ravesb_') ? $cachedCustomer['email'] : $paymentData['customer']['email'];
+            $customerName = $cachedCustomer['name'] ?? $paymentData['customer']['name'];
+            $customerPhone = $cachedCustomer['phonenumber'] ?? $paymentData['customer']['phonenumber'];
+            $customerPassword = $cachedCustomer['secret'] ?? $paymentData['customer']['secret'];
+    
+            // Parse name
+            $nameParts = explode(' ', trim($customerName));
+            $firstname = $nameParts[0] ?? 'Unknown';
+            $surname = count($nameParts) > 1 ? $nameParts[1] : 'User';
+            $othernames = count($nameParts) > 2 ? implode(' ', array_slice($nameParts, 2)) : null;
+    
+            // Validate user data
+            $validator = Validator::make([
+                'email' => $customerEmail,
+                'phone_number' => $customerPhone,
+                'firstname' => $firstname,
+                'surname' => $surname,
+                'othernames' => $othernames,
+                'password' => $customerPassword,
+            ], [
+                'email' => 'required|email|max:255|unique:users,email',
+                'phone_number' => 'required|string|max:11|unique:users,phone_number',
+                'firstname' => 'required|string',
+                'surname' => 'required|string',
+                'password' => 'required|string',
+            ]);
+    
+            if ($validator->fails()) {
+                Log::error('Validation error during payment verification:', ['errors' => $validator->errors()]);
+                return response()->json([
+                    'error' => 'Validation failed',
+                    'details' => $validator->errors(),
+                ], 422);
+            }
+    
+            $validatedUserData = $validator->validated();
+            $randomString = strtoupper(Str::random(10));
+            // $auto_password = Str::random(12);
+    
+            // Create records
+            $client = Client::create([
+                'client_id' => $randomString,
+                'firstname' => $validatedUserData['firstname'],
+                'surname' => $validatedUserData['surname'],
+                'othernames' => $othernames,
+                'status' => 'registered',
+            ]);
+    
+            $user = User::create([
+                'email' => $validatedUserData['email'],
+                'phone_number' => $validatedUserData['phone_number'],
+                'password' => Hash::make($customerPassword),
+                'client_id' => $randomString,
+                'role_id' => 3,
+            ]);
+    
+            Educationaldetails::create([
+                'client_id' => $randomString,
+            ]);
+    
+            $user->assignRole('client');
+            Auth::login($user);
+            $token = $user->createToken('auth_token')->plainTextToken;
+    
+            // Store payment record
+            $paymentRecord = [
+                'payment_id' => mt_rand(1000000, 9999999),
+                'created_by' => $user->id,
+                'client_id' => $randomString,
+                'amount' => $paymentData['amount'],
+                'part_payment' => $paymentData['amount'],
+                'payment_method' => 'Online',
+                'payment_gateway' => 'FLUTTERWAVE',
+                'transaction_reference' => $request->query('tx_ref'),
+                'transaction_id' => $txRef,
+                'other_reference' => $paymentData['id'],
+                'payment_for' => 'ILEARN_COURSES',
+                'status' => 1,
+                'cohort_id' => $request->cohort_id,
+                'course_id' => $request->course_id,
+            ];
+    
+            $admission_number = mt_rand(1000000, 9999999);
+            $admissions = new Admissions();
+            $admissions->client_id = $randomString;
+            $admissions->admission_number = $admission_number;
+            $admissions->status = 'pending';
+            $admissions->cohort_id = $request->cohort_id;
+            $admissions->save();
+    
+            $paymentRecord['admission_number'] = $admission_number;
+            Payments::create($paymentRecord);
+    
+            // Clear cache
+            Cache::forget("payment_{$paymentData['tx_ref']}");
+            $role=$user->roles->first()->name ?? 'client';
+            $status = $client->status;
+            $redirectUrl = env('FRONTEND_PAYMENT_SUCCESS_URL2') . "?role={$role}&access_token={$token}&token_type=Bearer&client_id={$randomString}&email={$validatedUserData['email']}&tx_ref={$paymentData['tx_ref']}&status={$status}&user={$user}";
+    
+            Log::info('Payment processed successfully:', [
+                'tx_ref' => $txRef,
+                'client_id' => $randomString,
+                'email' => $validatedUserData['email'],
+            ]);
+            return redirect()->away($redirectUrl);
+            // In verifyAndStorePaymentForiLearnCoursesOnly
+return response()->json([
+    'message' => 'Payment verified and user account created successfully',
+    'data' => $paymentData,
+    'access_token' => $token,
+    'token_type' => 'Bearer',
+    'user' => [
+        'client_id' => $user->client_id,
+    ],
+    'role' => $user->roles->first()->name ?? 'client',
+    'client' => [
+        'status' => $client->status ?? 'profile_created', // Adjust based on your Client model
+    ],
+    'redirect_url' => $redirectUrl,
+], 200);
+    
+        } catch (ValidationException $e) {
+            Log::error('Validation error during payment verification:', ['errors' => $e->errors()]);
             return response()->json([
-                'error' => 'Payment was not successful',
-                'details' => $responseData,
-            ], 400);
+                'error' => 'Validation failed',
+                'details' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error verifying payment:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'error' => 'Payment verification failed',
+                'message' => $e->getMessage(),
+            ], 500);
         }
-    
-        // Handle verification failure
-        return response()->json([
-            'error' => 'Payment verification failed',
-            'details' => $response->json(),
-        ], 400);
+    }    
+
+
+
+    public function notifyPayment(Request $request)
+    {
+        // Validate the incoming request
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:100',
+            'email' => 'required|email|max:255',
+            'phone_number' => 'nullable|string|max:15',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
+            'tx_ref' => 'required|string|max:100',
+            'course_id' => 'required',
+            'cohort_id' => 'required',
+            'payment_method' => 'required|string|in:bank_transfer',
+            'secret' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            Log::info('Processing bank transfer notification:', [
+                'payload' => $validated,
+            ]);
+
+            // Parse name
+            $nameParts = explode(' ', trim($validated['name']));
+            $firstname = $nameParts[0] ?? 'Unknown';
+            $surname = count($nameParts) > 1 ? $nameParts[1] : 'User';
+            $othernames = count($nameParts) > 2 ? implode(' ', array_slice($nameParts, 2)) : null;
+
+            // Validate user data for uniqueness
+            $userValidator = Validator::make([
+                'email' => $validated['email'],
+                'phone_number' => $validated['phone_number'],
+                'firstname' => $firstname,
+                'surname' => $surname,
+            ], [
+                'email' => 'required|email|max:255|unique:users,email',
+                'phone_number' => 'required|string|max:15|unique:users,phone_number',
+                'firstname' => 'required|string',
+                'surname' => 'required|string',
+            ], [
+                'email.unique' => 'The email address has already been taken.',
+                'phone_number.unique' => 'The phone number has already been taken.',
+            ]);
+
+            if ($userValidator->fails()) {
+                Log::error('Validation error during bank transfer notification:', ['errors' => $userValidator->errors()]);
+                return response()->json([
+                    'error' => 'Validation failed',
+                    'details' => $userValidator->errors(),
+                ], 422);
+            }
+
+            // Generate unique client ID and password
+            $randomString = strtoupper(Str::random(10));
+            $auto_password = Str::random(12);
+
+            // Create Client record
+            $client = Client::create([
+                'client_id' => $randomString,
+                'firstname' => $firstname,
+                'surname' => $surname,
+                'othernames' => $othernames,
+            ]);
+
+            // Create User record
+            $user = User::create([
+                'email' => $validated['email'],
+                'phone_number' => $validated['phone_number'],
+                'password' => \Hash::make($auto_password),
+                'client_id' => $randomString,
+                'role_id' => 3, // Assuming role_id 3 is for clients
+            ]);
+
+            // Create Educationaldetails record
+            Educationaldetails::create([
+                'client_id' => $randomString,
+            ]);
+
+            // Assign 'client' role
+            $user->assignRole('client');
+
+            // Log the user in
+            Auth::login($user);
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Store customer data in cache for verification
+            Cache::put("payment_{$validated['tx_ref']}", [
+                'email' => $validated['email'],
+                'name' => $validated['name'],
+                'phonenumber' => $validated['phone_number'],
+                'secret' => $validated['secret'] ?? null,
+            ], now()->addHours(2));
+
+            // Store payment record as pending
+            $paymentRecord = [
+                'payment_id' => mt_rand(1000000, 9999999),
+                'created_by' => $user->id,
+                'client_id' => $randomString,
+                'amount' => $validated['amount'],
+                'part_payment' => $validated['amount'],
+                'payment_method' => $validated['payment_method'],
+                'payment_gateway' => 'MANUAL',
+                'transaction_reference' => $validated['tx_ref'],
+                'transaction_id' => $validated['tx_ref'], // Use tx_ref as transaction_id for manual payments
+                'other_reference' => null,
+                'payment_for' => 'ILEARN_COURSES',
+                'status' => 0, // 0 = PENDING
+                'cohort_id' => $validated['cohort_id'],
+                'course_id' => $validated['course_id'],
+            ];
+
+            // Create admission record
+            $admission_number = mt_rand(1000000, 9999999);
+            $admissions = new Admissions();
+            $admissions->client_id = $randomString;
+            $admissions->admission_number = $admission_number;
+            $admissions->status = 'pending';
+            $admissions->cohort_id = $validated['cohort_id'];
+            $admissions->save();
+
+            // Save payment record
+            $paymentRecord['admission_number'] = $admission_number;
+            Payments::create($paymentRecord);
+
+            // Prepare redirect URL
+            $redirectUrl = env('FRONTEND_PAYMENT_SUCCESS_URL') . "?tx_ref={$validated['tx_ref']}&status=pending";
+
+            Log::info('Bank transfer notification processed successfully:', [
+                'tx_ref' => $validated['tx_ref'],
+                'client_id' => $randomString,
+                'email' => $validated['email'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment notification submitted successfully. Awaiting verification.',
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => [
+                    'client_id' => $user->client_id,
+                ],
+                'role' => $user->roles->first()->name ?? 'client',
+                'client' => [
+                    'status' => $client->status ?? 'profile_created',
+                ],
+                'redirect_url' => $redirectUrl,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Bank transfer notification error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'error' => 'Payment notification failed',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
-    
-
-
 
     public function verifyAndStorePayment2(Request $request)
     {
