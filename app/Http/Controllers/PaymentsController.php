@@ -559,7 +559,7 @@ if ($request->file('file')) {
     public function verifyAndStorePayment(Request $request)
     {
         // Retrieve transaction reference from the query string
-        $txRef = $request->query('transaction_id');
+        $txRef = $request->query('transaction_id') || $request->query('tx_ref');
         
         if (!$txRef) {
             return response()->json([
