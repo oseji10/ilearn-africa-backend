@@ -22,6 +22,7 @@ use App\Models\Cohorts;
 use Illuminate\Support\Facades\Http;
 use Flutterwave\Flutterwave;
 use Flutterwave\Rave;
+use Illuminate\Support\Facades\Log; 
 
 class PaymentsController extends Controller
 {
@@ -519,6 +520,7 @@ if ($request->file('file')) {
 
 
 
+
     public function initializePayment(Request $request)
     {
         $validated = $request->validate([
@@ -541,18 +543,35 @@ if ($request->file('file')) {
             ],
         ];
 
-        $response = Http::withToken($secretKey)
-            ->post($flutterwaveUrl, $payload);
+        try {
+            Log::info('Sending payment request to Flutterwave:', ['url' => $flutterwaveUrl, 'payload' => $payload]);
 
-        if ($response->successful()) {
-            return response()->json($response->json(), 200);
+            $response = Http::withToken($secretKey)
+                ->withOptions(['verify' => false]) // Disable SSL verification (local dev only)
+                ->post($flutterwaveUrl, $payload);
+
+            Log::info('Flutterwave response:', ['status' => $response->status(), 'body' => $response->json()]);
+
+            if ($response->successful()) {
+                return response()->json($response->json(), 200);
+            }
+
+            return response()->json([
+                'error' => 'Payment initialization failed',
+                'details' => $response->json(),
+            ], $response->status());
+        } catch (\Exception $e) {
+            Log::error('Payment initialization error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'error' => 'Payment initialization failed',
+                'message' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'error' => 'Payment initialization failed',
-            'details' => $response->json(),
-        ], 400);
     }
+
 
 
 
@@ -572,7 +591,10 @@ if ($request->file('file')) {
         $secretKey = env('FLUTTERWAVE_SECRET_KEY');
         
         // Make a request to verify the payment
-        $response = Http::withToken($secretKey)->get($flutterwaveUrl);
+        // $response = Http::withToken($secretKey)->get($flutterwaveUrl);
+        $response = Http::withToken($secretKey)
+                ->withOptions(['verify' => false]) // Disable SSL verification (local dev only)
+                ->get($flutterwaveUrl);
         
         if ($response->successful()) {
             $responseData = $response->json();
@@ -636,6 +658,92 @@ if ($request->file('file')) {
         ], 400);
     }
     
+
+    public function verifyAndStorePaymentForiLearnCoursesOnly(Request $request)
+    {
+        // Retrieve transaction reference from the query string
+        // $txRef = $request->query('tx_ref');
+        $txRef = $request->query('transaction_id');
+        
+        if (!$txRef) {
+            return response()->json([
+                'error' => 'Transaction reference missing',
+            ], 400);
+        }
+        
+        // Flutterwave verification endpoint
+        $flutterwaveUrl = env('FLUTTERWAVE_VERIFY_TRANSACTION') . "/{$txRef}/verify";
+        $secretKey = env('FLUTTERWAVE_SECRET_KEY');
+        
+        // Make a request to verify the payment
+        // $response = Http::withToken($secretKey)->get($flutterwaveUrl);
+        $response = Http::withToken($secretKey)
+                ->withOptions(['verify' => false]) // Disable SSL verification (local dev only)
+                ->get($flutterwaveUrl);
+        
+        if ($response->successful()) {
+            $responseData = $response->json();
+            
+            // Check if the payment was successful
+            if ($responseData['data']['status'] === 'successful') {
+                // Handle successful payment, e.g., update the database
+                $paymentData = $responseData['data'];
+              
+                // Generate a 7-digit random number for payment_id
+                $validated['payment_id'] = mt_rand(1000000, 9999999);
+                $validated['created_by'] = auth()->id();
+                // $validated['client_id'] = auth()->user()->client_id;
+                $validated['client_id'] = $request->clientId;
+                $validated['amount'] = $paymentData['amount'];
+                $validated['part_payment'] = $paymentData['amount'];
+                $validated['payment_method'] = "Online";
+                $validated['payment_gateway'] = "FLUTTERWAVE";
+                $validated['transaction_reference'] = $paymentData['id'];
+                $validated['transaction_id'] = $txRef;
+                $validated['other_reference'] = $paymentData['id'];
+                $validated['payment_gateway'] = "FLUTTERWAVE";
+                $validated['status'] = 1; 
+                $validated['cohort_id'] = $request->cohort_id;
+                $validated['course_id'] = $request->course_id;
+    
+                // Create a new admission record
+                $admission_number = mt_rand(1000000, 9999999);
+                $admissions = new Admissions();
+                $admissions->client_id = $request->clientId;
+                $admissions->admission_number = $admission_number;
+                $admissions->status = "pending";
+                $admissions->cohort_id = $request->cohort_id;
+                $admissions->save();
+    
+                // Save the payment record
+                $validated['admission_number'] = $admission_number;
+                $payments = Payments::create($validated);
+    
+    
+                $redirectUrl = env('FRONTEND_PAYMENT_SUCCESS_URL') . "?tx_ref={$paymentData['tx_ref']}&status=success";
+                return redirect()->away($redirectUrl);
+                return response()->json([
+                    'message' => 'Payment verified successfully',
+                    'data' => $paymentData,
+                    'redirect_url' => $redirectUrl,
+                ], 200);
+            }
+    
+            // Handle unsuccessful payment
+            return response()->json([
+                'error' => 'Payment was not successful',
+                'details' => $responseData,
+            ], 400);
+        }
+    
+        // Handle verification failure
+        return response()->json([
+            'error' => 'Payment verification failed',
+            'details' => $response->json(),
+        ], 400);
+    }
+    
+
 
 
     public function verifyAndStorePayment2(Request $request)
