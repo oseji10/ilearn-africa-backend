@@ -10,6 +10,7 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use App\Models\Admissions;
+use App\Models\CourseModule;
 use App\Mail\EmailReceipt;
 use App\Mail\EmailAdmission;
 use App\Mail\EmailCertificate;
@@ -353,6 +354,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
         ];
         $status = "COMPLETED";
         $validated['status'] = $status;
+        $validated['certificate_type'] = 1; // Default to 1 if not set
         $update_admission = Admissions::where('admission_number', $request->admission_number)->update($validated);
 
 
@@ -377,16 +379,15 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
     }
 
 
-
-    public function downloadCertificate(Request $request, $admission_number)
+    public function issueIlearnAfricaCertificate(Request $request)
     {
         // Validate the request
-        // $request->validate([
-        //     'admission_number' => 'required',
-        // ]);
+        $request->validate([
+            'admission_number' => 'required',
+        ]);
     
         // Fetch the payment data based on the transaction_reference
-        $admission = Admissions::with("clients",  "users", "payments.courses.centers")->where('admission_number', $admission_number)->first();
+        $admission = Admissions::with("clients",  "users", "payments.courses.centers")->where('admission_number', $request->admission_number)->first();
      
         
         // Check if payment exists
@@ -409,16 +410,17 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
             'transaction_reference' => $admission->transaction_reference,
             'course_name' => $admission->payments->courses->course_name,
             'course_id' => $admission->payments->courses->course_id,
+            'certification_name' => $admission->payments->courses->certification_name,
             'admission_date' => $admission->created_at,
             'admission_number' => $admission->admission_number,
-            'center_name' => $admission->payments->courses->centers->center_name,
-            'certification_name' => $admission->payments->courses->certification_name,
             'admission_id' => $admission->id,
+            'center_name' => $admission->payments->courses->centers->center_name,
             'name_on_certificate' => $admission->clients->name_on_certificate,
             // Add other necessary fields
         ];
         $status = "COMPLETED";
         $validated['status'] = $status;
+        $validated['certificate_type'] = 2; // Assuming 2 is for iLearn Africa certificate
         $update_admission = Admissions::where('admission_number', $request->admission_number)->update($validated);
 
 
@@ -432,11 +434,109 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
     // Save the QR code to a file or directly use it in the PDF
     $certificate_data['qr_code'] = $qrCode->getDataUri();
 
-        $pdf = Pdf::loadView('pdf.certificate', $certificate_data)
+
+        $pdf = Pdf::loadView('pdf.ilearn_certificate', $certificate_data)
           ->setPaper('a4', 'landscape');
         
+
+
         Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
         return $pdf->download("admission-{$admission->admission_number}.pdf");
+    }
+    
+
+    public function downloadCertificate(Request $request, $admission_number)
+    {
+        $admission = Admissions::with("clients", "users", "payments.courses.centers", "payments.courses.modules")
+            ->where('admission_number', $admission_number)
+            ->first();
+    
+        if (!$admission) {
+            return response()->json(['error' => 'Admission not found'], 404);
+        }
+    
+        // Certificate type
+        $certificate_type = $admission->certificate_type;
+    
+        $certificate_data = [
+            'id' => $admission->id,
+            'client_id' => $admission->client_id,
+            'amount' => $admission->amount,
+            'created_at' => $admission->created_at->format('Y-m-d'),
+            'firstname' => $admission->clients->firstname,
+            'surname' => $admission->clients->surname,
+            'othernames' => $admission->clients->othernames,
+            'phone_number' => $admission->users->phone_number,
+            'email' => $admission->users->email,
+            'payment_method' => $admission->payment_method,
+            'transaction_reference' => $admission->transaction_reference,
+            'course_name' => $admission->payments->courses->course_name,
+            'course_id' => $admission->payments->courses->course_id,
+            'admission_date' => $admission->created_at,
+            'admission_number' => $admission->admission_number,
+            'center_name' => $admission->payments->courses->centers->center_name,
+            'certification_name' => $admission->payments->courses->certification_name,
+            'admission_id' => $admission->id,
+            'name_on_certificate' => $admission->clients->name_on_certificate,
+            'modules' => $admission->payments->courses->modules->pluck('modules')->toArray(), // Add modules
+        ];
+    
+        // Generate QR code
+        $verificationUrl = route('pdf.verify_certificate', ['admission_number' => $admission->admission_number]);
+        $qrCode = Builder::create()
+            ->writer(new PngWriter())
+            ->data($verificationUrl)
+            ->size(200)
+            ->build();
+    
+        $certificate_data['qr_code'] = $qrCode->getDataUri();
+    
+        // Update admission status
+        Admissions::where('admission_number', $admission_number)->update(['status' => 'COMPLETED']);
+    
+        if ($certificate_type == 1) {
+            $pdf = Pdf::loadView('pdf.certificate', $certificate_data)
+                ->setPaper('a4', 'landscape');
+    
+            Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+            return $pdf->download("admission-{$admission->admission_number}.pdf");
+    
+        } elseif ($certificate_type == 2) {
+            $pdf = Pdf::loadView('pdf.ilearn_certificate', $certificate_data)
+                ->setPaper('a4', 'portrait');
+    
+            Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+            return $pdf->download("ilearn-{$admission->admission_number}.pdf");
+    
+        } elseif ($certificate_type == 3) {
+            // Generate both PDFs
+            $pdf1 = Pdf::loadView('pdf.certificate', $certificate_data)
+                ->setPaper('a4', 'landscape')
+                ->output();
+    
+            $pdf2 = Pdf::loadView('pdf.ilearn_certificate', $certificate_data)
+                ->setPaper('a4', 'portrait')
+                ->output();
+    
+            // Create a ZIP archive with both PDFs
+            $zipFileName = "certificates_{$admission->admission_number}.zip";
+            $tempZipPath = storage_path("app/public/{$zipFileName}");
+    
+            $zip = new \ZipArchive;
+            if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                $zip->addFromString("certificate.pdf", $pdf1);
+                $zip->addFromString("ilearn_certificate.pdf", $pdf2);
+                $zip->close();
+            }
+    
+            // Mail one of the certificates (optional)
+            Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+    
+            // Return the ZIP download
+            return response()->download($tempZipPath)->deleteFileAfterSend(true);
+        }
+    
+        return response()->json(['error' => 'Invalid certificate type'], 400);
     }
 
     

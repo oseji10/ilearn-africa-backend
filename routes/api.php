@@ -77,6 +77,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('course_material', [CourseMaterialController::class, 'uploadCourseMaterial']);
     Route::delete('delete_course/{course_id}', [CourseListController::class, 'deleteCourse']);
     Route::patch('update_course/{course_id}', [CourseListController::class, 'updateCourse']);
+    Route::post('course/module', [CourseListController::class, 'uploadCourseModule']);
+    Route::get('course/modules/{course_id}', [CourseListController::class, 'getCourseModules']);
+    Route::patch('course/module/{id}', [CourseListController::class, 'updateModule']);
+    Route::delete('course/module/{id}', [CourseListController::class, 'deleteModule']);
     
     Route::get('centers', [CentersController::class, 'show']);
     Route::post('centers', [CentersController::class, 'store']);
@@ -139,6 +143,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('certificates', [CertificatesController::class, 'clientCertificates'])->name('certificate');
     Route::post('certificates/batch-process', [CertificatesController::class, 'batchProcess']);
     Route::get('process_certificate', [AdmissionController::class, 'processCertificate']);
+    
+    Route::post('certificate/ilearn/issue', [PdfController::class, 'issueIlearnAfricaCertificate'])->name('ilearn_certificate');
+
     
     Route::post('certificates/client-certificate/download/{admission_number}', [CertificatesController::class, 'downloadCertificate']);
     Route::post('certificates/client-certificate/email/{admission_number}', [CertificatesController::class, 'emailCertificate']);
@@ -256,3 +263,5 @@ Route::get('/test_result', function () {
 Route::post('/upload-questions', [CBTController::class, 'importQuestions']);
 
 Route::get('courses/active', [CoursesController::class, 'activeCourses']);
+
+Route::post('certificates/client-certificate/test/{admission_number}', [PdfController::class, 'downloadCertificate'])->name('download_certificate');

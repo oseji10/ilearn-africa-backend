@@ -10,6 +10,7 @@ use App\Models\Cohorts;
 use App\Models\CohortsClients;
 use App\Models\CohortsCourses;
 use App\Models\Client;
+use App\Models\CourseModule;
 
 class CourseListController extends Controller
 {
@@ -185,6 +186,70 @@ public function store(Request $request)
     return response()->json(['message' => 'Course updated successfully.']);
 }
 
+public function uploadCourseModule(Request $request)
+{
+    // Validate the incoming request data
+    $validated = $request->validate([
+        'course_id' => 'required|string|exists:course_list,course_id',
+        'modules' => 'required|string',
+    ]);
+
+    // Optionally: check if a module for this course already exists and update instead
+    $courseModule = CourseModule::create(
+        ['course_id' => $validated['course_id'], 'modules' => $validated['modules']],
+    );
+
+    return response()->json([
+        'message' => 'Course module uploaded successfully.',
+        'courseModule' => $courseModule
+    ]);
+}
+
+
+   public function getCourseModules($course_id){
+    // Find the course by its course_id
+    $courseModule = CourseModule::where('course_id', $course_id)->get();
+
+    // Check if the course module exists
+    if (!$courseModule) {
+        return response()->json(['message' => 'Course modules not found.'], 404);
+    }
+
+    // Return the course modules
+    return response()->json(['message' => 'Course modules retrieved successfully.', 'modules' => $courseModule]);
+   }
+
+
+   public function updateModule(request $request, $id)
+    {
+        
+        $module = CourseModule::where('id', $id)->first();
     
+        // Check if the course exists
+        if ($module) {
+            $module->update(['modules' => $request->modules]); // Delete the course from the course list
+            return response()->json(['message' => 'Module updated successfully.']);
+        } else {
+            return response()->json(['message' => 'Module not found.'], 404);
+        }
+    }
+
+
+    public function deleteModule($id)
+    {
+        
+        $module = CourseModule::where('id', $id)->first();
+    
+        // Check if the course exists
+        if ($module) {
+            $module->delete(); // Delete the course from the course list
+            return response()->json(['message' => 'Module deleted successfully.']);
+        } else {
+            return response()->json(['message' => 'Module not found.'], 404);
+        }
+    }
+
+    
+
     
 }

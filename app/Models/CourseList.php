@@ -22,4 +22,9 @@ class CourseList extends Model
     {
         return $this->belongsTo(CohortsCourses::class, 'course_id', 'course_id');
     }
+
+    public function modules()
+    {
+        return $this->hasMany(CourseModule::class, 'course_id', 'course_id');
+    }
 }
