@@ -30,6 +30,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Cache;
+use App\Models\ClientExtra;
 
 
 class PaymentsController extends Controller
@@ -535,9 +536,19 @@ if ($request->file('file')) {
             'customer.email' => 'required|email|max:255',
             'customer.phonenumber' => 'nullable|string|max:15',
             'customer.name' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
+            'customer.date_of_birth' => 'nullable|string|max:255',
+            'customer.gender' => 'nullable|string|max:255',
             'tx_ref' => 'required|string|max:100',
             'redirect_url' => 'required|url',
             'customer.secret' => 'nullable|string|max:255', // Optional password for the customer
+
+            'customer.preferred_mode_of_communication' => 'nullable|string|max:255',
+            'customer.employment_status' => 'nullable|string|max:255',
+            'customer.job_title' => 'nullable|string|max:255',
+            'customer.name_of_organization' => 'nullable|string|max:255',
+            'customer.years_of_experience' => 'nullable|string|max:255',
+            'customer.qualification' => 'nullable|string|max:255',
+            'customer.address' => 'nullable|string|max:255',
         ]);
 
         $flutterwaveUrl = env('FLUTTERWAVE_URL', 'https://api.flutterwave.com/v3/payments');
@@ -553,6 +564,14 @@ if ($request->file('file')) {
                 'phonenumber' => $validated['customer']['phonenumber'] ?? null,
                 'name' => $validated['customer']['name'],
                 'secret' => $validated['customer']['secret'] ?? null, // Optional password
+                'date_of_birth' => $validated['customer']['date_of_birth'],
+                'gender' => $validated['customer']['gender'],
+                'preferred_mode_of_communication' => $validated['customer']['preferred_mode_of_communication'],
+                'employment_status' => $validated['customer']['employment_status'],
+                'job_title' => $validated['customer']['job_title'],
+                'name_of_organization' => $validated['customer']['name_of_organization'],
+                'years_of_experience' => $validated['customer']['years_of_experience'],
+                'qualification' => $validated['customer']['qualification'],
             ],
             'customizations' => [
                 'title' => 'iLearn Africa Course Payment',
@@ -571,7 +590,16 @@ if ($request->file('file')) {
                 'email' => $validated['customer']['email'],
                 'name' => $validated['customer']['name'],
                 'phonenumber' => $validated['customer']['phonenumber'],
+                'date_of_birth' => $validated['customer']['date_of_birth'],
+                'gender' => $validated['customer']['gender'],
                 'secret' => $validated['customer']['secret'],
+                'preferred_mode_of_communication' => $validated['customer']['preferred_mode_of_communication'],
+                'employment_status' => $validated['customer']['employment_status'],
+                'job_title' => $validated['customer']['job_title'],
+                'name_of_organization' => $validated['customer']['name_of_organization'],
+                'years_of_experience' => $validated['customer']['years_of_experience'],
+                'qualification' => $validated['customer']['qualification'],
+                'address' => $validated['customer']['address'],
             ], now()->addHours(24));
 
             $response = Http::withToken($secretKey)
@@ -754,7 +782,17 @@ if ($request->file('file')) {
             $customerName = $cachedCustomer['name'] ?? $paymentData['customer']['name'];
             $customerPhone = $cachedCustomer['phonenumber'] ?? $paymentData['customer']['phonenumber'];
             $customerPassword = $cachedCustomer['secret'] ?? $paymentData['customer']['secret'];
-    
+            $customerDateOfBirth = $cachedCustomer['date_of_birth'] ?? $paymentData['customer']['date_of_birth'];
+            $customerGender = $cachedCustomer['gender'] ?? $paymentData['customer']['gender'];
+            $customerNationality = '149'; // Default
+            $customerCity = $cachedCustomer['address'] ?? $paymentData['customer']['address'];
+            $customerQualification = $cachedCustomer['qualification'] ?? $paymentData['customer']['qualification'];
+            $customerPreferredCommunication = $cachedCustomer['preferred_mode_of_communication'] ?? $paymentData['customer']['preferred_mode_of_communication'];
+            $customerEmploymentStatus = $cachedCustomer['employment_status'] ?? $paymentData['customer']['employment_status'];
+            $customerJobTitle = $cachedCustomer['job_title'] ?? $paymentData['customer']['job_title'];
+            $customerOrganizationName = $cachedCustomer['name_of_organization'] ?? $paymentData['customer']['name_of_organization'];
+            $customerYearsOfExperience = $cachedCustomer['years_of_experience'] ?? $paymentData['customer']['years_of_experience'];
+
             // Parse name
             $nameParts = explode(' ', trim($customerName));
             $firstname = $nameParts[0] ?? 'Unknown';
@@ -769,12 +807,35 @@ if ($request->file('file')) {
                 'surname' => $surname,
                 'othernames' => $othernames,
                 'password' => $customerPassword,
+                'date_of_birth' => $customerDateOfBirth,
+                'gender' => $customerGender,
+                'qualification' => $customerQualification,
+                'address' => $customerCity,
+                'nationality' => $customerNationality,
+                'address' => $customerCity,
+                'preferred_mode_of_communication' => $customerPreferredCommunication,
+                'employment_status' => $customerEmploymentStatus,
+                'job_title' => $customerJobTitle,
+                'name_of_organization' => $customerOrganizationName,
+                'years_of_experience' => $customerYearsOfExperience,
+                
             ], [
                 'email' => 'required|email|max:255|unique:users,email',
                 'phone_number' => 'required|string|max:11|unique:users,phone_number',
                 'firstname' => 'required|string',
                 'surname' => 'required|string',
                 'password' => 'required|string',
+                'date_of_birth' => 'nullable|string|max:255',
+            'gender' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
+            'qualification' => 'nullable|string|max:255',
+            'preferred_mode_of_communication' => 'nullable|string|max:255',
+            'employment_status' => 'nullable|string|max:255',
+            'job_title' => 'nullable|string|max:255',
+            'name_of_organization' => 'nullable|string|max:255',
+            'years_of_experience' => 'nullable|string|max:255',
+            'othernames' => 'nullable|string|max:255',
             ]);
     
             if ($validator->fails()) {
@@ -792,10 +853,24 @@ if ($request->file('file')) {
             // Create records
             $client = Client::create([
                 'client_id' => $randomString,
-                'firstname' => $validatedUserData['firstname'],
-                'surname' => $validatedUserData['surname'],
+                'firstname' => $firstname,
+                'surname' => $surname,
                 'othernames' => $othernames,
+                'date_of_birth' => $validatedUserData['date_of_birth'] ?? null,
+                'gender' => $validatedUserData['gender'] ?? null,
+                'nationality' => '149', // Default to Nigeria
+                'address' => $validatedUserData['address'] ?? null,
+                'qualification' => $validatedUserData['qualification'] ?? null,
                 'status' => 'registered',
+            ]);
+
+            $client_extra = ClientExtra::create([
+                'client_id' => $randomString,
+                'preferred_mode_of_communication' => $validatedUserData['preferred_mode_of_communication'],
+                'employment_status' => $validatedUserData['employment_status'],
+                'job_title' => $validatedUserData['job_title'],
+                'name_of_organization' => $validatedUserData['name_of_organization'],
+                'years_of_experience' => $validatedUserData['years_of_experience'],
             ]);
     
             $user = User::create([
@@ -897,13 +972,25 @@ return response()->json([
         $validated = $request->validate([
             'amount' => 'required|numeric|min:100',
             'email' => 'required|email|max:255',
-            'phone_number' => 'nullable|string|max:15',
+            'phonenumber' => 'nullable|string|max:15',
             'name' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
             'tx_ref' => 'required|string|max:100',
             'course_id' => 'required',
             'cohort_id' => 'required',
             'payment_method' => 'required|string|in:bank_transfer',
             'secret' => 'nullable|string|max:255',
+            'date_of_birth' => 'nullable|string|max:255',
+            'gender' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
+            'qualification' => 'nullable|string|max:255',
+            
+            'preferred_mode_of_communication' => 'nullable|string|max:255',
+            'employment_status' => 'nullable|string|max:255',
+            'job_title' => 'nullable|string|max:255',
+            'name_of_organization' => 'nullable|string|max:255',
+            'years_of_experience' => 'nullable|string|max:255',
+
         ]);
 
         try {
@@ -920,14 +1007,24 @@ return response()->json([
             // Validate user data for uniqueness
             $userValidator = Validator::make([
                 'email' => $validated['email'],
-                'phone_number' => $validated['phone_number'],
+                'phone_number' => $validated['phonenumber'],
                 'firstname' => $firstname,
                 'surname' => $surname,
+                'othernames' => $othernames,
+                'nationality' => $validated['nationality'] ?? null,
+                'address' => $validated['address'] ?? null,   
+                'qualification' => $validated['qualification'] ?? null,
             ], [
                 'email' => 'required|email|max:255|unique:users,email',
                 'phone_number' => 'required|string|max:15|unique:users,phone_number',
                 'firstname' => 'required|string',
                 'surname' => 'required|string',
+                'gender' => 'nullable|string',
+                'date_of_birth' => 'nullable|string',
+                'othernames' => 'nullable|string',
+                'nationality' => 'nullable|string',
+                'address' => 'nullable|string',
+                'qualification' => 'nullable|string',
             ], [
                 'email.unique' => 'The email address has already been taken.',
                 'phone_number.unique' => 'The phone number has already been taken.',
@@ -951,15 +1048,30 @@ return response()->json([
                 'firstname' => $firstname,
                 'surname' => $surname,
                 'othernames' => $othernames,
+                'date_of_birth' => $validated['date_of_birth'] ?? null,
+                'gender' => $validated['gender'] ?? null,
+                'nationality' => 149,
+                'address' => $validated['address'] ?? null,
+                'status' => 'registered',
+                'qualification' => $validated['qualification'] ?? null,
             ]);
 
+            $client_extra = ClientExtra::create([
+                'client_id' => $randomString,
+                'preferred_mode_of_communication' => $validated['preferred_mode_of_communication'] ?? null,
+                'employment_status' => $validated['employment_status'] ?? null,
+                'job_title' => $validated['job_title'] ?? null,
+                'name_of_organization' => $validated['name_of_organization'] ?? null,
+                'years_of_experience' => $validated['years_of_experience'] ?? null,
+            ]);
             // Create User record
             $user = User::create([
                 'email' => $validated['email'],
-                'phone_number' => $validated['phone_number'],
+                'phone_number' => $validated['phonenumber'],
                 'password' => \Hash::make($auto_password),
                 'client_id' => $randomString,
                 'role_id' => 3, // Assuming role_id 3 is for clients
+
             ]);
 
             // Create Educationaldetails record
@@ -978,7 +1090,7 @@ return response()->json([
             Cache::put("payment_{$validated['tx_ref']}", [
                 'email' => $validated['email'],
                 'name' => $validated['name'],
-                'phonenumber' => $validated['phone_number'],
+                'phonenumber' => $validated['phonenumber'],
                 'secret' => $validated['secret'] ?? null,
             ], now()->addHours(2));
 

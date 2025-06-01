@@ -359,4 +359,41 @@ public function reset(Request $request)
     }
 }
 
+
+public function checkUser(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'nullable|email|max:255',
+                'phonenumber' => 'nullable|string|max:15',
+            ]);
+
+            $emailExists = false;
+            $phonenumberExists = false;
+
+            if ($request->email) {
+                $emailExists = User::where('email', $request->email)->exists();
+            }
+
+            if ($request->phonenumber) {
+                $phonenumberExists = User::where('phone_number', $request->phonenumber)->exists();
+            }
+
+            return response()->json([
+                'success' => true,
+                'email_exists' => $emailExists,
+                'phonenumber_exists' => $phonenumberExists,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error checking user:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to check user.',
+            ], 500);
+        }
+    }
+    
 }

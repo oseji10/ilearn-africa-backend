@@ -75,5 +75,10 @@ class Client extends Model
     {
         return $this->belongsTo(Admissions::class, 'client_id', 'client_id');
     }
+
+    public function client_extra()
+    {
+        return $this->hasOne(ClientExtra::class, 'client_id', 'client_id');
+    }
   
 }
