@@ -386,7 +386,7 @@ if ($request->file('file')) {
     $validated = $request->validate([
         'transaction_reference' => 'string',
         'client_id' => 'string',
-        'other_reference' => 'string',
+        'other_reference' => 'nullable',
         'status' => 'string',
         'updated_by'
     ]);
@@ -900,7 +900,7 @@ if ($request->file('file')) {
                 'payment_gateway' => 'FLUTTERWAVE',
                 'transaction_reference' => $request->query('tx_ref'),
                 'transaction_id' => $txRef,
-                'other_reference' => $paymentData['id'],
+                'other_reference' => $request->query('tx_ref'),
                 'payment_for' => 'ILEARN_COURSES',
                 'status' => 1,
                 'cohort_id' => $request->cohort_id,
@@ -1105,7 +1105,7 @@ return response()->json([
                 'payment_gateway' => 'MANUAL',
                 'transaction_reference' => $validated['tx_ref'],
                 'transaction_id' => $validated['tx_ref'], // Use tx_ref as transaction_id for manual payments
-                'other_reference' => null,
+                'other_reference' => $validated['tx_ref'],
                 'payment_for' => 'ILEARN_COURSES',
                 'status' => 0, // 0 = PENDING
                 'cohort_id' => $validated['cohort_id'],
