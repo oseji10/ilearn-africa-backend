@@ -21,7 +21,7 @@
         .container {
             width: 100%;
             max-width: 800px;
-            margin: 0 0 0 0;
+            margin: -15 -10 -15 -10;
             /* padding: -300px; */
             /* text-align: center; */
         }
@@ -58,7 +58,7 @@
             font-family: 'Cinzel', serif;
             font-size: 20pt;
             /* text-transform: uppercase; */
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-weight: bold;
             text-align: left;
         }
