@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Validator;
 // use Illuminate\Support\Str;
 // use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
