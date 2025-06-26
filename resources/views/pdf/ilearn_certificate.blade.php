@@ -176,19 +176,20 @@
         </div>
 
         <div class="date">
-        <br/><br/><br/><br/><br/><br/>Date issued: {{ \Carbon\Carbon::parse($admission_date)->format('F j, Y') }}.
+        <br/><br/><br/><br/><br/>Date issued: {{ \Carbon\Carbon::parse($admission_date)->format('F j, Y') }}.
         </div>
-        <div class="certificate-title">
+        <!-- <div class="certificate-title">
+        Certificate of Professional Development
+</div> -->
+
+<div class="certificate-title">
         Certificate of Professional Development
 </div>
-<div class="certificate-title">
-        {{$course_name}}
-</div>
-<br/><br/>
-<div class="course-details-two">
+<br/>
+<!-- <div class="course-details-two">
             This is to certify that:
         </div>
-<br/>
+<br/> -->
 <div class="recipient">
     @if(!empty($name_on_certificate))
         {{$name_on_certificate}}
@@ -197,19 +198,17 @@
     @endif
 </div>
 <br/>
-<div class="course-details-two">
-has successfully completed the above course organized by iLearn Africa.
-        </div>
+ <div class="certificate-title">
+        Certificate in {{$course_name}}
+</div>
 
 
 
-        <!-- <div class="course-details">
-            Has Successfully Completed a Course in<br>
-            {{$course_name}} and Has Been Awarded this
-        </div> -->
+        <div class="course-details">
+AWARDED FOR SUCCESSFUL COMPLETION OF A CPD CERTIFIED PROGRAM.        </div>
 
         <div class="modules-list">
-            <strong>Core Skill Areas Covered:</strong>
+            <strong>Core Skills Covered:</strong>
             @if(!empty($modules) && is_array($modules))
                 <ul>
                     @foreach($modules as $module)

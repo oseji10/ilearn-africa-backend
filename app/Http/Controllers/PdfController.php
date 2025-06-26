@@ -503,7 +503,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
     
         } elseif ($certificate_type == 2) {
             $pdf = Pdf::loadView('pdf.ilearn_certificate', $certificate_data)
-                ->setPaper('a4', 'portrait');
+                ->setPaper('letter', 'landscape');
     
             Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
             return $pdf->download("ilearn-{$admission->admission_number}.pdf");
@@ -515,7 +515,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
                 ->output();
     
             $pdf2 = Pdf::loadView('pdf.ilearn_certificate', $certificate_data)
-                ->setPaper('a4', 'portrait')
+                ->setPaper('letter', 'landscape')
                 ->output();
     
             // Create a ZIP archive with both PDFs
