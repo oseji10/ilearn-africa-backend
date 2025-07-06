@@ -199,7 +199,7 @@
 </div>
 <br/>
  <div class="certificate-title">
-        Certificate in {{$course_name}}
+        Certificate in {{$certification_name}}
 </div>
 
 
