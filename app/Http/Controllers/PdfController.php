@@ -374,7 +374,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
         
 
 
-        Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+        // Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
         return $pdf->download("admission-{$admission->admission_number}.pdf");
     }
 
@@ -440,7 +440,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
         
 
 
-        Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+        // Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
         return $pdf->download("admission-{$admission->admission_number}.pdf");
     }
     
@@ -505,7 +505,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
             $pdf = Pdf::loadView('pdf.ilearn_certificate', $certificate_data)
                 ->setPaper('letter', 'landscape');
     
-            Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+            // Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
             return $pdf->download("ilearn-{$admission->admission_number}.pdf");
     
         } elseif ($certificate_type == 3) {
@@ -530,7 +530,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
             }
     
             // Mail one of the certificates (optional)
-            Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+            // Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
     
             // Return the ZIP download
             return response()->download($tempZipPath)->deleteFileAfterSend(true);
