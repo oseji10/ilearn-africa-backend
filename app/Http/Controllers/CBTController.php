@@ -434,7 +434,7 @@ class CBTController extends Controller
     $data = $request->all();
 
     // Find the question by ID
-    $question = Questions::findOrFail($questionId);
+    $question = Questions::find($questionId);
 
     // Update the question details
     $question->update([
