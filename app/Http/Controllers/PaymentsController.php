@@ -392,7 +392,15 @@ if ($request->file('file')) {
     ]);
 
     // Fetch the payment details
-    $payment = Payments::where('other_reference', $validated['other_reference'])->first();
+    $payment = Payments::when(
+    !empty($validated['other_reference']),
+    function ($query) use ($validated) {
+        return $query->where('other_reference', $validated['other_reference']);
+    },
+    function ($query) use ($validated) {
+        return $query->where('transaction_reference', $validated['transaction_reference']);
+    }
+)->first();
 
     if (!$payment) {
         return response()->json([
