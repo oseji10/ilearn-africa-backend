@@ -977,7 +977,7 @@ return response()->json([
             'tx_ref' => 'required|string|max:100',
             'course_id' => 'required',
             'cohort_id' => 'required',
-            'payment_method' => 'required|string|in:bank_transfer',
+            'payment_method' => 'required|string',
             'secret' => 'nullable|string|max:255',
             'date_of_birth' => 'nullable|string|max:255',
             'gender' => 'nullable|string|max:255',
@@ -990,6 +990,7 @@ return response()->json([
             'job_title' => 'nullable|string|max:255',
             'name_of_organization' => 'nullable|string|max:255',
             'years_of_experience' => 'nullable|string|max:255',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:1024', // Max 2MB
 
         ]);
 
@@ -1112,6 +1113,18 @@ return response()->json([
                 'course_id' => $validated['course_id'],
             ];
 
+               // Handle photo upload
+    if ($request->hasFile('payment_proof')) {
+    $file = $request->file('payment_proof');
+    $path = $file->store('receipts', 'public'); // Store in the 'public/documents' directory
+
+    $validated['file_path'] = $path;
+    $validated['client_id'] = $randomString;
+
+    // Save the file path or other related information to the database if needed
+    $save = ProofOfPayment::create($validated);
+
+}
             // Create admission record
             $admission_number = mt_rand(1000000, 9999999);
             $admissions = new Admissions();
