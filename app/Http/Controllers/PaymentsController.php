@@ -384,7 +384,7 @@ if ($request->file('file')) {
     public function confirmPayment(Request $request)
 {
     $validated = $request->validate([
-        'transaction_reference' => 'string',
+        'transaction_reference' => 'nullable',
         'client_id' => 'string',
         'other_reference' => 'nullable',
         'status' => 'string',
