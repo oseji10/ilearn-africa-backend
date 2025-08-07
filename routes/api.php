@@ -207,7 +207,9 @@ Route::post('cohorts/delete-cohort-course', [CohortsController::class, 'deleteCo
 Route::post('/initialize-payment', [PaymentsController::class, 'initializePayment']);
 Route::get('/verify-payment', [PaymentsController::class, 'verifyAndStorePayment']);
 Route::get('/verify-this-payment', [PaymentsController::class, 'verifyAndStorePaymentForiLearnCoursesOnly']);
+Route::get('/verify-this-payment-dashboard', [PaymentsController::class, 'verifyAndStorePaymentForiLearnCoursesOnlyOnDashboard']);
 Route::post('/notify-payment', [PaymentsController::class, 'notifyPayment']);
+Route::post('/notify-payment2', [PaymentsController::class, 'notifyPayment2']);
 
 Route::post('/check-user', [AuthController::class, 'checkUser']);
 
