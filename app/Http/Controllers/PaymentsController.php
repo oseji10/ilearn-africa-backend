@@ -1368,40 +1368,6 @@ return response()->json([
 
            
 
-            // // Validate user data for uniqueness
-            // $userValidator = Validator::make([
-            //     'email' => $validated['email'],
-            //     'phone_number' => $validated['phonenumber'],
-            //     'firstname' => $firstname,
-            //     'surname' => $surname,
-            //     'othernames' => $othernames,
-            //     'nationality' => $validated['nationality'] ?? null,
-            //     'address' => $validated['address'] ?? null,   
-            //     'qualification' => $validated['qualification'] ?? null,
-            // ], [
-            //     'email' => 'required|email|max:255|unique:users,email',
-            //     'phone_number' => 'required|string|max:15|unique:users,phone_number',
-            //     'firstname' => 'required|string',
-            //     'surname' => 'required|string',
-            //     'gender' => 'nullable|string',
-            //     'date_of_birth' => 'nullable|string',
-            //     'othernames' => 'nullable|string',
-            //     'nationality' => 'nullable|string',
-            //     'address' => 'nullable|string',
-            //     'qualification' => 'nullable|string',
-            // ], [
-            //     'email.unique' => 'The email address has already been taken.',
-            //     'phone_number.unique' => 'The phone number has already been taken.',
-            // ]);
-
-            // if ($userValidator->fails()) {
-            //     Log::error('Validation error during bank transfer notification:', ['errors' => $userValidator->errors()]);
-            //     return response()->json([
-            //         'error' => 'Validation failed',
-            //         'details' => $userValidator->errors(),
-            //     ], 422);
-            // }
-
           
             // Store payment record as pending
             $paymentRecord = [
@@ -1427,7 +1393,7 @@ return response()->json([
     $path = $file->store('receipts', 'public'); // Store in the 'public/documents' directory
 
     $validated['file_path'] = $path;
-    $validated['client_id'] = $randomString;
+    $validated['client_id'] = $client_id;
 
     // Save the file path or other related information to the database if needed
     $save = ProofOfPayment::create($validated);
