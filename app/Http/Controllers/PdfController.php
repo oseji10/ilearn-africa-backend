@@ -472,7 +472,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
             'transaction_reference' => $admission->transaction_reference,
             'course_name' => $admission->payments->courses->course_name,
             'course_id' => $admission->payments->courses->course_id,
-            'admission_date' => $admission->created_at,
+            'admission_date' => $admission->updated_at,
             'admission_number' => $admission->admission_number,
             'center_name' => $admission->payments->courses->centers->center_name,
             'certification_name' => $admission->payments->courses->certification_name,
