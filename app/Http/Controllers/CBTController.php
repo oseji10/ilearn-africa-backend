@@ -385,48 +385,51 @@ class CBTController extends Controller
     }
     
 
+public function storeQuestion(Request $request)
+{
+    DB::beginTransaction(); // Start the transaction
 
-    public function storeQuestion(Request $request)
-    {
-        DB::beginTransaction(); // Start the transaction
-    
-        try {
-            $data = $request->all();
-    
-            // Create the question and save it to the questions table
-            $question = Questions::create($data);
-    
-            // Create the exam_question record
-            $exam_question = ExamQuestions::create([
-                'examId' => $data['examId'], // Pass the correct examId
-                'questionId' => $question->questionId,
-                'score' => $data['score'], // Ensure 'score' is passed
+    try {
+        $data = $request->all();
+
+        // Create the question and save it to the questions table
+        // Note: Ensure 'options' is excluded from $data if your Questions model isn't set up to handle it
+        $questionData = $data;
+        unset($questionData['options']); // Prevent passing nested array to question creation
+        $question = Questions::create($questionData);
+
+        // Create the exam_question record
+        $exam_question = ExamQuestions::create([
+            'examId' => $data['examId'], // Pass the correct examId
+            'questionId' => $question->questionId,
+            'score' => $data['score'], // Ensure 'score' is passed
+        ]);
+
+        // Add options to the question
+        // Fixed: Access 'optionDetail' from each option object (it's an array of assoc arrays)
+        foreach ($data['options'] as $option) {
+            QuestionOptions::create([
+                'questionId' => $question->questionId, // Ensure this matches your table schema
+                'optionDetail' => $option['optionDetail'], // Extract the string value
+                'isCorrect' => $option['isCorrect'] ?? 0, // Use the sent value (string "0"/"1", Eloquent will cast)
             ]);
-    
-            // Add options to the question
-            foreach ($data['options'] as $index => $optionText) {
-                QuestionOptions::create([
-                    'questionId' => $question->questionId, // Ensure this matches your table schema
-                    'optionDetail' => $optionText,
-                    'isCorrect' => ($index === (int)$data['correctOptionIndex']) ? 1 : 0,
-                ]);
-            }
-    
-            // If everything is successful, commit the transaction
-            DB::commit();
-            
-            return response()->json($question, 201); // Return success response
-        } catch (\Exception $e) {
-            // If there is any exception, rollback the transaction
-            DB::rollBack();
-    
-            // Log the error for debugging purposes (optional)
-            \Log::error('Error storing question: ' . $e->getMessage());
-    
-            // Return error response
-            return response()->json(['error' => 'Failed to store question.'], 500);
         }
+
+        // If everything is successful, commit the transaction
+        DB::commit();
+        
+        return response()->json($question, 201); // Return success response
+    } catch (\Exception $e) {
+        // If there is any exception, rollback the transaction
+        DB::rollBack();
+
+        // Log the error for debugging purposes (optional)
+        \Log::error('Error storing question: ' . $e->getMessage());
+
+        // Return error response
+        return response()->json(['error' => 'Failed to store question.'], 500);
     }
+}
 
 
     public function updateQuestion(Request $request, $questionId)
