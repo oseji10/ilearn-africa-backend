@@ -36,15 +36,15 @@ class CBTController extends Controller
             //     'examId' => 'required|integer|exists:cbts,id',
             //     'clientId' => 'required|integer|exists:clients,id',
             // ]);
-    
+
             $examId = $request->examId;
             $clientId = $request->clientId;
-    
+
             // Check if the client has already retaken this exam
             $examRetake = ExamRetake::where('examId', $examId)
                                     ->where('clientId', $clientId)
                                     ->first();
-    
+
             if ($examRetake) {
                 // Increment retake_count if the record exists
                 $examRetake->increment('retake_count');
@@ -57,7 +57,7 @@ class CBTController extends Controller
                     'permittedBy' => Auth::id(),
                 ]);
             }
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'Exam retake request processed successfully',
@@ -84,7 +84,7 @@ class CBTController extends Controller
     //             ->orWhere('canRetake', 1); // Allow if retakes are allowed
     //         })
     //         ->get();
-    
+
     //     return response()->json($cbts);
     // }
 
@@ -169,7 +169,7 @@ class CBTController extends Controller
 // {
 //     $now = Carbon::now();
 //     $midnight = Carbon::today()->endOfDay();
-    
+
 //     // Fetch all exams for the client
 //     $cbts = CBT::with('course', 'cohort', 'clientCohort')
 //         ->where('status', 'active')
@@ -246,8 +246,8 @@ class CBTController extends Controller
 // }
 
 
-    
-    
+
+
 
     public function RetrieveCBT(Request $request)
     {
@@ -261,20 +261,20 @@ class CBTController extends Controller
     {
         $data = $request->all();
         $cbt = CBT::create($data);
-        return response()->json($cbt, 201); 
-    }   
-    
-    
+        return response()->json($cbt, 201);
+    }
+
+
     public function updateCBT(Request $request, $examId)
     {
         $cbt = CBT::find($examId);
-    
+
         if (!$cbt) {
             return response()->json([
                 'error' => 'Exam not found',
             ], 404); // HTTP status code 404: Not Found
         }
-    
+
         // Get the data from the request
         $data = $request->all();
         $cbt->update($data);
@@ -285,8 +285,8 @@ class CBTController extends Controller
     }
 
 
-    
-    
+
+
     public function cloneCBT($examId)
     {
         // Find the original exam
@@ -294,7 +294,7 @@ class CBTController extends Controller
         if (!$originalExam) {
             return response()->json(['message' => 'Exam not found'], 404);
         }
-    
+
         // Clone the exam
         $newExam = CBT::create([
             'examName' => $originalExam->examName . ' (Copy)',
@@ -306,7 +306,7 @@ class CBTController extends Controller
             'timeAllowed' => $originalExam->timeAllowed,
             'addedBy' => Auth::id(),
         ]);
-    
+
         // Clone the questions
         $originalQuestions = ExamQuestions::where('examId', $examId)->get();
         foreach ($originalQuestions as $question) {
@@ -317,11 +317,11 @@ class CBTController extends Controller
             ]);
         }
 
-        
-    
+
+
         return response()->json(['message' => 'Exam cloned successfully', 'new_exam_id' => $newExam->examId], 201);
     }
-    
+
 
     public function RetrieveAllQuestions()
     {
@@ -346,27 +346,27 @@ class CBTController extends Controller
         //     ->get();
     }
 
-    
+
 
     public function loadQuestions($examId)
     {
         // Fetch the CBT exam details
         $cbtExam = CBT::find($examId);
-    
+
         if (!$cbtExam) {
             return response()->json(['error' => 'Exam not found'], 404);
         }
-    
+
         // Retrieve questions based on the examId
         $questions = ExamQuestions::with(['exams', 'questions.options'])
             ->where('examId', $examId)
             ->get();
-    
+
         // Shuffle the questions if isShuffle is set to 1
         if ($cbtExam->isShuffle == 1) {
             $questions = $questions->shuffle();
         }
-    
+
         // Check if isRandom is set to 1 and shuffle options inside each question
         if ($cbtExam->isRandom == 1) {
             $questions->transform(function ($examQuestion) {
@@ -376,14 +376,14 @@ class CBTController extends Controller
                     }
                     return $question;
                 });
-    
+
                 return $examQuestion;
             });
         }
-    
+
         return response()->json($questions);
     }
-    
+
 
 public function storeQuestion(Request $request)
 {
@@ -417,7 +417,7 @@ public function storeQuestion(Request $request)
 
         // If everything is successful, commit the transaction
         DB::commit();
-        
+
         return response()->json($question, 201); // Return success response
     } catch (\Exception $e) {
         // If there is any exception, rollback the transaction
@@ -450,25 +450,24 @@ public function storeQuestion(Request $request)
 
     // Iterate over provided options to update or create as needed
     $receivedOptionIds = [];
-    foreach ($data['options'] as $index => $option) {
-        if (isset($option['optionId']) && in_array($option['optionId'], $existingOptionIds)) {
-            // Update existing option
-            $existingOption = QuestionOptions::findOrFail($option['optionId']);
-            $existingOption->update([
-                'optionDetail' => $option['optionDetail'],
-                'isCorrect' => ($index === (int)$data['correctOptionIndex']) ? 1 : 0,
-            ]);
-            $receivedOptionIds[] = $option['optionId']; // Track updated options
-        } else {
-            // Create new option
-            $newOption = QuestionOptions::create([
-                'questionId' => $question->questionId,
-                'optionDetail' => $option['optionDetail'],
-                'isCorrect' => ($index === (int)$data['correctOptionIndex']) ? 1 : 0,
-            ]);
-            $receivedOptionIds[] = $newOption->optionId; // Track newly created option
-        }
+    foreach ($data['options'] as $option) {
+    if (isset($option['optionId']) && in_array($option['optionId'], $existingOptionIds)) {
+        $existingOption = QuestionOptions::findOrFail($option['optionId']);
+        $existingOption->update([
+            'optionDetail' => $option['optionDetail'],
+            'isCorrect' => isset($option['isCorrect']) && $option['isCorrect'] == "1" ? 1 : 0,
+        ]);
+        $receivedOptionIds[] = $option['optionId'];
+    } else {
+        $newOption = QuestionOptions::create([
+            'questionId' => $question->questionId,
+            'optionDetail' => $option['optionDetail'],
+            'isCorrect' => isset($option['isCorrect']) && $option['isCorrect'] == "1" ? 1 : 0,
+        ]);
+        $receivedOptionIds[] = $newOption->optionId;
     }
+}
+
 
     // Delete options that are not in the received options list
     QuestionOptions::where('questionId', $questionId)
@@ -483,12 +482,12 @@ public function storeQuestion(Request $request)
 public function deleteQuestion($questionId)
 {
     try {
-        
+
         DB::transaction(function () use ($questionId) {
-            
+
             QuestionOptions::where('questionId', $questionId)->delete();
 
-            
+
             Questions::where('questionId', $questionId)->delete();
         });
 
@@ -598,7 +597,7 @@ public function submitExam(Request $request)
 // }
 public function ExamResults($examId)
 {
-    
+
     // $results = ExamResultMaster::join('cbt_exams', 'cbt_exams.examId', '=', 'cbt_master_results.examId')
     // ->join('clients', 'clients.client_id', '=', 'cbt_master_results.clientId')
     // ->join('cbt_exams_retake', 'cbt_exams_retake.examId', '=', 'cbt_master_results.examId')
@@ -672,7 +671,7 @@ public function CBTExamResults() {
     // });
     $results = CBT::with('cohort')->orderBy('examDate', 'desc')->get();
     return response()->json($results);
-    
+
 }
 
 
@@ -692,7 +691,7 @@ public function getUserExamResults($masterId)
     $results = ExamResultMaster::where('masterId', $masterId)
         ->with(
             'client',
-            'exam', 
+            'exam',
             'exam_questions.questions.options',
             'cbt_results'
         )
@@ -719,7 +718,7 @@ public function downloadExamResults($masterId)
     $results = ExamResultMaster::where('masterId', $masterId)
         ->with(
             'client.admissions',
-            'exam.course', 
+            'exam.course',
             'exam_questions',
             'cbt_results',
             'client.passport'
