@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Cache;
 use App\Models\ClientExtra;
-
+use Illuminate\Http\JsonResponse;
 
 class PaymentsController extends Controller
 {
@@ -1535,6 +1535,108 @@ return response()->json([
         }
     }
     
+
+
+
+    // Delete methods
+    public function destroy($id): JsonResponse
+    {
+        try {
+            $payment = Payments::find($id);
+
+            if (!$payment) {
+                return response()->json([
+                    'message' => 'Payment not found',
+                ], 404);
+            }
+
+            $payment->delete();
+
+            return response()->json([
+                'message' => 'Payment deleted successfully',
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to delete payment',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function restore($id): JsonResponse
+    {
+        try {
+            $payment = Payments::withTrashed()->find($id);
+
+            if (!$payment) {
+                return response()->json([
+                    'message' => 'Payment not found',
+                ], 404);
+            }
+
+            if (!$payment->trashed()) {
+                return response()->json([
+                    'message' => 'Payment is not deleted',
+                ], 400);
+            }
+
+            $payment->restore();
+
+            return response()->json([
+                'message' => 'Payment restored successfully',
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to restore payment',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function forceDelete($id): JsonResponse
+    {
+        try {
+            $payment = Payments::withTrashed()->find($id);
+
+            if (!$payment) {
+                return response()->json([
+                    'message' => 'Payment not found',
+                ], 404);
+            }
+
+            $payment->forceDelete();
+
+            return response()->json([
+                'message' => 'Payment permanently deleted',
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to permanently delete payment',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function deletedPayments(): JsonResponse
+{
+    try {
+        $payments = Payments::onlyTrashed()
+            ->with(['clients', 'courses', 'proof'])
+            ->orderByDesc('deleted_at')
+            ->get();
+
+        return response()->json([
+            'payments' => $payments,
+        ], 200);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'message' => 'Failed to fetch deleted payments',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 }
 
 

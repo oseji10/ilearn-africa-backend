@@ -176,7 +176,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('payments_this_month', [StatisticsController::class, 'paymentsThisMonth']);
     Route::get('all_payments', [StatisticsController::class, 'allPayments']);
     
-
+    Route::delete('/delete-payment/{id}', [PaymentsController::class, 'destroy']);
+    Route::post('/restore-payment/{id}', [PaymentsController::class, 'restore']);
+    Route::delete('/force-delete-payment/{id}', [PaymentsController::class, 'forceDelete']);
+    Route::get('/deleted-payments', [PaymentsController::class, 'deletedPayments']);
 });
 
 Route::options('/{any}', function () {
