@@ -180,6 +180,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/restore-payment/{id}', [PaymentsController::class, 'restore']);
     Route::delete('/force-delete-payment/{id}', [PaymentsController::class, 'forceDelete']);
     Route::get('/deleted-payments', [PaymentsController::class, 'deletedPayments']);
+
+    Route::get('courses/client/active', [CoursesController::class, 'activeClientCourses']);
+
 });
 
 Route::options('/{any}', function () {

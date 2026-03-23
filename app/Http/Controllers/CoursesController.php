@@ -7,6 +7,13 @@ use App\Models\Courses;
 use App\Models\CourseList;
 use App\Models\CohortsCourses;
 use App\Models\Cohorts;
+
+    use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+// use App\Models\CohortsCourses;
+use App\Models\Payments; // or your actual enrollment model
+
+
 class CoursesController extends Controller
 {
     public function show()
@@ -21,10 +28,7 @@ class CoursesController extends Controller
             ->whereHas('cohorts', function ($query) {
                 $query->where('status', 'active');
             })
-            // ->whereHas('course_list', function ($query) {
-            //     $query->where('center_id', '849933');
-            // })
-            
+         
             ->orderBy('created_at', 'desc')
             ->get();
         return response()->json([
@@ -32,6 +36,63 @@ class CoursesController extends Controller
             'cohorts' => $cohorts,
         ]);
     }
+
+
+
+public function activeClientCourses(): JsonResponse
+{
+    $user = auth()->user();
+
+    if (!$user) {
+        return response()->json([
+            'message' => 'Unauthorized',
+        ], 401);
+    }
+
+    // Adjust this depending on where client_id lives in your app
+    $clientId = $user->client_id ?? null;
+
+    if (!$clientId) {
+        return response()->json([
+            'message' => 'Client ID not found for this user',
+        ], 400);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get all enrolled course/cohort combinations for this client
+    |--------------------------------------------------------------------------
+    | Change this query to match your real enrollment source.
+    | Example below assumes a payment means the user has already registered
+    | for that course/cohort.
+    */
+    $enrolledKeys = Payments::where('client_id', $clientId)
+        ->whereNotNull('course_id')
+        ->whereNotNull('cohort_id')
+        ->get(['course_id', 'cohort_id'])
+        ->map(fn ($item) => $item->course_id . '_' . $item->cohort_id)
+        ->toArray();
+
+    $cohorts = CohortsCourses::with('course_list', 'cohorts')
+        ->whereHas('cohorts', function ($query) {
+            $query->where('status', 'active');
+        })
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($item) use ($enrolledKeys) {
+            $item->isEnrolled = in_array(
+                $item->course_id . '_' . $item->cohort_id,
+                $enrolledKeys
+            );
+
+            return $item;
+        });
+
+    return response()->json([
+        'message' => 'Cohorts retrieved successfully',
+        'cohorts' => $cohorts,
+    ]);
+}
 
     public function store(Request $request)
     {
