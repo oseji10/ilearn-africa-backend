@@ -19,6 +19,8 @@ use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\QuestionsImport;
 
+use Illuminate\Validation\ValidationException;
+
 class CBTController extends Controller
 {
     public function RetrieveAll()
@@ -88,79 +90,79 @@ class CBTController extends Controller
     //     return response()->json($cbts);
     // }
 
-    public function RetrieveClientWithCohort($client_id)
+  public function retrieveClientWithCohort($clientId)
 {
     $now = Carbon::now();
-    $midnight = Carbon::today()->endOfDay();
 
-    // Fetch all exams for the client
-    $cbts = CBT::join('admissions', 'admissions.cohort_id', '=', 'cbt_exams.cohortId')
-        ->join('course_list', 'course_list.course_id', '=', 'cbt_exams.courseId') // Ensure course data is included
-        ->where('admissions.client_id', $client_id)
-        ->where('admissions.status', '=', 'ADMITTED')
+    $exams = CBT::join('admissions', 'admissions.cohort_id', '=', 'cbt_exams.cohortId')
+        ->join('course_list', 'course_list.course_id', '=', 'cbt_exams.courseId')
+        ->where('admissions.client_id', $clientId)
+        ->where('admissions.status', 'ADMITTED')
         ->where('cbt_exams.status', 'active')
-        // ->whereDate('cbt_exams.examDate', Carbon::today()->toDateString())
-        // ->whereTime('cbt_exams.examTime', '<=', $midnight->toTimeString())
         ->orderBy('cbt_exams.created_at', 'desc')
         ->select([
             'cbt_exams.*',
-            'course_list.course_id', // Include course_id for payment verification
-            'course_list.course_name', // Include course_name for display
+            'course_list.course_id',
+            'course_list.course_name',
         ])
         ->get();
 
-    $client_status = 'not eligible';
-    $eligible_for_exam = false;
+    $courseIds = $exams->pluck('course_id')->unique()->values();
+    $examIds = $exams->pluck('examId')->unique()->values();
 
-    // Process each exam and filter out unpaid ones
-    $cbts = $cbts->filter(function ($exam) use ($client_id, $now, &$eligible_for_exam) {
-        $course_id = $exam->course_id; // Use directly from the selected data
+    $payments = Payments::where('client_id', $clientId)
+        ->whereIn('course_id', $courseIds)
+        ->get()
+        ->keyBy('course_id');
 
-        // Retrieve payment record for the course
-        $payment = Payments::where('client_id', $client_id)
-            ->where('course_id', $course_id)
-            ->first();
+    $attempts = ExamResultMaster::where('clientId', $clientId)
+        ->whereIn('examId', $examIds)
+        ->selectRaw('examId, COUNT(*) as attempt_count')
+        ->groupBy('examId')
+        ->get()
+        ->keyBy('examId');
 
-        // **Exclude exams where no payment exists**
-        if (!$payment) {
-            return false; // Skip this exam
-        }
+    $retakes = ExamRetake::where('clientId', $clientId)
+        ->whereIn('examId', $examIds)
+        ->get()
+        ->keyBy('examId');
 
-        // Count how many times the client has taken this exam
-        $examAttempts = ExamResultMaster::where('clientId', $client_id)
-            ->where('examId', $exam->examId)
-            ->count();
+    $eligibleForAnyExam = false;
 
-        // Retrieve retake record
-        $examRetake = ExamRetake::where('clientId', $client_id)
-            ->where('examId', $exam->examId)
-            ->first();
+    $exams = $exams->map(function ($exam) use (
+        $payments,
+        $attempts,
+        $retakes,
+        $now,
+        &$eligibleForAnyExam
+    ) {
+        $payment = $payments->get($exam->course_id);
+        $attemptCount = (int) optional($attempts->get($exam->examId))->attempt_count;
+        $retakeCount = (int) optional($retakes->get($exam->examId))->retake_count;
 
-        $retakeCount = $examRetake ? $examRetake->retake_count : 0;
+        $examDateTime = Carbon::parse($exam->examDate . ' ' . $exam->examTime);
 
-        // Determine eligibility status
-        if ($payment->part_payment < $payment->amount) {
+        if (!$payment || $payment->part_payment < $payment->amount) {
             $exam->status2 = 'incomplete payment';
-        } elseif ($now->lt(Carbon::parse($exam->examTime))) {
+        } elseif ($now->lt($examDateTime)) {
             $exam->status2 = 'not yet available';
-        } elseif ($examAttempts > 0 && (!$examRetake || $examAttempts > $retakeCount)) {
-            $exam->status2 = 'cannot retake exam';
         } else {
-            $exam->status2 = 'eligible for exam';
-            $eligible_for_exam = true;
+            $allowedAttempts = 1 + $retakeCount;
+
+            if ($attemptCount >= $allowedAttempts) {
+                $exam->status2 = 'cannot retake exam';
+            } else {
+                $exam->status2 = 'eligible for exam';
+                $eligibleForAnyExam = true;
+            }
         }
 
-        return true; // Keep this exam in the results
+        return $exam;
     });
 
-    // Update client status if at least one exam is available
-    if ($eligible_for_exam) {
-        $client_status = 'eligible for exam';
-    }
-
     return response()->json([
-        'client_status' => $client_status,
-        'exams' => $cbts->values() // Reset array indexes
+        'client_status' => $eligibleForAnyExam ? 'eligible for exam' : 'not eligible',
+        'exams' => $exams->values(),
     ]);
 }
 
@@ -498,83 +500,138 @@ public function deleteQuestion($questionId)
 }
 
 
+
+
 public function submitExam(Request $request)
 {
-    // Validate the incoming request
     $request->validate([
-        'clientId' => 'required|string',
-        'examId' => 'required|integer',
-        'answers' => 'array',
-        'answers.*.questionId' => 'integer',
-        'answers.*.optionSelected' => 'integer',
+        'examId' => ['required', 'integer'],
+        'answers' => ['required', 'array'],
+        'answers.*.questionId' => ['required', 'integer'],
+        'answers.*.optionSelected' => ['nullable', 'integer'],
     ]);
 
-    $examId = $request->input('examId');
-    $answers = $request->input('answers');
-    $clientId = $request->input('clientId');
-    $totalScore = 0;
-    $results = [];
+    $examId = (int) $request->input('examId');
+    $answers = $request->input('answers', []);
+    $clientId = auth()->user()->client_id ?? $request->input('clientId');
 
-    // Create a master record for the exam submission
-    $masterResult = ExamResultMaster::create([
-        'examId' => $examId,
-        'clientId' => $clientId, // Assuming clientId should also be stored in ExamResultMaster
-        'total_score' => 0, // Initialize score, will update later
-    ]);
+    if (!$clientId) {
+        return response()->json([
+            'message' => 'Unable to determine client.',
+        ], 422);
+    }
 
-    foreach ($answers as $answer) {
-        $questionId = $answer['questionId'];
-        $optionSelected = $answer['optionSelected'];
+    return DB::transaction(function () use ($examId, $answers, $clientId) {
+        $exam = CBT::find($examId);
 
-        // Fetch the question
-        $question = Questions::find($questionId);
-
-        if (!$question) {
+        if (!$exam) {
             return response()->json([
-                'message' => "Question with ID $questionId not found."
+                'message' => 'Exam not found.',
             ], 404);
         }
 
-        // Fetch the correct option for the question
-        $correctOption = QuestionOptions::where('questionId', $questionId)
-                                ->where('isCorrect', 1)
-                                ->first();
+        $questionIds = collect($answers)
+            ->pluck('questionId')
+            ->filter()
+            ->unique()
+            ->values();
 
-        if (!$correctOption) {
+        if ($questionIds->isEmpty()) {
             return response()->json([
-                'message' => "No correct option set for question with ID $questionId."
-            ], 500);
+                'message' => 'No valid answers were submitted.',
+            ], 422);
         }
 
-        // Determine if the selected option is correct
-        $isCorrect = $correctOption->optionId === $optionSelected;
-        $score = $isCorrect ? $question->score : 0;
+        // If your exams table has a column like allowRetake or canRetake
+        $retakeAllowed = (bool) ($exam->canRetake ?? false);
 
-        // Save the result to ExamResult table with masterId reference
-        $result = ExamResult::create([
-            'masterId' => $masterResult->masterId, // Store reference to ExamResultMaster
-            'clientId' => $clientId,
+        if (!$retakeAllowed) {
+            $existingMaster = ExamResultMaster::where('examId', $examId)
+                ->where('clientId', $clientId)
+                ->exists();
+
+            if ($existingMaster) {
+                return response()->json([
+                    'message' => 'This exam has already been submitted.',
+                ], 409);
+            }
+        }
+
+        $questions = Questions::whereIn('questionId', $questionIds)
+            // ->where('examId', $examId)
+            ->get()
+            ->keyBy('questionId');
+
+        if ($questions->count() !== $questionIds->count()) {
+            return response()->json([
+                'message' => 'One or more questions do not belong to this exam.',
+            ], 422);
+        }
+
+        $correctOptions = QuestionOptions::whereIn('questionId', $questionIds)
+            ->where('isCorrect', 1)
+            ->get()
+            ->keyBy('questionId');
+
+        // Optional: track attempt number
+        $attemptNumber = ExamResultMaster::where('examId', $examId)
+            ->where('clientId', $clientId)
+            ->count() + 1;
+
+        $masterResult = ExamResultMaster::create([
             'examId' => $examId,
-            'questionId' => $questionId,
-            'optionSelected' => $optionSelected,
-            'isCorrect' => $isCorrect,
-            'score' => $score,
+            'clientId' => $clientId,
+            'total_score' => 0,
+            'attempt_number' => $attemptNumber, // remove if column does not exist
         ]);
 
-        $results[] = $result;
-        $totalScore += $score;
-    }
+        $totalScore = 0;
+        $results = [];
 
-    // Update the total score in the ExamResultMaster record
-    $masterResult->update(['total_score' => $totalScore]);
+        foreach ($answers as $answer) {
+            $questionId = (int) $answer['questionId'];
+            $optionSelected = $answer['optionSelected'] ?? null;
 
-    // Return the response
-    return response()->json([
-        'message' => 'Exam submitted successfully.',
-        'totalScore' => $totalScore,
-        'masterId' => $masterResult->masterId,
-        'results' => $results,
-    ]);
+            $question = $questions->get($questionId);
+            $correctOption = $correctOptions->get($questionId);
+
+            if (!$correctOption) {
+                throw ValidationException::withMessages([
+                    'answers' => ["No correct option set for question ID {$questionId}."],
+                ]);
+            }
+
+            $isCorrect = $optionSelected !== null
+                && (int) $correctOption->optionId === (int) $optionSelected;
+
+            $score = $isCorrect ? (float) ($question->score ?? 0) : 0;
+
+            $result = ExamResult::create([
+                'masterId' => $masterResult->masterId,
+                'clientId' => $clientId,
+                'examId' => $examId,
+                'questionId' => $questionId,
+                'optionSelected' => $optionSelected,
+                'isCorrect' => $isCorrect ? 1 : 0,
+                'score' => $score,
+            ]);
+
+            $results[] = $result;
+            $totalScore += $score;
+        }
+
+        $masterResult->update([
+            'total_score' => $totalScore,
+        ]);
+
+        return response()->json([
+            'message' => 'Exam submitted successfully.',
+            'totalScore' => $totalScore,
+            'masterId' => $masterResult->masterId,
+            'attemptNumber' => $attemptNumber,
+            'results' => $results,
+        ]);
+    });
 }
 
 // // Exam Results
@@ -634,21 +691,23 @@ $result = ExamResultMaster::
     return response()->json($result);
 }
 
-public function MyCBTExamResult($client_id) {
+public function myCBTExamResult($client_id)
+{
     $results = ExamResultMaster::where('clientId', $client_id)
-        ->with(['exam' => function ($query) {
-            $query->select('examId', 'examName', 'examDate', 'canSeeResult'); // Include canSeeResult for validation
-        }])
-        ->select('masterId', 'clientId', 'total_score', 'examId') // Ensure examId is selected for relationship
-        ->get();
+        ->with([
+            'exam' => function ($query) {
+                $query->select('examId', 'examName', 'examDate', 'examTime', 'canSeeResult');
+            }
+        ])
+        ->select('masterId', 'clientId', 'total_score', 'examId')
+        ->get()
+        ->map(function ($result) {
+            if ($result->exam && (int) $result->exam->canSeeResult === 0) {
+                $result->total_score = null;
+            }
 
-    // Modify results based on canSeeResult
-    $results->transform(function ($result) {
-        if ($result->exam && $result->exam->canSeeResult == 0) {
-            unset($result->total_score); // Remove total_score if canSeeResult is 0
-        }
-        return $result;
-    });
+            return $result;
+        });
 
     return response()->json($results);
 }
@@ -688,62 +747,60 @@ if ($examResultMaster) {
 
 public function getUserExamResults($masterId)
 {
-    $results = ExamResultMaster::where('masterId', $masterId)
-        ->with(
+    $result = ExamResultMaster::where('masterId', $masterId)
+        ->with([
             'client',
             'exam',
             'exam_questions.questions.options',
-            'cbt_results'
-        )
+            'cbt_results',
+        ])
         ->first();
 
-    // Check if results exist
-    if (!$results) {
-        return response()->json(['message' => 'No exam results found'], 404);
+    if (!$result) {
+        return response()->json([
+            'message' => 'No exam results found',
+        ], 404);
     }
 
-    // Calculate total score from exam_questions
-    $totalScore = $results->exam_questions->sum('score');
+    $totalPossibleScore = collect($result->exam_questions)
+        ->flatMap(function ($examQuestion) {
+            return $examQuestion->questions ?? collect();
+        })
+        ->sum(function ($question) {
+            return (float) ($question->score ?? 0);
+        });
 
-    // Append total score to response
-    $results->total_score2 = $totalScore;
+    $result->total_score2 = $totalPossibleScore;
 
-    return response()->json($results);
+    return response()->json($result);
 }
 
 
 // Download Exam Results in PDF format
 public function downloadExamResults($masterId)
 {
-    $results = ExamResultMaster::where('masterId', $masterId)
-        ->with(
-            'client.admissions',
-            'exam.course',
-            'exam_questions',
-            'cbt_results',
-            'client.passport'
-        )
-        ->first();
+    $results = ExamResultMaster::with([
+        'client.admissions',
+        'client.passport',
+        'exam.course',
+        'exam_questions',
+        'results',
+    ])->find($masterId);
 
-    // Check if results exist
     if (!$results) {
-        return response()->json(['message' => 'No exam results found'], 404);
+        return response()->json([
+            'message' => 'No exam results found',
+        ], 404);
     }
 
-    // Calculate total score from exam_questions
-    $totalScore = $results->exam_questions->sum('score');
+    // Total number of questions, not total marks
+    $results->total_score2 = $results->exam_questions
+        ->pluck('questionId')
+        ->unique()
+        ->count();
 
-    // Append total score to response
-    $results->total_score2 = $totalScore;
-// return $results;
-    // Generate and return PDF
-    // return view ('pdf.test_report', compact('results'));
-     $pdf = \PDF::loadView('pdf.test_report', compact('results'));
-    return $pdf->setPaper('undefined')->stream('result-slip.pdf');
-    // return $pdf->setPaper('undefined')->download('invoice.pdf');
-
-    // return $pdf->download('exam-results.pdf');
-
+    $pdf = \PDF::loadView('pdf.test_report', compact('results'));
+    return $pdf->stream('result-slip.pdf');
 }
 
 
