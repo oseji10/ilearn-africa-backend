@@ -776,30 +776,51 @@ public function getUserExamResults($masterId)
 }
 
 
-// Download Exam Results in PDF format
+
+
 public function downloadExamResults($masterId)
 {
-    $results = ExamResultMaster::with([
-        'client.admissions',
-        'client.passport',
-        'exam.course',
-        'exam_questions',
-        'results',
-    ])->find($masterId);
+    $result = ExamResultMaster::where('masterId', $masterId)
+        ->with([
+            'client.admissions',
+            'client.passport',
+            'exam.course',
+        ])
+        ->first();
 
-    if (!$results) {
+    if (!$result) {
         return response()->json([
             'message' => 'No exam results found',
         ], 404);
     }
 
-    // Total number of questions, not total marks
-    $results->total_score2 = $results->exam_questions
-        ->pluck('questionId')
-        ->unique()
-        ->count();
+    $scoreSummary = DB::table('cbt_exams_results as r')
+        ->joinSub(
+            DB::table('cbt_exams_questions')
+                ->select('examId', DB::raw('SUM(score) as obtainable_score'))
+                ->groupBy('examId'),
+            'q',
+            function ($join) {
+                $join->on('q.examId', '=', 'r.examId');
+            }
+        )
+        ->select(
+            'r.clientId',
+            DB::raw('SUM(r.score) as total_score'),
+            'q.obtainable_score'
+        )
+        ->where('r.masterId', $masterId)
+        ->where('r.examId', $result->examId)
+        ->groupBy('r.clientId', 'q.obtainable_score')
+        ->first();
 
-    $pdf = \PDF::loadView('pdf.test_report', compact('results'));
+    $result->total_score = $scoreSummary?->total_score ?? 0;
+    $result->obtainable_score = $scoreSummary?->obtainable_score ?? 0;
+
+    $pdf = \PDF::loadView('pdf.test_report', [
+        'results' => $result,
+    ]);
+
     return $pdf->stream('result-slip.pdf');
 }
 

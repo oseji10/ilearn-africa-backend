@@ -218,13 +218,28 @@
         <tbody>
             <tr>
                 
-                <td><strong>{{$results->total_score}}/{{$results->total_score2}}</strong></td>
-                <td>
-                    {{-- {{ round(($results->total_score / $results->total_score2) * 100, 2) }}% --}}
-                    {{ $results->total_score2 > 0 ? round(($results->total_score / $results->total_score2) * 100, 2) : 0 }}%
-                </td>
-                <td>{{ ($results->total_score2 != 0 && ($results->total_score / $results->total_score2) * 100 >= 50) ? 'PASS' : 'RESIT' }}
-                </td>
+<td>
+    <strong>
+        {{ $results->total_score }}/{{ $results->obtainable_score }}
+    </strong>
+</td>
+
+<td>
+    {{
+        $results->obtainable_score > 0
+        ? round(($results->total_score / $results->obtainable_score) * 100, 2)
+        : 0
+    }}%
+</td>
+
+<td>
+    {{
+        $results->obtainable_score > 0 &&
+        (($results->total_score / $results->obtainable_score) * 100) >= 50
+        ? 'PASS'
+        : 'RESIT'
+    }}
+</td>                
             </tr>
         </tbody>
     </table>
