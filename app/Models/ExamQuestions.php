@@ -23,6 +23,11 @@ class ExamQuestions extends Model
         return $this->belongsTo(Questions::class, 'questionId', 'questionId');
     }
 
+    public function questions()
+    {
+        return $this->hasMany(Questions::class, 'questionId', 'questionId');
+    }
+
     public function exam()
     {
         return $this->belongsTo(CBT::class, 'examId', 'examId');
