@@ -7,6 +7,7 @@ use App\Models\Admissions;
 use App\Models\Payments;
 use App\Models\Clients;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 
 class AdmissionController extends Controller
 {
@@ -129,5 +130,71 @@ return response()->json([
         }
     }
 
-    
+
+
+
+public function destroy($id): JsonResponse
+{
+    $admission = Admissions::find($id);
+
+    if (!$admission) {
+        return response()->json([
+            'message' => 'Admission not found.',
+        ], 404);
+    }
+
+    $admission->delete();
+
+    return response()->json([
+        'message' => 'Admission deleted successfully.',
+    ], 200);
+}
+
+
+
+public function trashed(): JsonResponse
+{
+    $admissions = Admissions::onlyTrashed()
+        ->with(['clients.documents', 'payments.courses'])
+        ->latest('deleted_at')
+        ->get();
+
+    return response()->json([
+        'admissions' => $admissions,
+    ], 200);
+}
+
+public function restore($id): JsonResponse
+{
+    $admission = Admissions::onlyTrashed()->find($id);
+
+    if (!$admission) {
+        return response()->json([
+            'message' => 'Trashed admission not found.',
+        ], 404);
+    }
+
+    $admission->restore();
+
+    return response()->json([
+        'message' => 'Admission restored successfully.',
+    ], 200);
+}
+
+public function forceDelete($id): JsonResponse
+{
+    $admission = Admissions::onlyTrashed()->find($id);
+
+    if (!$admission) {
+        return response()->json([
+            'message' => 'Trashed admission not found.',
+        ], 404);
+    }
+
+    $admission->forceDelete();
+
+    return response()->json([
+        'message' => 'Admission permanently deleted successfully.',
+    ], 200);
+}
 }

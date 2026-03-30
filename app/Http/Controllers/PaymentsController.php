@@ -305,65 +305,81 @@ public function storeManualPayment(Request $request)
 
 
 
-
 public function topUpPayment(Request $request)
 {
     $validated = $request->validate([
-        'id' => 'required|integer',  // Make 'id' required for the update
-        'client_id' => 'required|string', // Assuming 'client_id' is required
-        'part_payment' => 'required|numeric', // Assuming part_payment should be numeric
-        'file' => 'required|file|mimes:png,jpg,jpeg,JPG,pdf,doc,docx|max:2048', // Make 'id' required for the update
-            'client_id' => 'required|string', // Assuming 'client_id' is required
+        'id' => ['required', 'integer', 'exists:payments,id'],
+        'client_id' => ['required', 'string'],
+        'part_payment' => ['required', 'numeric', 'min:0.01'],
+        'file' => ['nullable', 'file', 'mimes:png,jpg,jpeg,pdf,doc,docx', 'max:2048'],
     ]);
-    
-    $retrive_payment_detail = Payments::where('id', $validated['id'])->first();
-    
-    if (!$retrive_payment_detail) {
-        return response()->json(['error' => 'Payment not found'], 404);
+
+    try {
+        $result = DB::transaction(function () use ($request, $validated) {
+            $payment = Payments::lockForUpdate()->find($validated['id']);
+
+            if (!$payment) {
+                return response()->json([
+                    'error' => 'Payment not found',
+                ], 404);
+            }
+
+            $topUpAmount = (float) $validated['part_payment'];
+            $previousBalance = (float) ($payment->part_payment ?? 0);
+            $newBalance = $previousBalance + $topUpAmount;
+
+            $payment->update([
+                'part_payment' => $newBalance,
+                'client_id' => $validated['client_id'],
+            ]);
+
+            $partPayment = new PartPayments();
+            $partPayment->client_id = $validated['client_id'];
+            $partPayment->payment_id = $payment->id;
+            $partPayment->amount = $topUpAmount; // save only this top-up amount
+            $partPayment->status = 'pending';
+            $partPayment->save();
+
+            $proofOfPayment = null;
+
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $path = $file->store('receipts', 'public');
+
+                $proofOfPayment = ProofOfPayment::create([
+                    'client_id' => $validated['client_id'],
+                    'payment_id' => $payment->id,
+                    'file_path' => $path,
+                    'amount' => $topUpAmount,
+                ]);
+            }
+
+            return [
+                'message' => 'Top-up recorded successfully.',
+                'data' => [
+                    'payment_id' => $payment->id,
+                    'previous_balance' => $previousBalance,
+                    'top_up_amount' => $topUpAmount,
+                    'new_balance' => $newBalance,
+                    'part_payment_id' => $partPayment->id,
+                    'proof_of_payment_id' => $proofOfPayment?->id,
+                    'proof_file_path' => $proofOfPayment?->file_path,
+                ],
+            ];
+        });
+
+        return response()->json($result, 200);
+    } catch (\Throwable $e) {
+        \Log::error('Top-up payment failed', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'error' => 'Top-up payment failed',
+            'message' => $e->getMessage(),
+        ], 500);
     }
-    
-    $previous_balance = $retrive_payment_detail->part_payment;
-    
-    // Ensure part_payment is numeric before adding
-    $validated['part_payment'] += $previous_balance;
-    
-    $updated = Payments::where('id', $validated['id'])
-                ->update(['part_payment' => $validated['part_payment'], 'client_id' => $validated['client_id']]);
-    
-
-
-                $payment_id = $retrive_payment_detail->id;
-
-$part_payments = new PartPayments();
-$part_payments->client_id = $request->client_id;
-$part_payments->payment_id = $payment_id;
-$part_payments->amount = $request->part_payment;
-$part_payments->status = 'pending';
-$part_payments->save();
-
-if ($request->file('file')) {
-    $file = $request->file('file');
-    $path = $file->store('receipts', 'public'); // Store in the 'public/documents' directory
-
-    $validated['file_path'] = $path;
-    $validated['client_id'] = auth()->user()->client_id;
-
-    // Save the file path or other related information to the database if needed
-    $save = ProofOfPayment::create($validated);
-
-}
-
-    if ($updated) {
-        return response()->json(['message' => 'Payment updated successfully']);
-    } else {
-        return response()->json(['error' => 'Update failed'], 500);
-    }
-    
-
-
-
-
-
 }
 
 

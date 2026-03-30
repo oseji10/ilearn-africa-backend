@@ -36,7 +36,7 @@ class PdfController extends Controller
         // Prepare the data for the PDF
         $user_data = [
             'client_id' => $payment->client_id,
-            'amount' => $payment->amount,
+            'amount' => $payment->part_payment,
             'created_at' => $payment->created_at->format('Y-m-d'),
             'firstname' => $payment->clients->firstname,
             'surname' => $payment->clients->surname,
@@ -100,7 +100,7 @@ class PdfController extends Controller
         // Prepare the data for the PDF
         $user_data = [
             'client_id' => $payment->client_id,
-            'amount' => $payment->amount,
+            'amount' => $payment->part_payment,
             'created_at' => $payment->created_at->format('Y-m-d'),
             'firstname' => $payment->clients->firstname,
             'surname' => $payment->clients->surname,

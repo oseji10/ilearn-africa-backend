@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Admissions extends Model
 {
+    use SoftDeletes;
     use HasFactory;
+    
     public $table = 'admissions';
     protected $fillable = [
         'admission_number',
@@ -17,6 +20,8 @@ class Admissions extends Model
         'cohort_id',
     ];
 
+
+    protected $dates = ['deleted_at'];
 
     public function clients()
     {

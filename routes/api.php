@@ -137,7 +137,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('admit-all', [AdmissionController::class, 'admitAll']);
     Route::post('admissions/admission_letter/download', [PdfController::class, 'generateAdmissionLetter']);
     Route::post('admissions/admission_letter/email', [PdfController::class, 'emailAdmissionLetter']);
-    
+    Route::delete('/admissions/{id}', [AdmissionController::class, 'destroy']);
+    Route::get('/admissions/trashed', [AdmissionController::class, 'trashed']);
+    Route::put('/admissions/{id}/restore', [AdmissionController::class, 'restore']);
+    Route::delete('/admissions/{id}/force', [AdmissionController::class, 'forceDelete']);
+
     Route::post('certificates/client-certificate/{admission_number}', [PdfController::class, 'downloadCertificate'])->name('download_certificate');
     Route::post('certificate/issue', [PdfController::class, 'generateCertificate'])->name('certificate');
     Route::get('certificates', [CertificatesController::class, 'clientCertificates'])->name('certificate');
