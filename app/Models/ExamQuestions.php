@@ -32,4 +32,9 @@ class ExamQuestions extends Model
     {
         return $this->belongsTo(CBT::class, 'examId', 'examId');
     }
+
+     public function exams()
+    {
+        return $this->belongsTo(CBT::class, 'examId', 'examId');
+    }
 }
