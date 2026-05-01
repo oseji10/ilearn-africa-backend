@@ -543,19 +543,19 @@ public function submitExam(Request $request)
         }
 
         // If your exams table has a column like allowRetake or canRetake
-        $retakeAllowed = (bool) ($exam->canRetake ?? false);
+        // $retakeAllowed = (bool) ($exam->canRetake ?? false);
 
-        if (!$retakeAllowed) {
-            $existingMaster = ExamResultMaster::where('examId', $examId)
-                ->where('clientId', $clientId)
-                ->exists();
+        // if (!$retakeAllowed) {
+        //     $existingMaster = ExamResultMaster::where('examId', $examId)
+        //         ->where('clientId', $clientId)
+        //         ->exists();
 
-            if ($existingMaster) {
-                return response()->json([
-                    'message' => 'This exam has already been submitted.',
-                ], 409);
-            }
-        }
+        //     if ($existingMaster) {
+        //         return response()->json([
+        //             'message' => 'This exam has already been submitted.',
+        //         ], 409);
+        //     }
+        // }
 
         $questions = Questions::whereIn('questionId', $questionIds)
             // ->where('examId', $examId)
