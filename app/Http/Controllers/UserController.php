@@ -44,7 +44,7 @@ class UserController extends Controller
                     'email' => $user->email,
                     'phone' => $user->phone_number,
                     'role' => $user->role_id,
-                    'role_name' => $user->user_role ? $user->user_role->role_name : 'N/A',
+                    // 'role_name' => $user->user_role ? $user->user_role->role_name : 'N/A',
                     'status' => $user->status,
                     'department' => $user->client ? $user->client->client_extra?->department : null,
                     'created_at' => $user->created_at,
