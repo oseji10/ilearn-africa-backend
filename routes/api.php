@@ -20,6 +20,7 @@ use App\Http\Controllers\CourseMaterialController;
 use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\CohortsController;
 use App\Http\Controllers\CBTController;
+use App\Http\Controllers\UserController;
 
 
 Route::post('register', [AuthController::class, 'register']);
@@ -186,6 +187,29 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/deleted-payments', [PaymentsController::class, 'deletedPayments']);
 
     Route::get('courses/client/active', [CoursesController::class, 'activeClientCourses']);
+
+
+    // Get all users (exclude clients)
+    Route::get('/users', [UserController::class, 'index']);
+    
+    // Get single user
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    
+    // Create new user
+    Route::post('/users', [UserController::class, 'store']);
+    
+    // Update user
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    
+    // Delete user
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    
+    // Get user statistics
+    Route::get('/users-statistics', [UserController::class, 'statistics']);
+    
+    // Toggle user status
+    Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
+
 
 });
 

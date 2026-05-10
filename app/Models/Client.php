@@ -80,5 +80,8 @@ class Client extends Model
     {
         return $this->hasOne(ClientExtra::class, 'client_id', 'client_id');
     }
+
+
+
   
 }

@@ -149,7 +149,7 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user,
-            'role' => $user->role->name, // Assuming the user has a role relationship
+            'role' => $user->user_role?->name, // Assuming the user has a role relationship
             'client' => $user->client, 
             
         ]);
@@ -216,7 +216,9 @@ class AuthController extends Controller
 
     public function getRole()
 {
-    $role = auth()->user()->roles->pluck('name')->first();
+    // $role = auth()->user()->roles->pluck('name')->first();
+
+    $role = auth()->user()->user_role->name;
 
 
     return response()->json($role);

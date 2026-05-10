@@ -60,6 +60,11 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class, 'role_id', 'id');
     }
 
+    public function user_role()
+    {
+        return $this->belongsTo(Role::class, 'role_id', 'id');
+    }
+
     public function profileImage()
     {
         return $this->hasOne(ProfileImage::class, 'client_id', 'client_id');
