@@ -125,7 +125,7 @@ class UserController extends Controller
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:6',
-                'role' => 'required|integer|in:1,2,3', // Only Super Admin, Admin, Staff
+                'role' => 'required|integer|in:1,2,4', // Only Super Admin, Admin, Staff
                 'phone' => 'nullable|string|max:20',
                 'department' => 'nullable|string|max:255',
                 'status' => 'nullable|string',
