@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
+
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+
+
+
 class UserController extends Controller
 {
     /**
@@ -109,6 +115,57 @@ class UserController extends Controller
      * Create new user (Super Admin, Admin, or Staff only)
      * Only Super Admin can access
      */
+
+    /**
+     * Generate a secure random password
+     */
+    private function generateSecurePassword($length = 12)
+    {
+        $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers = '0123456789';
+        $special = '!@#$%^&*';
+        
+        $password = '';
+        $password .= $uppercase[rand(0, strlen($uppercase) - 1)];
+        $password .= $lowercase[rand(0, strlen($lowercase) - 1)];
+        $password .= $numbers[rand(0, strlen($numbers) - 1)];
+        $password .= $special[rand(0, strlen($special) - 1)];
+        
+        $allChars = $uppercase . $lowercase . $numbers . $special;
+        for ($i = 4; $i < $length; $i++) {
+            $password .= $allChars[rand(0, strlen($allChars) - 1)];
+        }
+        
+        return str_shuffle($password);
+    }
+
+    /**
+     * Send welcome email with login credentials
+     */
+    private function sendWelcomeEmail($user, $plainPassword, $name)
+    {
+        try {
+            $data = [
+                'name' => $name,
+                'email' => $user->email,
+                'password' => $plainPassword,
+                // 'login_url' => config('app.frontend_url') . '/login', // or your actual login URL
+                'login_url' => "https://app.ilearnafricaedu.com"
+            ];
+
+            Mail::send('emails.user-welcome', $data, function($message) use ($user, $name) {
+                $message->to($user->email, $name)
+                    ->subject('Welcome to ' . config('app.name') . ' - Your Account Details');
+            });
+
+            return true;
+        } catch (\Exception $e) {
+            \Log::error('Failed to send welcome email: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function store(Request $request)
     {
         try {
@@ -120,15 +177,14 @@ class UserController extends Controller
                 ], 403);
             }
 
-            // Validate request
+            // Validate request (removed password validation)
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
-                'password' => 'required|string|min:6',
-                'role' => 'required|integer|in:1,2,4', // Only Super Admin, Admin, Staff
+                'role' => 'required|int|in:1,2,4', // Only Super Admin, Admin, Staff
                 'phone' => 'nullable|string|max:20',
                 'department' => 'nullable|string|max:255',
-                'status' => 'nullable|string',
+                 'status' => 'nullable|string|in:active,inactive',
             ]);
 
             if ($validator->fails()) {
@@ -150,6 +206,9 @@ class UserController extends Controller
                 // Generate unique client_id
                 $client_id = 'USR' . strtoupper(substr(uniqid(), -8));
 
+                // Generate secure password
+                $plainPassword = $this->generateSecurePassword(12);
+
                 // Create client record
                 $client = Client::create([
                     'client_id' => $client_id,
@@ -157,7 +216,7 @@ class UserController extends Controller
                     'surname' => $surname,
                     'othernames' => $othernames,
                     'status' => $request->status == 1 ? 'active' : 'inactive',
-                    'created_by' => $currentUser->id,
+                    // 'created_by' => $currentUser->id,
                 ]);
 
                 // Create client_extra if department is provided
@@ -174,22 +233,28 @@ class UserController extends Controller
                 $user = User::create([
                     'email' => $request->email,
                     'phone_number' => $request->phone,
-                    'password' => Hash::make($request->password),
+                    'password' => Hash::make($plainPassword),
                     'client_id' => $client_id,
                     'role_id' => $request->role,
                 ]);
 
+                // Send welcome email with credentials
+                $emailSent = $this->sendWelcomeEmail($user, $plainPassword, $firstname . ' ' . $surname);
+
                 DB::commit();
 
                 return response()->json([
-                    'message' => 'User created successfully',
+                    'message' => $emailSent 
+                        ? 'User created successfully. Login credentials have been sent to their email.' 
+                        : 'User created successfully, but failed to send email notification.',
                     'user' => [
                         'id' => $user->id,
                         'name' => $firstname . ' ' . $surname,
                         'email' => $user->email,
                         'role' => $user->role_id,
                         'client_id' => $client_id,
-                    ]
+                    ],
+                    'email_sent' => $emailSent
                 ], 201);
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -202,6 +267,7 @@ class UserController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Update user
@@ -251,6 +317,7 @@ class UserController extends Controller
                     'email' => $request->email ?? $user->email,
                     'phone_number' => $request->phone ?? $user->phone_number,
                     'role_id' => $request->role ?? $user->role_id,
+                    'status' => $request->status ?? $user->status,
                 ];
 
                 if ($request->filled('password')) {
@@ -270,9 +337,9 @@ class UserController extends Controller
                         $clientData['othernames'] = isset($nameParts[2]) ? implode(' ', array_slice($nameParts, 2)) : null;
                     }
 
-                    if ($request->has('status')) {
-                        $clientData['status'] = $request->status == 1 ? 'active' : 'inactive';
-                    }
+                    // if ($request->has('status')) {
+                    //     $clientData['status'] = $request->status == 1 ? 'active' : 'inactive';
+                    // }
 
                     if (!empty($clientData)) {
                         $user->client->update($clientData);
