@@ -221,7 +221,7 @@ class UserController extends Controller
 
                 // Create client_extra if department is provided
                 if ($request->department) {
-                    DB::table('client_extras')->insert([
+                    DB::table('clients_extra')->insert([
                         'client_id' => $client_id,
                         'department' => $request->department,
                         'created_at' => now(),
