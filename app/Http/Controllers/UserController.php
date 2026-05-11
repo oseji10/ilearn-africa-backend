@@ -296,7 +296,7 @@ class UserController extends Controller
                 'name' => 'sometimes|required|string|max:255',
                 'email' => 'sometimes|required|email|unique:users,email,' . $id,
                 'password' => 'nullable|string|min:6',
-                'role' => 'sometimes|required|integer|in:1,2,3',
+                'role' => 'sometimes|required|string',
                 'phone' => 'nullable|string|max:20',
                 'department' => 'nullable|string|max:255',
                 'status' => 'nullable|string',
