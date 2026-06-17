@@ -36,7 +36,7 @@ class EmailAdmission extends Mailable
     $centerName = $this->admission_data['center_name'];
 
     // Determine which PDF view to load based on the center name
-    if (strpos($centerName, 'iLearn Africa') !== false) {
+    if (strpos($centerName, 'iLearn 360 Africa') !== false) {
         $pdf = Pdf::loadView('pdf.ilearn_admission_letter', $this->admission_data);
     } else {
         $pdf = Pdf::loadView('pdf.partner_admission_letter', $this->admission_data);
@@ -44,7 +44,7 @@ class EmailAdmission extends Mailable
 
     // Attach the generated PDF to the email
     return $this->view('emails.email-admission')
-                ->subject('iLearn Africa - Admission Letter')
+                ->subject('iLearn 360 Africa - Admission Letter')
                 ->attachData($pdf->output(), 'admission.pdf', [
                     'mime' => 'application/pdf',
                 ])
@@ -60,7 +60,7 @@ class EmailAdmission extends Mailable
                     'transaction_reference' => $this->admission_data['transaction_reference'],
                     'course_name' => $this->admission_data['course_name'],
                     'course_id' => $this->admission_data['course_id'],
-                    'support_email' => "info@ilearnafricaedu.com",
+                    'support_email' => "info@ilearn360africa.com",
                     'admission_number' => $this->admission_data['admission_number'],
                     'admission_date' => $this->admission_data['admission_date'],
                 ]);

@@ -151,7 +151,7 @@ class UserController extends Controller
                 'email' => $user->email,
                 'password' => $plainPassword,
                 // 'login_url' => config('app.frontend_url') . '/login', // or your actual login URL
-                'login_url' => "https://app.ilearnafricaedu.com"
+                'login_url' => "https://app.ilearn360africa.com"
             ];
 
             Mail::send('emails.user-welcome', $data, function($message) use ($user, $name) {

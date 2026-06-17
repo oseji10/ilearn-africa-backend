@@ -32,16 +32,16 @@ class WelcomeEmail extends Mailable
     public function build()
     {
         return $this->view('emails.welcome-email')
-                    ->subject('Welcome to iLearn Africa')
+                    ->subject('Welcome to iLearn 360 Africa')
                     ->with([
                         'email' => $this->user->email,
                         'client_id' => $this->user->client_id,
                         'phone_number' => $this->user->phone_number,
                         'password' => $this->auto_password,
-                        'action_url' => "https://app.ilearnafricaedu.com/auth/signin/",
-                        'login_url' => "https://app.ilearnafricaedu.com/auth/signin/",
+                        'action_url' => "https://app.ilearn360africa.com/auth/signin/",
+                        'login_url' => "https://app.ilearn360africa.com/auth/signin/",
                         'firstname' => $this->user->client->firstname, // Accessing the client's firstname
-                        'support_email' => "info@ilearnafricaedu.com",
+                        'support_email' => "info@ilearn360africa.com",
                     ]);
     }
 }

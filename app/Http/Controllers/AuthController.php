@@ -323,7 +323,7 @@ public function changePassword(Request $request)
     // $url = env('URL');
     // echo getenv('URL');
     // return $url;
-    $url = "https://app.ilearnafricaedu.com";
+    $url = "https://app.ilearn360africa.com";
     $resetLink = ($url .'/auth/reset-password?token=' . $token . '&email=' . urlencode($email));
 
     // Send the reset link via email if needed

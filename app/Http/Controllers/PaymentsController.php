@@ -600,7 +600,7 @@ public function topUpPayment(Request $request)
                 'qualification' => $validated['customer']['qualification'] ?? null,
             ],
             'customizations' => [
-                'title' => 'iLearn Africa Course Payment',
+                'title' => 'iLearn 360 Africa Course Payment',
             ],
         ];
 

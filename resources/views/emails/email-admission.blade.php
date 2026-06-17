@@ -445,7 +445,7 @@
             <tr>
               <td class="email-masthead">
               <a href="https://app.ilearnfricaedu.com" class="f-fallback email-masthead_name">
-                <img src="https://app.ilearnafricaedu.com/images/logo/ilearn-logo.png" width="15%"/>
+                <img src="https://app.ilearn360africa.com/images/logo/ilearn-logo.png" width="15%"/>
               </a>
               </td>
             </tr>
@@ -458,11 +458,11 @@
                     <td class="content-cell">
                       <div class="f-fallback">
                         <h1>Congratulations, {{$firstname}}!</h1>
-                        <p>We are pleased to inform you that your recent application for <b>{{$course_name}}</b> with iLearn Africa has been approved and you can commence your trainining immediately.</p>
+                        <p>We are pleased to inform you that your recent application for <b>{{$course_name}}</b> with iLearn 360 Africa has been approved and you can commence your trainining immediately.</p>
                        
                         <p>If you have any questions for us, you can reply to this email and it will go right to them. Alternatively, feel free to <a href="mailto:{{$support_email}}">contact our customer success team</a> anytime. </p>
                         <p>Welcome aboard,
-                          <br>The iLearn Africa Team</p>
+                          <br>The iLearn 360 Africa Team</p>
                         <!-- <p><strong>P.S.</strong> Need help getting started? Check out our <a href="">help documentation</a>.</p> -->
                         <!-- Sub copy -->
                         <table class="body-sub" role="presentation">
@@ -485,8 +485,8 @@
                   <tr>
                     <td class="content-cell" align="center">
                       <p class="f-fallback sub align-center">
-                        iLearn Africa 
-                        <br>Address: Suite 308 Nawa Complex,
+                        iLearn 360 Africa 
+                        <br>Address: Suite 009 Nawa Complex,
                         <br>Kado Abuja, Nigeria.
                       </p>
                     </td>

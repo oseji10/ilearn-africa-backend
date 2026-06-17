@@ -40,7 +40,7 @@ class EmailCertificate extends Mailable
 
 
         return $this->view('emails.email-certificate')
-                    ->subject('iLearn Africa - Certificate')
+                    ->subject('iLearn 360 Africa - Certificate')
                     ->attachData($pdf->output(), 'certificate.pdf', [
                         'mime' => 'application/pdf',
                     ])
@@ -57,7 +57,7 @@ class EmailCertificate extends Mailable
                         'transaction_reference' => $this->certificate_data['transaction_reference'],
                         'course_name' => $this->certificate_data['course_name'],
                         'course_id' => $this->certificate_data['course_id'],
-                        'support_email' => "info@ilearnafricaedu.com",
+                        'support_email' => "info@ilearn360africa.com",
                         'admission_number' => $this->certificate_data['admission_number'],
                         'admission_date' => $this->certificate_data['admission_date'],
                         'name_on_certificate' => $this->certificate_data['name_on_certificate'],

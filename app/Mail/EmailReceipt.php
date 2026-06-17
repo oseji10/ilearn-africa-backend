@@ -37,7 +37,7 @@ class EmailReceipt extends Mailable
 
 
         return $this->view('emails.email-receipt')
-                    ->subject('iLearn Africa - Payment Receipt')
+                    ->subject('iLearn 360 Africa - Payment Receipt')
                     ->attachData($pdf->output(), 'receipt.pdf', [
                         'mime' => 'application/pdf',
                     ])
@@ -58,7 +58,7 @@ class EmailReceipt extends Mailable
                         'course_id' => $this->user_data['course_id'],
                         'transaction_date' => $this->user_data['transaction_date'],
                         
-                        'support_email' => "info@ilearnafricaedu.com",
+                        'support_email' => "info@ilearn360africa.com",
                     ]);
     }
 

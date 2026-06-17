@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iLearn Africa Test Report Form</title>
+    <title>iLearn 360 Africa Test Report Form</title>
     <style>
      
         .header {
@@ -132,8 +132,8 @@
 </head>
 <body>
     <!-- <div class="header">Test Report Form</div> -->
-     <!-- <img src="{{Storage::url('/ilearn-logo.png')}}" alt="iLearn Africa Logo" align="left" width="200px"><br/><br/><br/><br/><br/><br/> -->
-     <img src="{{ public_path('images/ilearn-logo.png') }}" alt="iLearn Africa Logo" width="150px">
+     <!-- <img src="{{Storage::url('/ilearn-logo.png')}}" alt="iLearn 360 Africa Logo" align="left" width="200px"><br/><br/><br/><br/><br/><br/> -->
+     <img src="{{ public_path('images/ilearn-logo.png') }}" alt="iLearn 360 Africa Logo" width="150px">
      
 
      <div>

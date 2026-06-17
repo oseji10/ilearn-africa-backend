@@ -32,7 +32,7 @@ class PasswordEmail extends Mailable
     public function build()
     {
         return $this->view('emails.password-email')
-                    ->subject('iLearn Africa - Password Reset Link!')
+                    ->subject('iLearn 360 Africa - Password Reset Link!')
                     ->with([
                        'reset_link' => $this->reset_email_link
                     ]);

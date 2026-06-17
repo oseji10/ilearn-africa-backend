@@ -445,7 +445,7 @@
             <tr>
               <td class="email-masthead">
               <a href="https://app.ilearnfricaedu.com" class="f-fallback email-masthead_name">
-                <img src="https://app.ilearnafricaedu.com/images/logo/ilearn-logo.png" width="15%"/>
+                <img src="https://app.ilearn360africa.com/images/logo/ilearn-logo.png" width="15%"/>
               </a>
               </td>
             </tr>
@@ -503,7 +503,7 @@
                         </table>
                         <p>If you have any questions about this receipt, simply reply to this email or reach out to our <a href="{{$support_email}}">support team</a> for help.</p>
                         <p>Cheers,
-                          <br>The iLearn Africa Team</p>
+                          <br>The iLearn 360 Africa Team</p>
                         <!-- Action -->
                         <table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
                           <tr>
@@ -541,8 +541,8 @@
                   <tr>
                     <td class="content-cell" align="center">
                       <p class="f-fallback sub align-center">
-                        iLearn Africa 
-                        <br>Address: Suite 308 Nawa Complex,
+                        iLearn 360 Africa 
+                        <br>Address: Suite 009 Nawa Complex,
                         <br>Kado Abuja, Nigeria.
                       </p>
                     </td>

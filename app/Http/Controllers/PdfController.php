@@ -223,7 +223,7 @@ public function generateAdmissionLetter(Request $request)
 $centerName = $admission->payments->courses->centers->center_name;
 
 // Determine which PDF view to load based on the center name
-if (strpos($centerName, 'iLearn Africa') !== false) {
+if (strpos($centerName, 'iLearn 360 Africa') !== false) {
     $pdf = Pdf::loadView('pdf.ilearn_admission_letter', $admission_data);
 } else {
     $pdf = Pdf::loadView('pdf.partner_admission_letter', $admission_data);
@@ -291,7 +291,7 @@ return $pdf->download('admission_letter.pdf');
 $centerName = $admission->payments->courses->centers->center_name;
 
 // Determine which PDF view to load based on the center name
-if (strpos($centerName, 'iLearn Africa') !== false) {
+if (strpos($centerName, 'iLearn 360 Africa') !== false) {
     $pdf = Pdf::loadView('pdf.ilearn_admission_letter', $admission_data);
 } else {
     $pdf = Pdf::loadView('pdf.partner_admission_letter', $admission_data);
@@ -420,7 +420,7 @@ if (strpos($centerName, 'iLearn Africa') !== false) {
         ];
         $status = "COMPLETED";
         $validated['status'] = $status;
-        $validated['certificate_type'] = 2; // Assuming 2 is for iLearn Africa certificate
+        $validated['certificate_type'] = 2; // Assuming 2 is for iLearn 360 Africa certificate
         $update_admission = Admissions::where('admission_number', $request->admission_number)->update($validated);
 
 

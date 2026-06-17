@@ -167,7 +167,7 @@
             {{ $firstTwoWords }}<br>{{ $remainingWords }}
         </div>
         <div class="developed-by">
-            This course has been developed and delivered by iLearn Africa
+            This course has been developed and delivered by iLearn 360 Africa
         </div>
 
         <div class="right-column">
