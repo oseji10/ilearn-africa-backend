@@ -38,7 +38,7 @@
             <td>
                 <h2>iLearn 360 Africa</h2>
                 Address: Suite 009 Nawa Complex Kado Abuja, Nigeria.<br/>
-                Email: info@ilearn360africa.com website: www.ilearnafricadu.com<br/>
+                Email: info@ilearn360africa.com website: www.ilearn360africa.com<br/>
                 Phone No: +234 9160 913 155<br/>
             </td>
 </tr>
