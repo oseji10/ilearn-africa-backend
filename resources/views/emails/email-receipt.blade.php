@@ -503,7 +503,7 @@
                         </table>
                         <p>If you have any questions about this receipt, simply reply to this email or reach out to our <a href="{{$support_email}}">support team</a> for help.</p>
                         <p>Cheers,
-                          <br>The iLearn 360 Africa Team</p>
+                          <br>The iLearn360 Africa Team</p>
                         <!-- Action -->
                         <table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
                           <tr>
@@ -541,7 +541,7 @@
                   <tr>
                     <td class="content-cell" align="center">
                       <p class="f-fallback sub align-center">
-                        iLearn 360 Africa 
+                        iLearn360 Africa 
                         <br>Address: Suite 009 Nawa Complex,
                         <br>Kado Abuja, Nigeria.
                       </p>

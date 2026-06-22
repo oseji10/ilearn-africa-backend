@@ -113,15 +113,15 @@
         <div class="content">
             <b>Dear {{$firstname}} {{$othernames}} {{$surname}},</b><br/>
             <i>Congratulations!</i><br/>
-            <!-- <i>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLearn 360 Africa has granted you admission into the {{$certification_name}} program of its affiliated institute; {{$center_name}}.</i>
-            <i>This program will lead to the prestigious award of a {{$course_name}} from our esteemed partner institution and a proficiency certificate in SEND from iLearn 360 Africa.</p>
+            <!-- <i>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLearn360 Africa has granted you admission into the {{$certification_name}} program of its affiliated institute; {{$center_name}}.</i>
+            <i>This program will lead to the prestigious award of a {{$course_name}} from our esteemed partner institution and a proficiency certificate in SEND from iLearn360 Africa.</p>
             <i>This course is slated to commence on the 10th of May, 2024, and will run for a duration of 5 weekends (Fridays only). You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course.</i>
             <i>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once.</i>
             <i>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</i> -->
 
-            <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLearn 360 Africa has granted you admission into the <b style="text-transform:uppercase;">{{$course_name}} program</b> of its affiliated institute; <b style="text-transform:uppercase;">{{$center_name}}</b>. </p>
+            <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLearn360 Africa has granted you admission into the <b style="text-transform:uppercase;">{{$course_name}} program</b> of its affiliated institute; <b style="text-transform:uppercase;">{{$center_name}}</b>. </p>
        
-            <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$professional_certification_name}}</b> from our esteemed partner institution and a <b style="text-transform:uppercase;">{{$certification_name}}</b> from iLearn 360 Africa. This course is slated to commence on the <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b> </p>
+            <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$professional_certification_name}}</b> from our esteemed partner institution and a <b style="text-transform:uppercase;">{{$certification_name}}</b> from iLearn360 Africa. This course is slated to commence on the <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b> </p>
             
             <!-- <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
             <p>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once. </p> -->
@@ -133,7 +133,7 @@
             <u style="margin:0;"><img src="images/cd-sign.png" /><br/>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u><br/>
             <p>Programs Director
-            <br>iLearn 360 Africa 
+            <br>iLearn360 Africa 
             </p>
         </div>
 
@@ -144,7 +144,7 @@
                     <u style="margin:0;"><img src="images/cd-sign.png" /><br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>
                     <p style="font-size:16pt; font-weight:bold; margin:0;">Nwude Ifeoma Grace</p>
-                    <p style="margin:0;">Programme Director/iLearn 360 Africa</p>
+                    <p style="margin:0;">Programme Director/iLearn360 Africa</p>
                 </div> -->
 
     </div>

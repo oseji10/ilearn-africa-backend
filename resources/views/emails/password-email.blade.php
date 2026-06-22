@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>iLearn 360 Africa - Password Reset Link</title>
+    <title>iLearn360 Africa - Password Reset Link</title>
 </head>
 <body>
     <h1>User Password Reset</h1>

@@ -458,11 +458,11 @@
                     <td class="content-cell">
                       <div class="f-fallback">
                         <h1>Congratulations, {{$firstname}}!</h1>
-                        <p>We are pleased to inform you that your certificate for <b>{{$course_name}}</b> with iLearn 360 Africa is now ready. The certificate is herewith attcahed</p>
+                        <p>We are pleased to inform you that your certificate for <b>{{$course_name}}</b> with iLearn360 Africa is now ready. The certificate is herewith attcahed</p>
                        
                         <p>If you have any questions for us, you can reply to this email and it will go right to them. Alternatively, feel free to <a href="mailto:{{$support_email}}">contact our customer success team</a> anytime. </p>
                         <p>Welcome aboard,
-                          <br>The iLearn 360 Africa Team</p>
+                          <br>The iLearn360 Africa Team</p>
                         <!-- <p><strong>P.S.</strong> Need help getting started? Check out our <a href="">help documentation</a>.</p> -->
                         <!-- Sub copy -->
                         <table class="body-sub" role="presentation">
@@ -485,7 +485,7 @@
                   <tr>
                     <td class="content-cell" align="center">
                       <p class="f-fallback sub align-center">
-                        iLearn 360 Africa 
+                        iLearn360 Africa 
                         <br>Address: Suite 009 Nawa Complex,
                         <br>Kado Abuja, Nigeria.
                       </p>

@@ -437,7 +437,7 @@
   <![endif]-->
   </head>
   <body>
-    <span class="preheader">Thanks for registering on iLearn 360 Africa. We’ve pulled together some information and resources to help you get started.</span>
+    <span class="preheader">Thanks for registering on iLearn360 Africa. We’ve pulled together some information and resources to help you get started.</span>
     <table class="email-wrapper" width="100%" cellpadding="0" cellspacing="0" role="presentation">
       <tr>
         <td align="center">
@@ -458,7 +458,7 @@
                     <td class="content-cell">
                       <div class="f-fallback">
                         <h1>Welcome, {{$firstname}}!</h1>
-                        <p>Thanks for signing up on iLearn 360 Africa. We’re thrilled to have you on board. To get the most out of iLearn 360 Africa, simply login and complete your registration:</p>
+                        <p>Thanks for signing up on iLearn360 Africa. We’re thrilled to have you on board. To get the most out of iLearn360 Africa, simply login and complete your registration:</p>
                         <!-- Action -->
                         <table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
                           <tr>
@@ -519,7 +519,7 @@
                   
                         <p>If you have any questions, feel free to <a href="mailto:{{$support_email}}">email our customer service team</a>. </p>
                         <p>Thanks,
-                          <br>iLearn 360 Africa Team</p>
+                          <br>iLearn360 Africa Team</p>
                         
                         <!-- Sub copy -->
                         <table class="body-sub" role="presentation">
@@ -542,7 +542,7 @@
                   <tr>
                     <td class="content-cell" align="center">
                       <p class="f-fallback sub align-center">
-                        iLearn 360 Africa 
+                        iLearn360 Africa 
                         <br>Address: Suite 009 Nawa Complex,
                         <br>Kado Abuja, Nigeria.
                       </p>

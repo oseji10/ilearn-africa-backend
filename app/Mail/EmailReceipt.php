@@ -37,7 +37,7 @@ class EmailReceipt extends Mailable
 
 
         return $this->view('emails.email-receipt')
-                    ->subject('iLearn 360 Africa - Payment Receipt')
+                    ->subject('iLearn360 Africa - Payment Receipt')
                     ->attachData($pdf->output(), 'receipt.pdf', [
                         'mime' => 'application/pdf',
                     ])

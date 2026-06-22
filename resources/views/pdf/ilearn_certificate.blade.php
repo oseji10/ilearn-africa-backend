@@ -233,7 +233,7 @@ AWARDED FOR SUCCESSFUL COMPLETION OF A CPD CERTIFIED PROGRAM.        </div>
             <!-- {{ $firstTwoWords }}<br>{{ $remainingWords }} -->
         <!-- </div> -->
         <!-- <div class="developed-by">
-            This course has been developed and delivered by iLearn 360 Africa
+            This course has been developed and delivered by iLearn360 Africa
         </div> -->
 
         <div class="right-column">
@@ -249,7 +249,7 @@ AWARDED FOR SUCCESSFUL COMPLETION OF A CPD CERTIFIED PROGRAM.        </div>
                 Nwude Ifeoma Grace
             </div>  -->
             <div class="signatory-title">
-            Training Director, iLearn 360 Africa
+            Training Director, iLearn360 Africa
             </div>
         </div>
         <div class="qr-code">

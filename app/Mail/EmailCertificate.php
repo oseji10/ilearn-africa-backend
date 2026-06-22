@@ -40,7 +40,7 @@ class EmailCertificate extends Mailable
 
 
         return $this->view('emails.email-certificate')
-                    ->subject('iLearn 360 Africa - Certificate')
+                    ->subject('iLearn360 Africa - Certificate')
                     ->attachData($pdf->output(), 'certificate.pdf', [
                         'mime' => 'application/pdf',
                     ])
