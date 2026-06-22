@@ -498,7 +498,7 @@ if (strpos($centerName, 'iLearn360 Africa') !== false) {
             $pdf = Pdf::loadView('pdf.certificate', $certificate_data)
                 ->setPaper('a4', 'landscape');
     
-            // Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
+            Mail::to($admission->users->email)->send(new EmailCertificate($certificate_data));
             return $pdf->download("admission-{$admission->admission_number}.pdf");
     
         } elseif ($certificate_type == 2) {
