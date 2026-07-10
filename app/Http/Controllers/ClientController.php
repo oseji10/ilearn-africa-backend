@@ -212,7 +212,7 @@ class ClientController extends Controller
         $payments_today = Payments::where('status', 1)->whereDate('created_at', $today)->sum('amount');
         $payments_this_week = Payments::where('status', 1)->whereBetween('created_at', [$startOfWeek, $endOfWeek])->sum('amount');
         $payments_this_month = Payments::where('status', 1)->whereBetween('created_at', [$startOfMonth, $endOfMonth])->sum('amount');
-        $all_payments = Payments::where('status', 1)->sum('amount');
+        $all_payments = Payments::where('status', 1)->whereYear('created_at', now()->year)->sum('amount');
 
         return response()->json([
             // 'message' => 'Client updated successfully',
