@@ -110,14 +110,27 @@ public function paymentsThisMonth(){
 }
 
 
-public function allPayments(){
-    $allPayments = Payments::with('users', 'clients', 'courses')->where('status', 1)->get();
+// public function allPayments(){
+//     $allPayments = Payments::with('users', 'clients', 'courses')->where('status', 1)->get();
+
+//     return response()->json([
+//         'message' => 'All payments retrieved successfully',
+//         'allPayments' => $allPayments,
+//     ]);
+
+// }
+
+public function allPayments()
+{
+    $allPayments = Payments::with('users', 'clients', 'courses')
+        ->where('status', 1)
+        ->whereYear('created_at', now()->year)
+        ->get();
 
     return response()->json([
         'message' => 'All payments retrieved successfully',
         'allPayments' => $allPayments,
     ]);
-
 }
 
 }
