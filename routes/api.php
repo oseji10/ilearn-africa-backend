@@ -210,7 +210,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Toggle user status
     Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
 
-
+    Route::post('/users/{id}/reset-password', [UserController::class, 'sendPasswordReset']);
 });
 
 Route::options('/{any}', function () {

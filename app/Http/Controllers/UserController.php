@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-
+use Carbon\Carbon;
 
 
 class UserController extends Controller
@@ -512,4 +512,55 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+
+
+    /**
+ * Send a password reset link to a user
+ * Only Super Admin can access
+ */
+public function sendPasswordReset($id)
+{
+    try {
+        $currentUser = Auth::user();
+        if ($currentUser->role_id != 2) {
+            return response()->json([
+                'message' => 'Unauthorized. Only Super Admins can reset user passwords.'
+            ], 403);
+        }
+
+        $user = User::with('client')
+            ->whereHas('role', function ($query) {
+                $query->whereIn('id', [1, 2, 4]);
+            })
+            ->findOrFail($id);
+
+        $email = $user->email;
+        $token = Str::random(60);
+
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $email],
+            [
+                'email' => $email,
+                'token' => Hash::make($token),
+                'created_at' => Carbon::now(),
+            ]
+        );
+
+        $url = "https://app.ilearn360africa.com";
+        $resetLink = $url . '/auth/reset-password?token=' . $token . '&email=' . urlencode($email);
+
+        Mail::to($email)->send(new \App\Mail\PasswordEmail($resetLink));
+
+        return response()->json([
+            'message' => 'Password reset link sent to ' . $email,
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Failed to send password reset link',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }
