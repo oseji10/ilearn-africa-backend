@@ -39,8 +39,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        'https://app.ilearn360africa.com',
+    // 'allowed_origins' => [
+    //     '*',
+    // ],
+
+     'allowed_origins' => [
+        'https://app.ilearn360africa.com', 'http://locahost:3002',
     ],
 
     'allowed_origins_patterns' => [],

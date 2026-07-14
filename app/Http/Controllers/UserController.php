@@ -37,7 +37,7 @@ class UserController extends Controller
             // Get all users except clients (role_id != 4)
             $users = User::with(['client', 'role'])
                 ->whereHas('role', function ($query) {
-                    $query->whereIn('id', [1, 2, 3, 4]); // Super Admin, Admin, Staff
+                    $query->whereIn('id', [1, 2, 3, 4]); // Super Admin, Admin, Staff, Client
                 })
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -531,7 +531,7 @@ public function sendPasswordReset($id)
 
         $user = User::with('client')
             ->whereHas('role', function ($query) {
-                $query->whereIn('id', [1, 2, 4]);
+                $query->whereIn('id', [1, 2, 3, 4]);
             })
             ->findOrFail($id);
 
