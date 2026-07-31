@@ -34,6 +34,11 @@
             margin-bottom: 10px;
         }
 
+        .header2 img {
+            max-width: 350px;
+            margin-bottom: 10px;
+        }
+
         .header p {
             margin: 0;
             font-size: 24px;
@@ -105,7 +110,7 @@
     <div class="container">
         <div class="header">
             <img src="images/ilearn-logo.png" alt="Logo" align="left"><br/>
-            <img src="images/redefining.png" style="margin-right:30;" />
+            <img src="images/redefining.png" class="header2" style="margin-right:30; width: 350px;" />
             <!-- <p style="margin-right:30; font-size: 34px;" class="good-vibration">Redefining Learning</p> -->
         </div>
         <hr style="margin-right:30;"/>
@@ -121,9 +126,9 @@
             <i>Kindly note that a penalty fee of ₦10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once.</i>
             <i>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</i> --> 
         
-            <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLearn360 Africa has granted you admission into her <b style="text-transform:uppercase;">{{$course_name}} program.</b></p>
+            <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLearn360 Africa has granted you admission into the <b style="text-transform:uppercase;">{{$course_name}} program.</b></p>
 
-            <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$certification_name}}</b>. This course is slated to commence on the <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b></p>
+            <p>Upon successful completetion of this program, participants will be awarded the prestigious <b style="text-transform:uppercase;">{{$certification_name}}</b> from iLearn360 Africa.. This course is slated to commence on the <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b></p>
             <!-- <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
 <p>Kindly note that a minimum mandatory participation attendance of 75% is required for certification. </p> -->
 <p>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</p>

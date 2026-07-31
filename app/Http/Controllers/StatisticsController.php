@@ -13,7 +13,7 @@ class StatisticsController extends Controller
 {
     public function incompleteApplications()
     {
-        $incompleteApplications = Client::with('user')->where('status', 'profile_created')
+        $incompleteApplications = Client::with('user', 'admissions')->where('status', 'profile_created')
         ->whereHas('user', function ($query) {$query->where('role_id', 3);})
         ->get();
         return response()->json([

@@ -221,9 +221,10 @@ public function generateAdmissionLetter(Request $request)
 
       // Assuming you have the necessary data in $admission_data
 $centerName = $admission->payments->courses->centers->center_name;
+$center_id = $admission->payments->courses->centers->center_id;
 
 // Determine which PDF view to load based on the center name
-if (strpos($centerName, 'iLearn360 Africa') !== false) {
+if (strpos($center_id, 849933) !== false) {
     $pdf = Pdf::loadView('pdf.ilearn_admission_letter', $admission_data);
 } else {
     $pdf = Pdf::loadView('pdf.partner_admission_letter', $admission_data);

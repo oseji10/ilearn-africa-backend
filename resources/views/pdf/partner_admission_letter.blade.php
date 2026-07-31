@@ -33,6 +33,11 @@
             margin-bottom: 10px;
         }
 
+        .header2 img {
+            max-width: 350px;
+            margin-bottom: 10px;
+        }
+
         .header p {
             margin: 0;
             font-size: 24px;
@@ -104,7 +109,7 @@
     <div class="container">
         <div class="header">
             <img src="images/ilearn-logo.png" alt="Logo" align="left"><br/>
-            <img src="images/redefining.png" style="margin-right:30;" />
+            <img src="images/redefining.png" class="header2" style="margin-right:30; width: 350px;" />
             <!-- <p style="margin-right:30; font-size: 34px;" class="good-vibration">Redefining Learning</p> -->
         </div>
         <hr style="margin-right:30;"/>
@@ -121,7 +126,8 @@
 
             <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLearn360 Africa has granted you admission into the <b style="text-transform:uppercase;">{{$course_name}} program</b> of its affiliated institute; <b style="text-transform:uppercase;">{{$center_name}}</b>. </p>
        
-            <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$professional_certification_name}}</b> from our esteemed partner institution and a <b style="text-transform:uppercase;">{{$certification_name}}</b> from iLearn360 Africa. This course is slated to commence on the <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b> </p>
+            <p>This program will lead to the prestigious award of <b style="text-transform:uppercase;">{{$professional_certification_name}}</b> from our esteemed partner institution and a <b style="text-transform:uppercase;">CERTIFICATE OF
+PARTICIPATION</b> from iLearn360 Africa. This course is slated to commence on <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b> </p>
             
             <!-- <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
             <p>Kindly note that a penalty fee of N10,000 is applied for the re-sit of the professional examination in the event of failure to meet the minimum score of 250 in your first attempt and that the re-sit option is only once. </p> -->
