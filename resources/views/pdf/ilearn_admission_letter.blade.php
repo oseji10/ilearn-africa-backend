@@ -74,9 +74,9 @@
 
         .footer {
             position: fixed;
-            bottom: -40;
-            left: -50;
-            right: -300;
+            bottom: -40px;
+            left: -50px;
+            right: -300px;
             width: 150%;
             height: 100px;
             background-color: #d8e4f4; /* Change this to your desired footer color */
@@ -92,8 +92,8 @@
 
         .right-edge-image {
             position: fixed;
-            top: -40;
-            right: -50;
+            top: -40px;
+            right: -50px;
             /* top: 0; */
             height: 100%;
             width: auto; /* Maintain aspect ratio */
@@ -117,7 +117,7 @@
         <p align="right" style="margin-right:30; margin-top:-10">{{ \Carbon\Carbon::parse($admission_date)->format('F jS, Y') }}.</p>
         <p align="center" style="color:blue;">ADMISSION LETTER</p>
         <div class="content">
-            <b>Dear {{$firstname}} {{$othernames}} {{$surname}},</b><br/>
+            <b>Dear {{ trim($firstname . ' ' . $othernames . ' ' . $surname) }},</b><br/>
             <p>Congratulations!</p>
             
             <!-- <i>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLearn360 Africa has granted you admission into the {{$certification_name}} program of its affiliated institute; {{$center_name}}.</i>
@@ -128,9 +128,18 @@
         
             <p>Following a comprehensive assessment of your application, encompassing your academic qualifications and pertinent credentials, we are delighted to convey that the board of iLearn360 Africa has granted you admission into the <b style="text-transform:uppercase;">{{$course_name}} program.</b></p>
 
-            <p>Upon successful completetion of this program, participants will be awarded the prestigious <b style="text-transform:uppercase;">{{$certification_name}}</b> from iLearn360 Africa.. This course is slated to commence on the <b>{{ \Carbon\Carbon::parse($start_date)->format('jS F Y') }}.</b></p>
-            <!-- <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p>
-<p>Kindly note that a minimum mandatory participation attendance of 75% is required for certification. </p> -->
+            @php
+    $date = \Carbon\Carbon::parse($start_date);
+@endphp
+
+<p>
+    Upon successful completion of this program, participants will be awarded the prestigious
+    <b style="text-transform:uppercase;">{{ $certification_name }}</b>
+    from iLearn360 Africa. This course is slated to commence on the
+    <b>{{ $date->format('jS') }} of {{ $date->format('F, Y') }}</b>.
+</p>
+            <!-- <p>You will be added to a dedicated WhatsApp group for registered participants soon where you would access the zoom link for training participation and other relevant material for this course. </p> -->
+<p>Kindly note that a minimum mandatory participation attendance of 75% is required for certification. </p> 
 <p>We extend our warmest wishes for a successful and enriching academic journey ahead. Should you have any queries or require further assistance, please do not hesitate to contact us.</p>
 
         </div>
