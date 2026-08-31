@@ -10,6 +10,7 @@ use App\Models\CourseList;
 use App\Models\Admissions;
 use App\Models\User;
 use App\Models\ProofOfPayment;
+// use App\Models\PartPayments;
 use Barryvdh\DomPDF\Facade\Pdf;
 use NumberToWords\NumberToWords;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -520,33 +521,72 @@ public function topUpPayment(Request $request)
 
 
 
-    public function updateAmount(Request $request){
-        $validated = $request->validate([
-            'edited_payment' => 'required|integer',
-            'client_id' => 'string',
-            'transaction_id' => 'string',
-            'id' => 'required|integer',
-        ]);
-        
-        $retrive_payment_detail = Payments::where('id', $validated['id'])->first();
-        
-        if (!$retrive_payment_detail) {
-            return response()->json(['error' => 'Payment not found'], 404);
-        }
-        
-        
-        $updated = Payments::where('id', $validated['id'])
-                    ->update(['part_payment' => $validated['edited_payment']]);
-        
-                    PartPayments::where('client_id', $validated['client_id'])
-                    ->where('payment_id', $validated['id'])
-                    ->update(['amount' => $validated['edited_payment']]);
+//    use Illuminate\Http\Request;
+// use Illuminate\Support\Facades\DB;
 
-                    return response()->json([
-                        'message' => 'Payment successfully verified and created',
-                        'updated' => $updated,
-                    ], 201);
-    }
+public function updateAmount(Request $request)
+{
+    $validated = $request->validate([
+        'edited_payment' => 'required|integer',
+        'client_id' => 'nullable|string',
+        'transaction_id' => 'nullable|string',
+        'id' => 'required|integer',
+    ]);
+
+    return DB::transaction(function () use ($validated) {
+
+        // First, check the Payments table
+        $payment = Payments::where('id', $validated['id'])->first();
+
+        if ($payment) {
+
+            // Update the main payment
+            $updated = Payments::where('id', $validated['id'])
+                ->update([
+                    'part_payment' => $validated['edited_payment']
+                ]);
+
+            // Also update the corresponding PartPayments record
+            $partPayment = PartPayments::where('client_id', $validated['client_id'])
+                ->where('payment_id', $validated['id'])
+                ->first();
+
+            if ($partPayment) {
+                $partPayment->update([
+                    'amount' => $validated['edited_payment']
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Payment amount successfully updated',
+                'source' => 'Payments',
+                'updated' => $updated,
+            ], 200);
+        }
+
+        // If not found in Payments, check PartPayments
+        $partPayment = PartPayments::where('id', $validated['id'])->first();
+
+        if ($partPayment) {
+
+            $updated = PartPayments::where('id', $validated['id'])
+                ->update([
+                    'amount' => $validated['edited_payment']
+                ]);
+
+            return response()->json([
+                'message' => 'Part payment amount successfully updated',
+                'source' => 'PartPayments',
+                'updated' => $updated,
+            ], 200);
+        }
+
+        // Not found in either table
+        return response()->json([
+            'error' => 'Payment not found in Payments or PartPayments'
+        ], 404);
+    });
+}
 
 
 
