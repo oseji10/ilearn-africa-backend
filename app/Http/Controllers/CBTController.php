@@ -794,28 +794,28 @@ public function downloadExamResults($masterId)
         ], 404);
     }
 
-    $scoreSummary = DB::table('cbt_exams_results as r')
-        ->joinSub(
-            DB::table('cbt_exams_questions')
-                ->select('examId', DB::raw('SUM(score) as obtainable_score'))
-                ->groupBy('examId'),
-            'q',
-            function ($join) {
-                $join->on('q.examId', '=', 'r.examId');
-            }
-        )
-        ->select(
-            'r.clientId',
-            DB::raw('SUM(r.score) as total_score'),
-            'q.obtainable_score'
-        )
+    // Obtainable: active (non-deleted) questions only
+    $obtainable = DB::table('cbt_exams_questions')
+        ->where('examId', $result->examId)
+        ->whereNull('deleted_at')
+        ->sum('score');
+
+    // Scored: only answers to active questions, one row per question
+    $scored = DB::table('cbt_exams_results as r')
+        ->join('cbt_exams_questions as q', function ($join) {
+            $join->on('q.questionId', '=', 'r.questionId')
+                 ->on('q.examId', '=', 'r.examId');
+        })
+        ->whereNull('q.deleted_at')
         ->where('r.masterId', $masterId)
         ->where('r.examId', $result->examId)
-        ->groupBy('r.clientId', 'q.obtainable_score')
-        ->first();
+        ->select('r.questionId', DB::raw('MAX(r.score) as score'))
+        ->groupBy('r.questionId');
 
-    $result->total_score = $scoreSummary?->total_score ?? 0;
-    $result->obtainable_score = $scoreSummary?->obtainable_score ?? 0;
+    $total = DB::query()->fromSub($scored, 's')->sum('score');
+
+    $result->total_score = (float) $total;
+    $result->obtainable_score = (float) $obtainable;
 
     $pdf = \PDF::loadView('pdf.test_report', [
         'results' => $result,

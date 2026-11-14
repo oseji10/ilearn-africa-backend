@@ -699,6 +699,7 @@ class ComposerStaticInitb14ac1143bf13bff29332768b25ba02b
         'App\\Http\\Controllers\\StatisticsController' => __DIR__ . '/../..' . '/app/Http/Controllers/StatisticsController.php',
         'App\\Http\\Controllers\\TokenValidationController' => __DIR__ . '/../..' . '/app/Http/Controllers/TokenValidationController.php',
         'App\\Http\\Controllers\\UploadDocumentController' => __DIR__ . '/../..' . '/app/Http/Controllers/UploadDocumentController.php',
+        'App\\Http\\Controllers\\UserController' => __DIR__ . '/../..' . '/app/Http/Controllers/UserController.php',
         'App\\Http\\Kernel' => __DIR__ . '/../..' . '/app/Http/Kernel.php',
         'App\\Http\\Middleware\\Authenticate' => __DIR__ . '/../..' . '/app/Http/Middleware/Authenticate.php',
         'App\\Http\\Middleware\\CorsMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/CorsMiddleware.php',

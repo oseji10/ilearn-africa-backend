@@ -44,7 +44,7 @@ return [
     // ],
 
      'allowed_origins' => [
-        'https://app.ilearn360africa.com', 'http://locahost:3002',
+        'https://app.ilearn360africa.com', 'http://locahost:3000',
     ],
 
     'allowed_origins_patterns' => [],
