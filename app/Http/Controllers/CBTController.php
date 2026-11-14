@@ -794,25 +794,20 @@ public function downloadExamResults($masterId)
         ], 404);
     }
 
-    // Obtainable: active (non-deleted) questions only
-    $obtainable = DB::table('cbt_exams_questions')
-        ->where('examId', $result->examId)
-        ->whereNull('deleted_at')
-        ->sum('score');
-
-    // Scored: only answers to active questions, one row per question
-    $scored = DB::table('cbt_exams_results as r')
-        ->join('cbt_exams_questions as q', function ($join) {
-            $join->on('q.questionId', '=', 'r.questionId')
-                 ->on('q.examId', '=', 'r.examId');
+    // Active (non-soft-deleted) questions for this exam: [questionId => score]
+    $activeQuestions = Questions::whereHas('questions', function ($query) use ($result) {
+            $query->where('examId', $result->examId);
         })
-        ->whereNull('q.deleted_at')
-        ->where('r.masterId', $masterId)
-        ->where('r.examId', $result->examId)
-        ->select('r.questionId', DB::raw('MAX(r.score) as score'))
-        ->groupBy('r.questionId');
+        ->pluck('score', 'questionId');
 
-    $total = DB::query()->fromSub($scored, 's')->sum('score');
+    $obtainable = $activeQuestions->sum();
+
+    // Candidate's score: only active questions, counted once each
+    $total = ExamResult::where('masterId', $masterId)
+        ->whereIn('questionId', $activeQuestions->keys())
+        ->get()
+        ->groupBy('questionId')
+        ->sum(fn ($rows) => (float) $rows->max('score'));
 
     $result->total_score = (float) $total;
     $result->obtainable_score = (float) $obtainable;
@@ -823,7 +818,6 @@ public function downloadExamResults($masterId)
 
     return $pdf->stream('result-slip.pdf');
 }
-
 
 // Bulk import questions
 public function importQuestions(Request $request)
