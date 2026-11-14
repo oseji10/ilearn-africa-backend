@@ -94,18 +94,41 @@ class CBTController extends Controller
 {
     $now = Carbon::now();
 
+    // $exams = CBT::join('admissions', 'admissions.cohort_id', '=', 'cbt_exams.cohortId')
+    //     ->join('course_list', 'course_list.course_id', '=', 'cbt_exams.courseId')
+    //     ->where('admissions.client_id', $clientId)
+    //     ->where('admissions.status', 'ADMITTED')
+    //     ->where('cbt_exams.status', 'active')
+    //     ->orderBy('cbt_exams.created_at', 'desc')
+    //     ->select([
+    //         'cbt_exams.*',
+    //         'course_list.course_id',
+    //         'course_list.course_name',
+    //     ])
+    //     ->get();
+
+
     $exams = CBT::join('admissions', 'admissions.cohort_id', '=', 'cbt_exams.cohortId')
-        ->join('course_list', 'course_list.course_id', '=', 'cbt_exams.courseId')
-        ->where('admissions.client_id', $clientId)
-        ->where('admissions.status', 'ADMITTED')
-        ->where('cbt_exams.status', 'active')
-        ->orderBy('cbt_exams.created_at', 'desc')
-        ->select([
-            'cbt_exams.*',
-            'course_list.course_id',
-            'course_list.course_name',
-        ])
-        ->get();
+    ->join('course_list', 'course_list.course_id', '=', 'cbt_exams.courseId')
+    ->where('admissions.client_id', $clientId)
+    ->where('admissions.status', 'ADMITTED')
+    ->whereNull('admissions.deleted_at')
+    ->where('cbt_exams.status', 'active')
+    // Only exams for a course this admission actually registered for
+    ->whereExists(function ($q) {
+        $q->select(DB::raw(1))
+          ->from('payments')
+          ->whereColumn('payments.admission_number', 'admissions.admission_number')
+          ->whereColumn('payments.course_id', 'cbt_exams.courseId');
+    })
+    ->orderBy('cbt_exams.created_at', 'desc')
+    ->select([
+        'cbt_exams.*',
+        'course_list.course_id',
+        'course_list.course_name',
+    ])
+    ->distinct()
+    ->get();
 
     $courseIds = $exams->pluck('course_id')->unique()->values();
     $examIds = $exams->pluck('examId')->unique()->values();
