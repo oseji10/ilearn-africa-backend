@@ -26,13 +26,13 @@ class EventCacheCommand extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return void
      */
     public function handle()
     {
         $this->callSilent('event:clear');
 
-        file_put_contents(
+        $this->laravel->make('files')->replace(
             $this->laravel->getCachedEventsPath(),
             '<?php return '.var_export($this->getEvents(), true).';'
         );

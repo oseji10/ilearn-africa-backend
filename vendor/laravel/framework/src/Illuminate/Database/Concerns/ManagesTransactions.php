@@ -7,14 +7,19 @@ use Illuminate\Database\DeadlockException;
 use RuntimeException;
 use Throwable;
 
+/**
+ * @mixin \Illuminate\Database\Connection
+ */
 trait ManagesTransactions
 {
     /**
+     * @template TReturn of mixed
+     *
      * Execute a Closure within a transaction.
      *
-     * @param  \Closure  $callback
+     * @param  (\Closure(static): TReturn)  $callback
      * @param  int  $attempts
-     * @return mixed
+     * @return TReturn
      *
      * @throws \Throwable
      */
@@ -44,7 +49,7 @@ trait ManagesTransactions
             $levelBeingCommitted = $this->transactions;
 
             try {
-                if ($this->transactions == 1) {
+                if ($this->transactions === 1) {
                     $this->fireConnectionEvent('committing');
                     $this->getPdo()->commit();
                 }
@@ -87,6 +92,12 @@ trait ManagesTransactions
         // let the developer handle it in another way. We will decrement too.
         if ($this->causedByConcurrencyError($e) &&
             $this->transactions > 1) {
+            try {
+                $this->performRollBack($this->transactions - 1);
+            } catch (Throwable) {
+                //
+            }
+
             $this->transactions--;
 
             $this->transactionsManager?->rollback(
@@ -142,11 +153,11 @@ trait ManagesTransactions
      */
     protected function createTransaction()
     {
-        if ($this->transactions == 0) {
+        if ($this->transactions === 0) {
             $this->reconnectIfMissingConnection();
 
             try {
-                $this->getPdo()->beginTransaction();
+                $this->executeBeginTransactionStatement();
             } catch (Throwable $e) {
                 $this->handleBeginTransactionException($e);
             }
@@ -182,7 +193,7 @@ trait ManagesTransactions
         if ($this->causedByLostConnection($e)) {
             $this->reconnect();
 
-            $this->getPdo()->beginTransaction();
+            $this->executeBeginTransactionStatement();
         } else {
             throw $e;
         }
@@ -197,7 +208,7 @@ trait ManagesTransactions
      */
     public function commit()
     {
-        if ($this->transactionLevel() == 1) {
+        if ($this->transactionLevel() === 1) {
             $this->fireConnectionEvent('committing');
             $this->getPdo()->commit();
         }
@@ -228,12 +239,24 @@ trait ManagesTransactions
     {
         $this->transactions = max(0, $this->transactions - 1);
 
+        $this->transactionsManager?->rollback(
+            $this->getName(), $this->transactions
+        );
+
         if ($this->causedByConcurrencyError($e) && $currentAttempt < $maxAttempts) {
+            $pdo = $this->getPdo();
+
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
             return;
         }
 
         if ($this->causedByLostConnection($e)) {
             $this->transactions = 0;
+
+            $this->pdo = null;
         }
 
         throw $e;
@@ -253,8 +276,8 @@ trait ManagesTransactions
         // that this given transaction level is valid before attempting to rollback to
         // that level. If it's not we will just return out and not attempt anything.
         $toLevel = is_null($toLevel)
-                    ? $this->transactions - 1
-                    : $toLevel;
+            ? $this->transactions - 1
+            : $toLevel;
 
         if ($toLevel < 0 || $toLevel >= $this->transactions) {
             return;
@@ -288,7 +311,7 @@ trait ManagesTransactions
      */
     protected function performRollBack($toLevel)
     {
-        if ($toLevel == 0) {
+        if ($toLevel === 0) {
             $pdo = $this->getPdo();
 
             if ($pdo->inTransaction()) {
@@ -313,6 +336,8 @@ trait ManagesTransactions
     {
         if ($this->causedByLostConnection($e)) {
             $this->transactions = 0;
+
+            $this->pdo = null;
 
             $this->transactionsManager?->rollback(
                 $this->getName(), $this->transactions
@@ -344,6 +369,23 @@ trait ManagesTransactions
     {
         if ($this->transactionsManager) {
             return $this->transactionsManager->addCallback($callback);
+        }
+
+        throw new RuntimeException('Transactions Manager has not been set.');
+    }
+
+    /**
+     * Execute the callback after a transaction rolls back.
+     *
+     * @param  callable  $callback
+     * @return void
+     *
+     * @throws \RuntimeException
+     */
+    public function afterRollBack($callback)
+    {
+        if ($this->transactionsManager) {
+            return $this->transactionsManager->addCallbackForRollback($callback);
         }
 
         throw new RuntimeException('Transactions Manager has not been set.');

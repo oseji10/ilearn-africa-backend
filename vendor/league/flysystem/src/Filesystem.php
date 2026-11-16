@@ -30,7 +30,7 @@ class Filesystem implements FilesystemOperator
         private ?TemporaryUrlGenerator $temporaryUrlGenerator = null,
     ) {
         $this->config = new Config($config);
-        $this->pathNormalizer = $pathNormalizer ?? new WhitespacePathNormalizer();
+        $this->pathNormalizer = $pathNormalizer ?? new WhitespacePathNormalizer($this->config->get('allow_relative_path_traversal', true));
     }
 
     public function fileExists(string $location): bool
@@ -168,8 +168,16 @@ class Filesystem implements FilesystemOperator
 
     public function mimeType(string $path): string
     {
-        return $this->adapter->mimeType($this->pathNormalizer->normalizePath($path))->mimeType();
+        $normalizedPath = $this->pathNormalizer->normalizePath($path);
+        $attributes = $this->adapter->mimeType($normalizedPath);
+
+        if ($attributes->mimeType() === null) {
+            throw UnableToRetrieveMetadata::mimeType($path);
+        }
+
+        return $attributes->mimeType();
     }
+
 
     public function setVisibility(string $path, string $visibility): void
     {
@@ -187,7 +195,10 @@ class Filesystem implements FilesystemOperator
             ?? throw UnableToGeneratePublicUrl::noGeneratorConfigured($path);
         $config = $this->config->extend($config);
 
-        return $this->publicUrlGenerator->publicUrl($this->pathNormalizer->normalizePath($path), $config);
+        return $this->publicUrlGenerator->publicUrl(
+            $this->pathNormalizer->normalizePath($path),
+            $config,
+        );
     }
 
     public function temporaryUrl(string $path, DateTimeInterface $expiresAt, array $config = []): string
@@ -214,9 +225,15 @@ class Filesystem implements FilesystemOperator
         }
 
         try {
-            return $this->adapter->checksum($path, $config);
+            return $this->adapter->checksum(
+                $this->pathNormalizer->normalizePath($path),
+                $config,
+            );
         } catch (ChecksumAlgoIsNotSupported) {
-            return $this->calculateChecksumFromStream($path, $config);
+            return $this->calculateChecksumFromStream(
+                $this->pathNormalizer->normalizePath($path),
+                $config,
+            );
         }
     }
 
@@ -245,7 +262,7 @@ class Filesystem implements FilesystemOperator
             throw new InvalidStreamProvided(
                 "Invalid stream provided, expected stream resource, received " . gettype($contents)
             );
-        } elseif ($type = get_resource_type($contents) !== 'stream') {
+        } elseif (($type = get_resource_type($contents)) !== 'stream') {
             throw new InvalidStreamProvided(
                 "Invalid stream provided, expected stream resource, received resource of type " . $type
             );

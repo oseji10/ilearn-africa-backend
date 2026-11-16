@@ -8,12 +8,11 @@ if (! function_exists('Illuminate\Filesystem\join_paths')) {
      *
      * @param  string|null  $basePath
      * @param  string  ...$paths
-     * @return string
      */
-    function join_paths($basePath, ...$paths)
+    function join_paths($basePath, ...$paths): string
     {
         foreach ($paths as $index => $path) {
-            if (empty($path)) {
+            if (empty($path) && $path !== '0') {
                 unset($paths[$index]);
             } else {
                 $paths[$index] = DIRECTORY_SEPARATOR.ltrim($path, DIRECTORY_SEPARATOR);

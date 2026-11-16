@@ -3,14 +3,21 @@
 namespace Illuminate\Console;
 
 use Illuminate\Console\Concerns\CreatesMatchingTest;
+use Illuminate\Console\Concerns\FindsAvailableModels;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Symfony\Component\Console\Completion\CompletionInput;
+use Symfony\Component\Console\Completion\CompletionSuggestions;
+use Symfony\Component\Console\Completion\Suggestion;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Finder\Finder;
 
 abstract class GeneratorCommand extends Command implements PromptsForMissingInput
 {
+    use FindsAvailableModels;
+
     /**
      * The filesystem instance.
      *
@@ -117,16 +124,13 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     ];
 
     /**
-     * Create a new controller creator command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
+     * Create a new generator command instance.
      */
     public function __construct(Filesystem $files)
     {
         parent::__construct();
 
-        if (in_array(CreatesMatchingTest::class, class_uses_recursive($this))) {
+        if (isset(class_uses_recursive($this)[CreatesMatchingTest::class])) {
             $this->addTestOptions();
         }
 
@@ -182,10 +186,8 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
 
         $info = $this->type;
 
-        if (in_array(CreatesMatchingTest::class, class_uses_recursive($this))) {
-            if ($this->handleTestCreation($path)) {
-                $info .= ' and test';
-            }
+        if (isset(class_uses_recursive($this)[CreatesMatchingTest::class])) {
+            $this->handleTestCreation($path);
         }
 
         if (windows_os()) {
@@ -221,8 +223,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     /**
      * Qualify the given model class base name.
      *
-     * @param  string  $model
-     * @return string
+     * @return class-string
      */
     protected function qualifyModel(string $model)
     {
@@ -237,24 +238,20 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
         }
 
         return is_dir(app_path('Models'))
-                    ? $rootNamespace.'Models\\'.$model
-                    : $rootNamespace.$model;
+            ? $rootNamespace.'Models\\'.$model
+            : $rootNamespace.$model;
     }
 
     /**
      * Get a list of possible model names.
      *
      * @return array<int, string>
+     *
+     * @deprecated 12.38.0 Use `findAvailableModels()` method instead.
      */
     protected function possibleModels()
     {
-        $modelPath = is_dir(app_path('Models')) ? app_path('Models') : app_path();
-
-        return collect(Finder::create()->files()->depth(0)->in($modelPath))
-            ->map(fn ($file) => $file->getBasename('.php'))
-            ->sort()
-            ->values()
-            ->all();
+        return $this->findAvailableModels();
     }
 
     /**
@@ -270,7 +267,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
             return [];
         }
 
-        return collect(Finder::create()->files()->depth(0)->in($eventPath))
+        return (new Collection(Finder::create()->files()->depth(0)->in($eventPath)))
             ->map(fn ($file) => $file->getBasename('.php'))
             ->sort()
             ->values()
@@ -419,7 +416,13 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      */
     protected function getNameInput()
     {
-        return trim($this->argument('name'));
+        $name = trim($this->argument('name'));
+
+        if (Str::endsWith($name, '.php')) {
+            return Str::substr($name, 0, -4);
+        }
+
+        return $name;
     }
 
     /**
@@ -454,12 +457,10 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      */
     protected function isReservedName($name)
     {
-        return in_array(
-            strtolower($name),
-            collect($this->reservedNames)
-                ->transform(fn ($name) => strtolower($name))
-                ->all()
-        );
+        $name = strtolower($name);
+
+        return (new Collection($this->reservedNames))
+            ->contains(fn ($reservedName) => strtolower($reservedName) === $name);
     }
 
     /**
@@ -478,7 +479,13 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     /**
      * Get the console command arguments.
      *
-     * @return array
+     * @return (InputArgument|array{
+     *    0: non-empty-string,
+     *    1?: InputArgument::REQUIRED|InputArgument::OPTIONAL|InputArgument::IS_ARRAY,
+     *    2?: string,
+     *    3?: mixed,
+     *    4?: list<string|Suggestion>|\Closure(CompletionInput, CompletionSuggestions): list<string|Suggestion>
+     * })[]
      */
     protected function getArguments()
     {
@@ -490,7 +497,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     /**
      * Prompt for missing input arguments using the returned questions.
      *
-     * @return array
+     * @return array<string, string|array{string, string}|\Closure(): (array<int, string>|string|int|bool)>
      */
     protected function promptForMissingArgumentsUsing()
     {

@@ -40,7 +40,7 @@ abstract class Element
     final public function __construct(
         protected OutputInterface $output,
         protected array|string $content,
-        Styles|null $styles = null
+        ?Styles $styles = null
     ) {
         $this->styles = $styles ?? new Styles(defaultStyles: static::$defaultStyles);
         $this->styles->setElement($this);
@@ -70,7 +70,7 @@ abstract class Element
     public function toString(): string
     {
         if (is_array($this->content)) {
-            $inheritance = new InheritStyles();
+            $inheritance = new InheritStyles;
             $this->content = implode('', $inheritance($this->content, $this->styles));
         }
 
@@ -83,6 +83,7 @@ abstract class Element
     public function __call(string $name, array $arguments): mixed
     {
         if (method_exists($this->styles, $name)) {
+            // @phpstan-ignore-next-line
             $result = $this->styles->{$name}(...$arguments);
 
             if (str_starts_with($name, 'get') || str_starts_with($name, 'has')) {
@@ -105,6 +106,8 @@ abstract class Element
 
     /**
      * Renders the string representation of the element on the output.
+     *
+     * @param  int<0, 511>  $options
      */
     final public function render(int $options): void
     {

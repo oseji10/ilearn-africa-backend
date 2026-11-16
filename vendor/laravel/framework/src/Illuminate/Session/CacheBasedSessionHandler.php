@@ -3,6 +3,7 @@
 namespace Illuminate\Session;
 
 use Illuminate\Contracts\Cache\Repository as CacheContract;
+use RuntimeException;
 use SessionHandlerInterface;
 
 class CacheBasedSessionHandler implements SessionHandlerInterface
@@ -26,7 +27,6 @@ class CacheBasedSessionHandler implements SessionHandlerInterface
      *
      * @param  \Illuminate\Contracts\Cache\Repository  $cache
      * @param  int  $minutes
-     * @return void
      */
     public function __construct(CacheContract $cache, $minutes)
     {
@@ -52,6 +52,26 @@ class CacheBasedSessionHandler implements SessionHandlerInterface
     public function close(): bool
     {
         return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return string
+     */
+    public function create_sid(): string
+    {
+        return session_create_id() ?: throw new RuntimeException('Unable to create a session ID.');
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public function validateId($id): bool
+    {
+        return $this->cache->has($id);
     }
 
     /**

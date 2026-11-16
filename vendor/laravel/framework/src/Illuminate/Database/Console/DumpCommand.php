@@ -3,9 +3,11 @@
 namespace Illuminate\Database\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Console\Prohibitable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Connection;
 use Illuminate\Database\ConnectionResolverInterface;
+use Illuminate\Database\Events\MigrationsPruned;
 use Illuminate\Database\Events\SchemaDumped;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
@@ -14,6 +16,8 @@ use Symfony\Component\Console\Attribute\AsCommand;
 #[AsCommand(name: 'schema:dump')]
 class DumpCommand extends Command
 {
+    use Prohibitable;
+
     /**
      * The console command name.
      *
@@ -22,7 +26,8 @@ class DumpCommand extends Command
     protected $signature = 'schema:dump
                 {--database= : The database connection to use}
                 {--path= : The path where the schema dump file should be stored}
-                {--prune : Delete all existing migration files}';
+                {--prune : Delete all existing migration files}
+                {--without-migration-data : Dump the schema without the migration data}';
 
     /**
      * The console command description.
@@ -36,10 +41,14 @@ class DumpCommand extends Command
      *
      * @param  \Illuminate\Database\ConnectionResolverInterface  $connections
      * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
-     * @return void
+     * @return int
      */
     public function handle(ConnectionResolverInterface $connections, Dispatcher $dispatcher)
     {
+        if ($this->isProhibited()) {
+            return self::FAILURE;
+        }
+
         $connection = $connections->connection($database = $this->input->getOption('database'));
 
         $this->schemaState($connection)->dump(
@@ -52,13 +61,17 @@ class DumpCommand extends Command
 
         if ($this->option('prune')) {
             (new Filesystem)->deleteDirectory(
-                database_path('migrations'), $preserve = false
+                $path = database_path('migrations'), preserve: false
             );
 
             $info .= ' and pruned';
+
+            $dispatcher->dispatch(new MigrationsPruned($connection, $path));
         }
 
         $this->components->info($info.' successfully.');
+
+        return Command::SUCCESS;
     }
 
     /**
@@ -69,11 +82,19 @@ class DumpCommand extends Command
      */
     protected function schemaState(Connection $connection)
     {
+        $migrations = Config::get('database.migrations', 'migrations');
+
+        $migrationTable = is_array($migrations) ? ($migrations['table'] ?? 'migrations') : $migrations;
+
+        if ($this->option('without-migration-data')) {
+            $migrationTable = null;
+        }
+
         return $connection->getSchemaState()
-                ->withMigrationTable($connection->getTablePrefix().Config::get('database.migrations', 'migrations'))
-                ->handleOutputUsing(function ($type, $buffer) {
-                    $this->output->write($buffer);
-                });
+            ->withMigrationTable($migrationTable)
+            ->handleOutputUsing(function ($type, $buffer) {
+                $this->output->write($buffer);
+            });
     }
 
     /**

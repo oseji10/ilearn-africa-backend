@@ -7,11 +7,12 @@ use DateTimeInterface;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel as KernelContract;
+use Illuminate\Foundation\Events\Terminating;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Pipeline;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\InteractsWithTime;
 use InvalidArgumentException;
 use Throwable;
@@ -118,7 +119,6 @@ class Kernel implements KernelContract
      *
      * @param  \Illuminate\Contracts\Foundation\Application  $app
      * @param  \Illuminate\Routing\Router  $router
-     * @return void
      */
     public function __construct(Application $app, Router $router)
     {
@@ -165,14 +165,14 @@ class Kernel implements KernelContract
     {
         $this->app->instance('request', $request);
 
-        Facade::clearResolvedInstance('request');
+        Request::clearResolvedInstance();
 
         $this->bootstrap();
 
         return (new Pipeline($this->app))
-                    ->send($request)
-                    ->through($this->app->shouldSkipMiddleware() ? [] : $this->middleware)
-                    ->then($this->dispatchToRouter());
+            ->send($request)
+            ->through($this->app->shouldSkipMiddleware() ? [] : $this->middleware)
+            ->then($this->dispatchToRouter());
     }
 
     /**
@@ -210,6 +210,8 @@ class Kernel implements KernelContract
      */
     public function terminate($request, $response)
     {
+        $this->app['events']->dispatch(new Terminating);
+
         $this->terminateMiddleware($request, $response);
 
         $this->app->terminate();
@@ -449,6 +451,67 @@ class Kernel implements KernelContract
     }
 
     /**
+     * Add the given middleware to the middleware priority list before other middleware.
+     *
+     * @param  array|string  $before
+     * @param  string  $middleware
+     * @return $this
+     */
+    public function addToMiddlewarePriorityBefore($before, $middleware)
+    {
+        return $this->addToMiddlewarePriorityRelative($before, $middleware, after: false);
+    }
+
+    /**
+     * Add the given middleware to the middleware priority list after other middleware.
+     *
+     * @param  array|string  $after
+     * @param  string  $middleware
+     * @return $this
+     */
+    public function addToMiddlewarePriorityAfter($after, $middleware)
+    {
+        return $this->addToMiddlewarePriorityRelative($after, $middleware);
+    }
+
+    /**
+     * Add the given middleware to the middleware priority list relative to other middleware.
+     *
+     * @param  string|array  $existing
+     * @param  string  $middleware
+     * @param  bool  $after
+     * @return $this
+     */
+    protected function addToMiddlewarePriorityRelative($existing, $middleware, $after = true)
+    {
+        if (! in_array($middleware, $this->middlewarePriority)) {
+            $index = null;
+
+            foreach ((array) $existing as $existingMiddleware) {
+                if (in_array($existingMiddleware, $this->middlewarePriority)) {
+                    $middlewareIndex = array_search($existingMiddleware, $this->middlewarePriority);
+
+                    if ($after && (is_null($index) || $middlewareIndex >= $index)) {
+                        $index = $middlewareIndex + 1;
+                    } elseif ($after === false && (is_null($index) || $middlewareIndex < $index)) {
+                        $index = $middlewareIndex;
+                    }
+                }
+            }
+
+            if (is_null($index) || $index === count($this->middlewarePriority)) {
+                $this->middlewarePriority[] = $middleware;
+            } else {
+                array_splice($this->middlewarePriority, $index, 0, $middleware);
+            }
+        }
+
+        $this->syncMiddlewareToRouter();
+
+        return $this;
+    }
+
+    /**
      * Sync the current state of the middleware to the router.
      *
      * @return void
@@ -510,13 +573,53 @@ class Kernel implements KernelContract
     }
 
     /**
+     * Get the application's global middleware.
+     *
+     * @return array<int, class-string|string>
+     */
+    public function getGlobalMiddleware()
+    {
+        return $this->middleware;
+    }
+
+    /**
+     * Set the application's global middleware.
+     *
+     * @param  array  $middleware
+     * @return $this
+     */
+    public function setGlobalMiddleware(array $middleware)
+    {
+        $this->middleware = $middleware;
+
+        $this->syncMiddlewareToRouter();
+
+        return $this;
+    }
+
+    /**
      * Get the application's route middleware groups.
      *
-     * @return array
+     * @return array<string, array<int, class-string|string>>
      */
     public function getMiddlewareGroups()
     {
         return $this->middlewareGroups;
+    }
+
+    /**
+     * Set the application's middleware groups.
+     *
+     * @param  array  $groups
+     * @return $this
+     */
+    public function setMiddlewareGroups(array $groups)
+    {
+        $this->middlewareGroups = $groups;
+
+        $this->syncMiddlewareToRouter();
+
+        return $this;
     }
 
     /**
@@ -539,6 +642,36 @@ class Kernel implements KernelContract
     public function getMiddlewareAliases()
     {
         return array_merge($this->routeMiddleware, $this->middlewareAliases);
+    }
+
+    /**
+     * Set the application's route middleware aliases.
+     *
+     * @param  array  $aliases
+     * @return $this
+     */
+    public function setMiddlewareAliases(array $aliases)
+    {
+        $this->middlewareAliases = $aliases;
+
+        $this->syncMiddlewareToRouter();
+
+        return $this;
+    }
+
+    /**
+     * Set the application's middleware priority.
+     *
+     * @param  array  $priority
+     * @return $this
+     */
+    public function setMiddlewarePriority(array $priority)
+    {
+        $this->middlewarePriority = $priority;
+
+        $this->syncMiddlewareToRouter();
+
+        return $this;
     }
 
     /**

@@ -11,6 +11,8 @@ namespace PHPUnit\Framework;
 
 use function array_keys;
 use function get_object_vars;
+use function is_int;
+use function sprintf;
 use RuntimeException;
 use Throwable;
 
@@ -40,10 +42,25 @@ use Throwable;
  */
 class Exception extends RuntimeException implements \PHPUnit\Exception
 {
+    /**
+     * @var list<array{file?: string, line?: int, function: string, ...}>
+     */
     protected array $serializableTrace;
 
-    public function __construct(string $message = '', int $code = 0, ?Throwable $previous = null)
+    public function __construct(string $message = '', int|string $code = 0, ?Throwable $previous = null)
     {
+        /**
+         * @see https://github.com/sebastianbergmann/phpunit/issues/5965
+         */
+        if (!is_int($code)) {
+            $message .= sprintf(
+                ' (exception code: %s)',
+                $code,
+            );
+
+            $code = 0;
+        }
+
         parent::__construct($message, $code, $previous);
 
         $this->serializableTrace = $this->getTrace();
@@ -53,13 +70,15 @@ class Exception extends RuntimeException implements \PHPUnit\Exception
         }
     }
 
-    public function __sleep(): array
+    public function __serialize(): array
     {
-        return array_keys(get_object_vars($this));
+        return get_object_vars($this);
     }
 
     /**
      * Returns the serializable trace (without 'args').
+     *
+     * @return list<array{file?: string, line?: int, function: string, ...}>
      */
     public function getSerializableTrace(): array
     {

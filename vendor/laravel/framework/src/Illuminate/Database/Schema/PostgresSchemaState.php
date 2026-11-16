@@ -3,6 +3,7 @@
 namespace Illuminate\Database\Schema;
 
 use Illuminate\Database\Connection;
+use Illuminate\Support\Collection;
 
 class PostgresSchemaState extends SchemaState
 {
@@ -15,12 +16,12 @@ class PostgresSchemaState extends SchemaState
      */
     public function dump(Connection $connection, $path)
     {
-        $commands = collect([
+        $commands = new Collection([
             $this->baseDumpCommand().' --schema-only > '.$path,
         ]);
 
         if ($this->hasMigrationTable()) {
-            $commands->push($this->baseDumpCommand().' -t '.$this->migrationTable.' --data-only >> '.$path);
+            $commands->push($this->baseDumpCommand().' -t '.$this->getMigrationTable().' --data-only >> '.$path);
         }
 
         $commands->map(function ($command, $path) {
@@ -52,6 +53,18 @@ class PostgresSchemaState extends SchemaState
     }
 
     /**
+     * Get the name of the application's migration table.
+     *
+     * @return string
+     */
+    protected function getMigrationTable(): string
+    {
+        [$schema, $table] = $this->connection->getSchemaBuilder()->parseSchemaAndTable($this->migrationTable, withDefaultSchema: true);
+
+        return $schema.'.'.$this->connection->getTablePrefix().$table;
+    }
+
+    /**
      * Get the base dump command arguments for PostgreSQL as a string.
      *
      * @return string
@@ -69,14 +82,25 @@ class PostgresSchemaState extends SchemaState
      */
     protected function baseVariables(array $config)
     {
+        if ($this->connection->hasDirectConnection()) {
+            $config = $this->connection->getDirectPdoConfig();
+        }
+
         $config['host'] ??= '';
 
-        return [
+        $variables = [
             'LARAVEL_LOAD_HOST' => is_array($config['host']) ? $config['host'][0] : $config['host'],
             'LARAVEL_LOAD_PORT' => $config['port'] ?? '',
             'LARAVEL_LOAD_USER' => $config['username'],
             'PGPASSWORD' => $config['password'],
-            'LARAVEL_LOAD_DATABASE' => $config['database'],
         ];
+
+        if (! empty($config['sslmode'])) {
+            $variables['PGSSLMODE'] = $config['sslmode'];
+        }
+
+        $variables['LARAVEL_LOAD_DATABASE'] = $config['database'];
+
+        return $variables;
     }
 }

@@ -2,12 +2,15 @@
 
 namespace NumberToWords\Concerns;
 
+use NumberToWords\Exception\NumberToWordsException;
 use NumberToWords\NumberTransformer as Transformer;
 use NumberToWords\Exception\InvalidArgumentException;
 use NumberToWords\NumberTransformer\NumberTransformer;
 
 trait ManagesNumberTransformers
 {
+    use ManagesLocaleAlias;
+
     private array $numberTransformers = [
         'ar' => Transformer\ArabicNumberTransformer::class,
         'al' => Transformer\AlbanianNumberTransformer::class,
@@ -34,11 +37,13 @@ trait ManagesNumberTransformers
         'nl' => Transformer\DutchNumberTransformer::class,
         'pl' => Transformer\PolishNumberTransformer::class,
         'pt_BR' => Transformer\PortugueseBrazilianNumberTransformer::class,
+        'pt_PT' => Transformer\PortugueseNumberTransformer::class,
         'ro' => Transformer\RomanianNumberTransformer::class,
         'sr' => Transformer\SerbianNumberTransformer::class,
         'ru' => Transformer\RussianNumberTransformer::class,
         'sk' => Transformer\SlovakNumberTransformer::class,
         'sv' => Transformer\SwedishNumberTransformer::class,
+        'sw' => Transformer\SwahiliNumberTransformer::class,
         'tk' => Transformer\TurkmenNumberTransformer::class,
         'tr' => Transformer\TurkishNumberTransformer::class,
         'ua' => Transformer\UkrainianNumberTransformer::class,
@@ -51,6 +56,7 @@ trait ManagesNumberTransformers
      */
     public function getNumberTransformer(string $language): NumberTransformer
     {
+        $language = $this->resolveAlias($language);
         if (!array_key_exists($language, $this->numberTransformers)) {
             throw new InvalidArgumentException(sprintf(
                 'Number transformer for "%s" language is not implemented.',
@@ -61,8 +67,15 @@ trait ManagesNumberTransformers
         return new $this->numberTransformers[$language]();
     }
 
+    /**
+     * @throws NumberToWordsException
+     * @throws InvalidArgumentException
+     */
     public static function transformNumber(string $language, int $number): string
     {
-        return (new static())->getNumberTransformer($language)->toWords($number);
+        $static = new static();
+        $language = $static->resolveAlias($language);
+
+        return $static->getNumberTransformer($language)->toWords($number);
     }
 }

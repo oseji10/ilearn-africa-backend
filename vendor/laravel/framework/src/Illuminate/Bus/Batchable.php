@@ -12,14 +12,14 @@ trait Batchable
     /**
      * The batch ID (if applicable).
      *
-     * @var string
+     * @var string|null
      */
     public $batchId;
 
     /**
      * The fake batch, if applicable.
      *
-     * @var \Illuminate\Support\Testing\Fakes\BatchFake
+     * @var \Illuminate\Support\Testing\Fakes\BatchFake|null
      */
     private $fakeBatch;
 
@@ -48,7 +48,7 @@ trait Batchable
     {
         $batch = $this->batch();
 
-        return $batch && ! $batch->cancelled();
+        return $batch && ! $batch->finished() && ! $batch->cancelled();
     }
 
     /**

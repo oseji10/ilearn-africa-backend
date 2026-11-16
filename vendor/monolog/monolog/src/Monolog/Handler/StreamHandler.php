@@ -34,17 +34,21 @@ class StreamHandler extends AbstractProcessingHandler
     private string|null $errorMessage = null;
     protected int|null $filePermission;
     protected bool $useLocking;
+    protected string $fileOpenMode;
     /** @var true|null */
     private bool|null $dirCreated = null;
+    private bool $retrying = false;
+    private int|null $inodeUrl = null;
 
     /**
      * @param resource|string $stream         If a missing path can't be created, an UnexpectedValueException will be thrown on first write
      * @param int|null        $filePermission Optional file permissions (default (0644) are only for owner read/write)
      * @param bool            $useLocking     Try to lock log file before doing any writes
+     * @param string          $fileOpenMode   The fopen() mode used when opening a file, if $stream is a file path
      *
      * @throws \InvalidArgumentException If stream is not a resource or string
      */
-    public function __construct($stream, int|string|Level $level = Level::Debug, bool $bubble = true, ?int $filePermission = null, bool $useLocking = false)
+    public function __construct($stream, int|string|Level $level = Level::Debug, bool $bubble = true, ?int $filePermission = null, bool $useLocking = false, string $fileOpenMode = 'a')
     {
         parent::__construct($level, $bubble);
 
@@ -71,8 +75,23 @@ class StreamHandler extends AbstractProcessingHandler
             throw new \InvalidArgumentException('A stream must either be a resource or a string.');
         }
 
+        $this->fileOpenMode = $fileOpenMode;
         $this->filePermission = $filePermission;
         $this->useLocking = $useLocking;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function reset(): void
+    {
+        parent::reset();
+
+        // auto-close on reset to make sure we periodically close the file in long running processes
+        // as long as they correctly call reset() between jobs
+        if ($this->url !== null && $this->url !== 'php://memory') {
+            $this->close();
+        }
     }
 
     /**
@@ -115,6 +134,13 @@ class StreamHandler extends AbstractProcessingHandler
      */
     protected function write(LogRecord $record): void
     {
+        if ($this->hasUrlInodeWasChanged()) {
+            $this->close();
+            $this->write($record);
+
+            return;
+        }
+
         if (!\is_resource($this->stream)) {
             $url = $this->url;
             if (null === $url || '' === $url) {
@@ -122,12 +148,14 @@ class StreamHandler extends AbstractProcessingHandler
             }
             $this->createDir($url);
             $this->errorMessage = null;
-            set_error_handler(function (...$args) {
-                return $this->customErrorHandler(...$args);
+            // forwarding to $this->customErrorHandler using a closure to make the
+            // private method accessible, see https://github.com/Seldaek/monolog/issues/1866
+            set_error_handler(function (int $code, string $msg) {
+                return $this->customErrorHandler($code, $msg);
             });
 
             try {
-                $stream = fopen($url, 'a');
+                $stream = fopen($url, $this->fileOpenMode);
                 if ($this->filePermission !== null) {
                     @chmod($url, $this->filePermission);
                 }
@@ -141,6 +169,7 @@ class StreamHandler extends AbstractProcessingHandler
             }
             stream_set_chunk_size($stream, $this->streamChunkSize);
             $this->stream = $stream;
+            $this->inodeUrl = $this->getInodeFromUrl();
         }
 
         $stream = $this->stream;
@@ -149,8 +178,32 @@ class StreamHandler extends AbstractProcessingHandler
             flock($stream, LOCK_EX);
         }
 
-        $this->streamWrite($stream, $record);
+        $this->errorMessage = null;
+        // forwarding to $this->customErrorHandler using a closure to make the
+        // private method accessible, see https://github.com/Seldaek/monolog/issues/1866
+        set_error_handler(function (int $code, string $msg) {
+            return $this->customErrorHandler($code, $msg);
+        });
+        try {
+            $this->streamWrite($stream, $record);
+        } finally {
+            restore_error_handler();
+        }
+        if ($this->errorMessage !== null) {
+            $error = $this->errorMessage;
+            // close the resource if possible to reopen it, and retry the failed write
+            if (!$this->retrying && $this->url !== null && $this->url !== 'php://memory') {
+                $this->retrying = true;
+                $this->close();
+                $this->write($record);
 
+                return;
+            }
+
+            throw new \UnexpectedValueException('Writing to the log file failed: '.$error . Utils::getRecordMessageForException($record));
+        }
+
+        $this->retrying = false;
         if ($this->useLocking) {
             flock($stream, LOCK_UN);
         }
@@ -162,12 +215,34 @@ class StreamHandler extends AbstractProcessingHandler
      */
     protected function streamWrite($stream, LogRecord $record): void
     {
-        fwrite($stream, (string) $record->formatted);
+        $data = (string) $record->formatted;
+        $length = \strlen($data);
+        $written = 0;
+
+        // fwrite() may write only part of the data on non-blocking streams, so loop until it is all written, see https://github.com/Seldaek/monolog/issues/2011
+        while ($written < $length) {
+            $result = fwrite($stream, substr($data, $written));
+            if ($result === false) {
+                // write failed, let the customErrorHandler/errorMessage logic in write() report and retry it
+                break;
+            }
+            if ($result === 0) {
+                // the non-blocking stream's buffer is full, wait until it can be written to again instead of busy-looping or dropping the rest of the record
+                $write = [$stream];
+                $read = $except = [];
+                stream_select($read, $write, $except, null);
+                continue;
+            }
+            $written += $result;
+        }
     }
 
+    /**
+     * @return true
+     */
     private function customErrorHandler(int $code, string $msg): bool
     {
-        $this->errorMessage = preg_replace('{^(fopen|mkdir)\(.*?\): }', '', $msg);
+        $this->errorMessage = preg_replace('{^(fopen|mkdir|fwrite)\(.*?\): }', '', $msg);
 
         return true;
     }
@@ -196,8 +271,10 @@ class StreamHandler extends AbstractProcessingHandler
         $dir = $this->getDirFromStream($url);
         if (null !== $dir && !is_dir($dir)) {
             $this->errorMessage = null;
-            set_error_handler(function (...$args) {
-                return $this->customErrorHandler(...$args);
+            // forwarding to $this->customErrorHandler using a closure to make the
+            // private method accessible, see https://github.com/Seldaek/monolog/issues/1866
+            set_error_handler(function (int $code, string $msg) {
+                return $this->customErrorHandler($code, $msg);
             });
             $status = mkdir($dir, 0777, true);
             restore_error_handler();
@@ -206,5 +283,27 @@ class StreamHandler extends AbstractProcessingHandler
             }
         }
         $this->dirCreated = true;
+    }
+
+    private function getInodeFromUrl(): ?int
+    {
+        if ($this->url === null || str_starts_with($this->url, 'php://')) {
+            return null;
+        }
+
+        $inode = @fileinode($this->url);
+
+        return $inode === false ? null : $inode;
+    }
+
+    private function hasUrlInodeWasChanged(): bool
+    {
+        if ($this->inodeUrl === null || $this->retrying || $this->inodeUrl === $this->getInodeFromUrl()) {
+            return false;
+        }
+
+        $this->retrying = true;
+
+        return true;
     }
 }

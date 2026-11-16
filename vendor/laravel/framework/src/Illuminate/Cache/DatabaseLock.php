@@ -3,10 +3,15 @@
 namespace Illuminate\Cache;
 
 use Illuminate\Database\Connection;
+use Illuminate\Database\DetectsConcurrencyErrors;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\SqlServerConnection;
+use Throwable;
 
 class DatabaseLock extends Lock
 {
+    use DetectsConcurrencyErrors;
+
     /**
      * The database connection instance.
      *
@@ -24,7 +29,7 @@ class DatabaseLock extends Lock
     /**
      * The prune probability odds.
      *
-     * @var array
+     * @var array{int, int}|null
      */
     protected $lottery;
 
@@ -43,8 +48,8 @@ class DatabaseLock extends Lock
      * @param  string  $name
      * @param  int  $seconds
      * @param  string|null  $owner
-     * @param  array  $lottery
-     * @return void
+     * @param  array{int, int}|null  $lottery
+     * @param  int  $defaultTimeoutInSeconds
      */
     public function __construct(Connection $connection, $table, $name, $seconds, $owner = null, $lottery = [2, 100], $defaultTimeoutInSeconds = 86400)
     {
@@ -60,22 +65,34 @@ class DatabaseLock extends Lock
      * Attempt to acquire the lock.
      *
      * @return bool
+     *
+     * @throws \Throwable
      */
     public function acquire()
     {
-        try {
-            $this->connection->table($this->table)->insert([
-                'key' => $this->name,
-                'owner' => $this->owner,
-                'expiration' => $this->expiresAt(),
-            ]);
+        $record = [
+            'key' => $this->name,
+            'owner' => $this->owner,
+            'expiration' => $this->expiresAt(),
+        ];
 
-            $acquired = true;
-        } catch (QueryException) {
+        try {
+            $acquired = $this->connection instanceof SqlServerConnection
+                ? $this->connection->table($this->table)->insert($record)
+                : $this->connection->table($this->table)->insertOrIgnore($record) > 0;
+        } catch (QueryException $e) {
+            if ($this->connection->transactionLevel() > 0 && $this->causedByConcurrencyError($e)) {
+                throw $e;
+            }
+
+            $acquired = false;
+        }
+
+        if (! $acquired) {
             $updated = $this->connection->table($this->table)
                 ->where('key', $this->name)
                 ->where(function ($query) {
-                    return $query->where('owner', $this->owner)->orWhere('expiration', '<=', time());
+                    return $query->where('owner', $this->owner)->orWhere('expiration', '<=', $this->currentTime());
                 })->update([
                     'owner' => $this->owner,
                     'expiration' => $this->expiresAt(),
@@ -84,11 +101,28 @@ class DatabaseLock extends Lock
             $acquired = $updated >= 1;
         }
 
-        if (random_int(1, $this->lottery[1]) <= $this->lottery[0]) {
-            $this->connection->table($this->table)->where('expiration', '<=', time())->delete();
+        if (count($this->lottery ?? []) === 2 && random_int(1, $this->lottery[1]) <= $this->lottery[0]) {
+            $this->pruneExpiredLocks();
         }
 
         return $acquired;
+    }
+
+    /**
+     * Attempt to refresh the lock for the given number of seconds.
+     *
+     * @param  int|null  $seconds
+     * @return bool
+     */
+    public function refresh($seconds = null)
+    {
+        $seconds ??= $this->seconds;
+
+        return $this->connection->table($this->table)
+            ->where('key', $this->name)
+            ->where('owner', $this->owner)
+            ->where('expiration', '>', $this->currentTime())
+            ->update(['expiration' => $this->expiresAt($seconds)]) >= 1;
     }
 
     /**
@@ -96,30 +130,36 @@ class DatabaseLock extends Lock
      *
      * @return int
      */
-    protected function expiresAt()
+    protected function expiresAt($seconds = null)
     {
-        $lockTimeout = $this->seconds > 0 ? $this->seconds : $this->defaultTimeoutInSeconds;
+        $seconds ??= $this->seconds;
 
-        return time() + $lockTimeout;
+        $lockTimeout = $seconds > 0 ? $seconds : $this->defaultTimeoutInSeconds;
+
+        return $this->currentTime() + $lockTimeout;
     }
 
     /**
      * Release the lock.
      *
      * @return bool
+     *
+     * @throws \Throwable
      */
     public function release()
     {
-        if ($this->isOwnedByCurrentProcess()) {
-            $this->connection->table($this->table)
-                        ->where('key', $this->name)
-                        ->where('owner', $this->owner)
-                        ->delete();
+        try {
+            return $this->connection->table($this->table)
+                ->where('key', $this->name)
+                ->where('owner', $this->owner)
+                ->delete() > 0;
+        } catch (Throwable $e) {
+            if ($this->causedByConcurrencyError($e) && $this->connection->transactionLevel() === 0) {
+                return true;
+            }
 
-            return true;
+            throw $e;
         }
-
-        return false;
     }
 
     /**
@@ -130,18 +170,41 @@ class DatabaseLock extends Lock
     public function forceRelease()
     {
         $this->connection->table($this->table)
-                    ->where('key', $this->name)
-                    ->delete();
+            ->where('key', $this->name)
+            ->delete();
+    }
+
+    /**
+     * Deletes locks that are past expiration.
+     *
+     * @return void
+     *
+     * @throws \Throwable
+     */
+    public function pruneExpiredLocks()
+    {
+        try {
+            $this->connection->table($this->table)
+                ->where('expiration', '<=', $this->currentTime())
+                ->delete();
+        } catch (Throwable $e) {
+            if (! $this->causedByConcurrencyError($e) || $this->connection->transactionLevel() > 0) {
+                throw $e;
+            }
+        }
     }
 
     /**
      * Returns the owner value written into the driver for this lock.
      *
-     * @return string
+     * @return string|null
      */
     protected function getCurrentOwner()
     {
-        return optional($this->connection->table($this->table)->where('key', $this->name)->first())->owner;
+        return $this->connection->table($this->table)
+            ->where('key', $this->name)
+            ->where('expiration', '>', $this->currentTime())
+            ->first()?->owner;
     }
 
     /**

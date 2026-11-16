@@ -3,10 +3,14 @@
 namespace Illuminate\Database\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\ConfigurationUrlParser;
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use UnexpectedValueException;
 
+#[AsCommand(name: 'db')]
 class DbCommand extends Command
 {
     /**
@@ -16,7 +20,8 @@ class DbCommand extends Command
      */
     protected $signature = 'db {connection? : The database connection that should be used}
                {--read : Connect to the read connection}
-               {--write : Connect to the write connection}';
+               {--write : Connect to the write connection}
+               {--pooled : Connect to the pooled connection}';
 
     /**
      * The console command description.
@@ -39,18 +44,28 @@ class DbCommand extends Command
             $this->line('  Use the <options=bold>[--read]</> and <options=bold>[--write]</> options to specify a read or write connection.');
             $this->newLine();
 
-            return Command::FAILURE;
+            return self::FAILURE;
         }
 
-        (new Process(
-            array_merge([$this->getCommand($connection)], $this->commandArguments($connection)),
-            null,
-            $this->commandEnvironment($connection)
-        ))->setTimeout(null)->setTty(true)->mustRun(function ($type, $buffer) {
-            $this->output->write($buffer);
-        });
+        try {
+            (new Process(
+                array_merge([$command = $this->getCommand($connection)], $this->commandArguments($connection)),
+                null,
+                $this->commandEnvironment($connection)
+            ))->setTimeout(null)->setTty(true)->mustRun(function ($type, $buffer) {
+                $this->output->write($buffer);
+            });
+        } catch (ProcessFailedException $e) {
+            if ($e->getProcess()->getExitCode() !== 127) {
+                throw $e;
+            }
 
-        return 0;
+            $this->error("{$command} not found in path.");
+
+            return self::FAILURE;
+        }
+
+        return self::SUCCESS;
     }
 
     /**
@@ -75,20 +90,46 @@ class DbCommand extends Command
         }
 
         if ($this->option('read')) {
-            if (is_array($connection['read']['host'])) {
-                $connection['read']['host'] = $connection['read']['host'][0];
-            }
-
-            $connection = array_merge($connection, $connection['read']);
+            $connection = $this->mergeConnectionConfiguration($connection, 'read');
         } elseif ($this->option('write')) {
-            if (is_array($connection['write']['host'])) {
-                $connection['write']['host'] = $connection['write']['host'][0];
-            }
-
-            $connection = array_merge($connection, $connection['write']);
+            $connection = $this->mergeConnectionConfiguration($connection, 'write');
+        } elseif (! $this->option('pooled') && ($connection['driver'] ?? null) === 'pgsql' && ($connection['pooled'] ?? false) === true && ! empty($connection['direct'])) {
+            $connection = $this->mergeConnectionConfiguration($connection, 'direct');
         }
 
         return $connection;
+    }
+
+    /**
+     * Merge a nested connection configuration onto the base connection.
+     *
+     * @param  array  $connection
+     * @param  string  $type
+     * @return array
+     */
+    protected function mergeConnectionConfiguration(array $connection, $type)
+    {
+        if (empty($connection[$type])) {
+            return $connection;
+        }
+
+        $merge = $connection[$type];
+
+        if (isset($merge[0]) && is_array($merge[0])) {
+            $merge = $merge[0];
+        }
+
+        if (is_array($merge['host'] ?? null)) {
+            $merge['host'] = $merge['host'][0];
+        }
+
+        $connection = array_merge($connection, $merge);
+
+        if (is_array($connection['host'] ?? null)) {
+            $connection['host'] = $connection['host'][0];
+        }
+
+        return Arr::except($connection, ['read', 'write', 'direct', 'pooled']);
     }
 
     /**
@@ -131,6 +172,7 @@ class DbCommand extends Command
     {
         return [
             'mysql' => 'mysql',
+            'mariadb' => 'mariadb',
             'pgsql' => 'psql',
             'sqlite' => 'sqlite3',
             'sqlsrv' => 'sqlcmd',
@@ -145,15 +187,32 @@ class DbCommand extends Command
      */
     protected function getMysqlArguments(array $connection)
     {
+        $optionalArguments = [
+            'password' => '--password='.$connection['password'],
+            'unix_socket' => '--socket='.($connection['unix_socket'] ?? ''),
+            'charset' => '--default-character-set='.($connection['charset'] ?? ''),
+        ];
+
+        if (! $connection['password']) {
+            unset($optionalArguments['password']);
+        }
+
         return array_merge([
             '--host='.$connection['host'],
             '--port='.$connection['port'],
             '--user='.$connection['username'],
-        ], $this->getOptionalArguments([
-            'password' => '--password='.$connection['password'],
-            'unix_socket' => '--socket='.($connection['unix_socket'] ?? ''),
-            'charset' => '--default-character-set='.($connection['charset'] ?? ''),
-        ], $connection), [$connection['database']]);
+        ], $this->getOptionalArguments($optionalArguments, $connection), [$connection['database']]);
+    }
+
+    /**
+     * Get the arguments for the MariaDB CLI.
+     *
+     * @param  array  $connection
+     * @return array
+     */
+    protected function getMariaDbArguments(array $connection)
+    {
+        return $this->getMysqlArguments($connection);
     }
 
     /**

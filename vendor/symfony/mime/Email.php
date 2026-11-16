@@ -246,7 +246,7 @@ class Email extends Message
             $priority = 1;
         }
 
-        return $this->setHeaderBody('Text', 'X-Priority', sprintf('%d (%s)', $priority, self::PRIORITY_MAP[$priority]));
+        return $this->setHeaderBody('Text', 'X-Priority', \sprintf('%d (%s)', $priority, self::PRIORITY_MAP[$priority]));
     }
 
     /**
@@ -270,7 +270,7 @@ class Email extends Message
     public function text($body, string $charset = 'utf-8'): static
     {
         if (null !== $body && !\is_string($body) && !\is_resource($body)) {
-            throw new \TypeError(sprintf('The body must be a string, a resource or null (got "%s").', get_debug_type($body)));
+            throw new \TypeError(\sprintf('The body must be a string, a resource or null (got "%s").', get_debug_type($body)));
         }
 
         $this->cachedBody = null;
@@ -301,7 +301,7 @@ class Email extends Message
     public function html($body, string $charset = 'utf-8'): static
     {
         if (null !== $body && !\is_string($body) && !\is_resource($body)) {
-            throw new \TypeError(sprintf('The body must be a string, a resource or null (got "%s").', get_debug_type($body)));
+            throw new \TypeError(\sprintf('The body must be a string, a resource or null (got "%s").', get_debug_type($body)));
         }
 
         $this->cachedBody = null;
@@ -362,18 +362,6 @@ class Email extends Message
 
     /**
      * @return $this
-     *
-     * @deprecated since Symfony 6.2, use addPart() instead
-     */
-    public function attachPart(DataPart $part): static
-    {
-        @trigger_deprecation('symfony/mime', '6.2', 'The "%s()" method is deprecated, use "addPart()" instead.', __METHOD__);
-
-        return $this->addPart($part);
-    }
-
-    /**
-     * @return $this
      */
     public function addPart(DataPart $part): static
     {
@@ -400,10 +388,7 @@ class Email extends Message
         return $this->generateBody();
     }
 
-    /**
-     * @return void
-     */
-    public function ensureValidity()
+    public function ensureValidity(): void
     {
         $this->ensureBodyValid();
 
@@ -416,7 +401,7 @@ class Email extends Message
 
     private function ensureBodyValid(): void
     {
-        if (null === $this->text && null === $this->html && !$this->attachments) {
+        if (null === $this->text && null === $this->html && !$this->attachments && null === parent::getBody()) {
             throw new LogicException('A message must have a text or an HTML part or attachments.');
         }
     }
@@ -497,6 +482,7 @@ class Email extends Message
         }
 
         $otherParts = $relatedParts = [];
+        $cidReplacements = [];
         foreach ($this->attachments as $part) {
             foreach ($names as $name) {
                 if ($name !== $part->getName() && (!$part->hasContentId() || $name !== $part->getContentId())) {
@@ -506,16 +492,19 @@ class Email extends Message
                     continue 2;
                 }
 
-                if ($name !== $part->getContentId()) {
-                    $html = str_replace('cid:'.$name, 'cid:'.$part->getContentId(), $html, $count);
-                }
+                $cidReplacements['cid:'.$name] = 'cid:'.$part->getContentId();
                 $relatedParts[$name] = $part;
-                $part->setName($part->getContentId())->asInline();
+                $part->setName($part->getName() ?? $part->getContentId())->asInline();
 
                 continue 2;
             }
 
             $otherParts[] = $part;
+        }
+        if ($cidReplacements) {
+            // all references are replaced at once as strtr() matches the longest name first and
+            // never replaces inside already substituted text, unlike successive str_replace() calls
+            $html = strtr($html, $cidReplacements);
         }
         if (null !== $htmlPart) {
             $htmlPart = new TextPart($html, $this->htmlCharset, 'html');
@@ -584,6 +573,10 @@ class Email extends Message
      */
     public function __unserialize(array $data): void
     {
+        if (!\is_string($data[1] ?? '') || !\is_string($data[3] ?? '')) {
+            throw new \BadMethodCallException('Cannot unserialize '.self::class);
+        }
+
         [$this->text, $this->textCharset, $this->html, $this->htmlCharset, $this->attachments, $parentData] = $data;
 
         parent::__unserialize($parentData);

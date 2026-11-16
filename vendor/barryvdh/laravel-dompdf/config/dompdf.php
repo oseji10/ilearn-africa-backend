@@ -91,6 +91,7 @@ return [
          * @var array
          */
         'allowed_protocols' => [
+            'data://' => ['rules' => []],
             'file://' => ['rules' => []],
             'http://' => ['rules' => []],
             'https://' => ['rules' => []],
@@ -235,7 +236,7 @@ return [
         'enable_php' => false,
 
         /**
-         * Rnable inline JavaScript
+         * Enable inline JavaScript
          *
          * If this setting is set to true then DOMPDF will automatically insert JavaScript code contained
          * within <script type="text/javascript"> ... </script> tags as written into the PDF.

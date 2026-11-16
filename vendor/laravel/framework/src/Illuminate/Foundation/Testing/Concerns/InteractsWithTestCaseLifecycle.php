@@ -4,27 +4,50 @@ namespace Illuminate\Foundation\Testing\Concerns;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Application as Artisan;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Foundation\Bootstrap\HandleExceptions;
+use Illuminate\Foundation\Bootstrap\RegisterProviders;
 use Illuminate\Foundation\Console\AboutCommand;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Foundation\Http\Middleware\TrimStrings;
+use Illuminate\Foundation\Testing\Attributes\SetUp;
+use Illuminate\Foundation\Testing\Attributes\TearDown;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
-use Illuminate\Foundation\Testing\WithoutEvents;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
+use Illuminate\Http\Client\Response;
+use Illuminate\Http\Middleware\HandleCors;
+use Illuminate\Http\Middleware\TrustHosts;
+use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Http\Resources\JsonApi\JsonApiResource;
+use Illuminate\Mail\Markdown;
+use Illuminate\Queue\Console\WorkCommand;
 use Illuminate\Queue\Queue;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\EncodedHtmlString;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\ParallelTesting;
+use Illuminate\Support\Lottery;
+use Illuminate\Support\Once;
 use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Validator;
 use Illuminate\View\Component;
+use Laravel\Prompts\Prompt;
 use Mockery;
 use Mockery\Exception\InvalidCountException;
+use PHPUnit\Metadata\Annotation\Parser\Registry as PHPUnitRegistry;
+use ReflectionClass;
 use Throwable;
 
 trait InteractsWithTestCaseLifecycle
@@ -98,6 +121,8 @@ trait InteractsWithTestCaseLifecycle
      * @internal
      *
      * @return void
+     *
+     * @throws \Throwable
      */
     protected function tearDownTheTestEnvironment(): void
     {
@@ -154,20 +179,49 @@ trait InteractsWithTestCaseLifecycle
             $this->originalDeprecationHandler = null;
         }
 
+        $this->flushState();
+
+        if ($this->callbackException) {
+            throw $this->callbackException;
+        }
+    }
+
+    /**
+     * Reset static state between test executions.
+     */
+    protected function flushState(): void
+    {
         AboutCommand::flushState();
         Artisan::forgetBootstrappers();
         Component::flushCache();
         Component::forgetComponentsResolver();
         Component::forgetFactory();
         ConvertEmptyStringsToNull::flushState();
-        HandleExceptions::forgetApp();
+        Factory::flushState();
+        FormRequest::flushState();
+        EncodedHtmlString::flushState();
+        EncryptCookies::flushState();
+        HandleCors::flushState();
+        HandleExceptions::flushState($this);
+        JsonApiResource::flushState();
+        JsonResource::flushState();
+        Lottery::determineResultsNormally();
+        Markdown::flushState();
+        Migrator::withoutMigrations([]);
+        Once::flush();
+        PreventRequestsDuringMaintenance::flushState();
+        Prompt::flushState();
         Queue::createPayloadUsing(null);
+        RegisterProviders::flushState();
+        Response::flushState();
         Sleep::fake(false);
+        Str::resetFactoryState();
         TrimStrings::flushState();
-
-        if ($this->callbackException) {
-            throw $this->callbackException;
-        }
+        TrustProxies::flushState();
+        TrustHosts::flushState();
+        PreventRequestForgery::flushState();
+        Validator::flushState();
+        WorkCommand::flushState();
     }
 
     /**
@@ -177,7 +231,7 @@ trait InteractsWithTestCaseLifecycle
      */
     protected function setUpTraits()
     {
-        $uses = array_flip(class_uses_recursive(static::class));
+        $uses = $this->traitsUsedByTest ?? class_uses_recursive(static::class);
 
         if (isset($uses[RefreshDatabase::class])) {
             $this->refreshDatabase();
@@ -199,10 +253,6 @@ trait InteractsWithTestCaseLifecycle
             $this->disableMiddlewareForAllTests();
         }
 
-        if (isset($uses[WithoutEvents::class])) {
-            $this->disableEventsForAllTests();
-        }
-
         if (isset($uses[WithFaker::class])) {
             $this->setUpFaker();
         }
@@ -214,6 +264,16 @@ trait InteractsWithTestCaseLifecycle
 
             if (method_exists($this, $method = 'tearDown'.class_basename($trait))) {
                 $this->beforeApplicationDestroyed(fn () => $this->{$method}());
+            }
+
+            foreach ((new ReflectionClass($trait))->getMethods() as $method) {
+                if ($method->getAttributes(SetUp::class) !== []) {
+                    $this->{$method->getName()}();
+                }
+
+                if ($method->getAttributes(TearDown::class) !== []) {
+                    $this->beforeApplicationDestroyed(fn () => $this->{$method->getName()}());
+                }
             }
         }
 
@@ -229,16 +289,11 @@ trait InteractsWithTestCaseLifecycle
      */
     public static function tearDownAfterClassUsingTestCase()
     {
-        foreach ([
-            \PHPUnit\Util\Annotation\Registry::class,
-            \PHPUnit\Metadata\Annotation\Parser\Registry::class,
-        ] as $class) {
-            if (class_exists($class)) {
-                (function () {
-                    $this->classDocBlocks = [];
-                    $this->methodDocBlocks = [];
-                })->call($class::getInstance());
-            }
+        if (class_exists(PHPUnitRegistry::class)) {
+            (function () {
+                $this->classDocBlocks = [];
+                $this->methodDocBlocks = [];
+            })->call(PHPUnitRegistry::getInstance());
         }
     }
 

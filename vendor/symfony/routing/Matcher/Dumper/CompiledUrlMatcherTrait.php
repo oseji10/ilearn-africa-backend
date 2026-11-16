@@ -34,15 +34,15 @@ trait CompiledUrlMatcherTrait
 
     public function match(string $pathinfo): array
     {
-        $allow = $allowSchemes = [];
-        if ($ret = $this->doMatch($pathinfo, $allow, $allowSchemes)) {
+        $allow = $allowSchemes = $trailingSlashSchemes = [];
+        if ($ret = $this->doMatch($pathinfo, $allow, $allowSchemes, $trailingSlashSchemes)) {
             return $ret;
         }
         if ($allow) {
             throw new MethodNotAllowedException(array_keys($allow));
         }
         if (!$this instanceof RedirectableUrlMatcherInterface) {
-            throw new ResourceNotFoundException(sprintf('No routes found for "%s".', $pathinfo));
+            throw new ResourceNotFoundException(\sprintf('No routes found for "%s".', $pathinfo));
         }
         if (!\in_array($this->context->getMethod(), ['HEAD', 'GET'], true)) {
             // no-op
@@ -57,24 +57,30 @@ trait CompiledUrlMatcherTrait
             } finally {
                 $this->context->setScheme($scheme);
             }
-        } elseif ('/' !== $trimmedPathinfo = rtrim($pathinfo, '/') ?: '/') {
+        } elseif ('' !== $trimmedPathinfo = rtrim($pathinfo, '/')) {
+            $fallbackSchemes = $trailingSlashSchemes;
+            $fallbackPathinfo = $pathinfo;
             $pathinfo = $trimmedPathinfo === $pathinfo ? $pathinfo.'/' : $trimmedPathinfo;
-            if ($ret = $this->doMatch($pathinfo, $allow, $allowSchemes)) {
+            if ($ret = $this->doMatch($pathinfo, $allow, $allowSchemes, $trailingSlashSchemes)) {
                 return $this->redirect($pathinfo, $ret['_route']) + $ret;
             }
-            if ($allowSchemes) {
+            if ($allowSchemes = $allowSchemes ?: $trailingSlashSchemes) {
+                goto redirect_scheme;
+            }
+            if ($allowSchemes = $fallbackSchemes) {
+                $pathinfo = $fallbackPathinfo;
                 goto redirect_scheme;
             }
         }
 
-        throw new ResourceNotFoundException(sprintf('No routes found for "%s".', $pathinfo));
+        throw new ResourceNotFoundException(\sprintf('No routes found for "%s".', $pathinfo));
     }
 
-    private function doMatch(string $pathinfo, array &$allow = [], array &$allowSchemes = []): array
+    private function doMatch(string $pathinfo, array &$allow = [], array &$allowSchemes = [], array &$trailingSlashSchemes = []): array
     {
-        $allow = $allowSchemes = [];
-        $pathinfo = rawurldecode($pathinfo) ?: '/';
-        $trimmedPathinfo = rtrim($pathinfo, '/') ?: '/';
+        $allow = $allowSchemes = $trailingSlashSchemes = [];
+        $pathinfo = '' === ($pathinfo = rawurldecode($pathinfo)) ? '/' : $pathinfo;
+        $trimmedPathinfo = '' === ($trimmedPathinfo = rtrim($pathinfo, '/')) ? '/' : $trimmedPathinfo;
         $context = $this->context;
         $requestMethod = $canonicalMethod = $context->getMethod();
 
@@ -104,6 +110,8 @@ trait CompiledUrlMatcherTrait
 
             if ('/' !== $pathinfo && $hasTrailingSlash === ($trimmedPathinfo === $pathinfo)) {
                 if ($supportsRedirections && (!$requiredMethods || isset($requiredMethods['GET']))) {
+                    $trailingSlashSchemes = $allowSchemes;
+
                     return $allow = $allowSchemes = [];
                 }
                 continue;
@@ -154,6 +162,8 @@ trait CompiledUrlMatcherTrait
 
                     if ('/' !== $pathinfo && !$hasTrailingVar && $hasTrailingSlash === ($trimmedPathinfo === $pathinfo)) {
                         if ($supportsRedirections && (!$requiredMethods || isset($requiredMethods['GET']))) {
+                            $trailingSlashSchemes = $allowSchemes;
+
                             return $allow = $allowSchemes = [];
                         }
                         continue;

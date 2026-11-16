@@ -7,14 +7,14 @@ class Attribute
     /**
      * The attribute accessor.
      *
-     * @var callable
+     * @var callable|null
      */
     public $get;
 
     /**
      * The attribute mutator.
      *
-     * @var callable
+     * @var callable|null
      */
     public $set;
 
@@ -37,9 +37,8 @@ class Attribute
      *
      * @param  callable|null  $get
      * @param  callable|null  $set
-     * @return void
      */
-    public function __construct(callable $get = null, callable $set = null)
+    public function __construct(?callable $get = null, ?callable $set = null)
     {
         $this->get = $get;
         $this->set = $set;
@@ -52,7 +51,7 @@ class Attribute
      * @param  callable|null  $set
      * @return static
      */
-    public static function make(callable $get = null, callable $set = null): static
+    public static function make(?callable $get = null, ?callable $set = null): static
     {
         return new static($get, $set);
     }
@@ -82,7 +81,7 @@ class Attribute
     /**
      * Disable object caching for the attribute.
      *
-     * @return static
+     * @return $this
      */
     public function withoutObjectCaching()
     {
@@ -94,7 +93,7 @@ class Attribute
     /**
      * Enable caching for the attribute.
      *
-     * @return static
+     * @return $this
      */
     public function shouldCache()
     {

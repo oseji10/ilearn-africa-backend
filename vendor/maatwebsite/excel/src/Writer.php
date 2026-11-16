@@ -2,7 +2,6 @@
 
 namespace Maatwebsite\Excel;
 
-use Illuminate\Support\Arr;
 use Maatwebsite\Excel\Concerns\WithBackgroundColor;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithDefaultStyles;
@@ -173,12 +172,14 @@ class Writer
         $writer = WriterFactory::make(
             $writerType,
             $this->spreadsheet,
-            $export
+            $export,
+            $temporaryFile->getLocalPath()
         );
 
         if ($temporaryFile instanceof RemoteTemporaryFile && !$temporaryFile->existsLocally() && !$this->isRunningServerless()) {
-            $temporaryFile = resolve(TemporaryFileFactory::class)
-                ->makeLocal(Arr::last(explode('/', $temporaryFile->getLocalPath())));
+            // just ensure that local copy exists (it creates the directory structure),
+            // no need to copy remote content since it will be overwritten below
+            $temporaryFile->sync(false);
         }
 
         $writer->save(

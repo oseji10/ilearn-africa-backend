@@ -1,3 +1,84 @@
+### 3.12.1 (2026-09-29)
+
+  * Fixed `Logger` silently dropping every record for the rest of the process once the infinite loop guard aborted a nested logging cycle, which could hit long-running workers (#2072)
+  * Fixed `RedactingFormatter` letting secrets containing `&`, `<` or `>` through when wrapping an `HtmlFormatter` (#2069)
+  * Fixed `SocketHandler` throwing the writing timeout immediately when the first write made no progress, instead of waiting for the configured timeout (#2071)
+  * Fixed `RotatingFileHandler` computing the first rotation in the default timezone instead of the `$timezone` passed to the constructor (#2070)
+
+### 3.12.0 (2026-09-09)
+
+  * Added support for reading the timestamp of new records from a PSR-20 clock, via a new `$clock` constructor param and `Logger::setClock()` (#2065)
+  * Added support for `#[WithMonologChannel]` on constructor/method parameters, so a channel can be bound to a single argument instead of the whole class (#2068)
+  * Fixed `TelegramBotHandler` breaking HTML markup when truncating or splitting long messages, open tags are now closed at the end of a chunk and reopened in the next one (#2066)
+  * Fixed `RedactingFormatter` not redacting secrets nested inside array values of sensitive keys (#2067)
+
+### 3.11.0 (2026-09-02)
+
+  * Security: Fixed potential XSS in `BrowserConsoleHandler` when logging user provided content
+  * Added `RedactingFormatter` to automatically redact sensitive data from records, based on key names, `#[SensitiveParameter]` constructor params and/or regex patterns (#2041)
+  * Added `FrankenPhpHandler` to log records via FrankenPHP's frankenphp_log() function (#2056)
+  * Added `LogMonsterHandler` which complains if the code did not log enough records before the process/request ends, like a dead man's switch for logs (#2039)
+  * Added `FILE_PER_HOUR` rotation mode to `RotatingFileHandler` (#2040)
+  * Added `ErrorHandler::captureStackTraces()` to attach the stack trace of PHP errors to the records it generates (#2060)
+  * Added `NormalizerFormatter::setMaxTraceLength()` to limit how many stack trace frames are included when normalizing exceptions (#2015)
+  * Added extension points to `TelegramBotHandler` to change the API URL (e.g. for a self-hosted Bot API server) and to send extra curl headers (#2029)
+  * Added ability to override `IntrospectionProcessor`'s `SKIP_FUNCTIONS` in subclasses (#2050)
+  * Added `$maxLength` param to `SyslogUdpHandler`/`UdpSocket` to keep datagrams below the path MTU, as fragmented UDP packets are often dropped (#2049)
+  * Fixed `StreamHandler` truncating writes on non-blocking streams, it now loops until the whole record is written (#2016)
+  * Fixed stack trace frames without file/line being skipped, they are now reported as `internal[function]` entries so traces are not truncated or empty (#2061)
+  * Fixed `RotatingFileHandler` cleanup not finding files behind stream wrappers (e.g. private://) as glob() cannot see through those (#2058)
+  * Fixed `RotatingFileHandler` not using the configured timezone when computing the next rotation time (#2022)
+  * Fixed scalars being replaced by the "Over N levels deep" message instead of being output when the max normalization depth is reached (#2042)
+  * Fixed `DeduplicationHandler` failing with an undefined array key error when the store file is written to concurrently (#2020)
+  * Fixed `TelegramBotHandler` swallowing errors when the API returns a non-JSON response (#2030)
+  * Fixed `AbstractProcessingHandler::handle()` reading `$bubble` directly instead of calling `getBubble()`, so overrides of it were ignored (#2031)
+  * Fixed warning on PHP 8.5 when `ErrorHandler` sets the HTTP response code and a status line was already registered (#2027)
+
+### 3.10.0 (2026-01-02)
+
+  * Added automatic directory cleanup in RotatingFileHandler (#2000)
+  * Added timezone-aware file rotation to RotatingFileHandler (#1982)
+  * Added support for mongodb/mongodb 2.0+ (#1998)
+  * Added NoDiscard attribute to TestHandler methods to ensure the result is used (#2013)
+  * Fixed JsonFormatter crashing if __toString throws while normalizing data (#1968)
+  * Fixed PHP 8.5 deprecation warnings (#1997, #2009)
+  * Fixed DeduplicatingHandler collecting duplicate logs if the file cannot be locked (2e97231)
+  * Fixed GelfMessageFormatter to use integers instead of bool for gelf 1.1 support (#1973)
+  * Fixed empty stack traces being output anyway (#1979)
+  * Fixed StreamHandler not reopening the file if the inode changed (#1963)
+  * Fixed TelegramBotHandler sending empty messages (#1992)
+  * Fixed file paths in stack traces containing backslashes on windows, always using / now to unify logs (#1980)
+  * Fixed RotatingFileHandler unlink errors not being suppressed correctly (#1999)
+
+### 3.9.0 (2025-03-24)
+
+  * BC Warning: Fixed SendGridHandler to use the V3 API as V2 is now shut down, but this requires a new API key (#1952)
+  * Deprecated Monolog\Test\TestCase in favor of Monolog\Test\MonologTestCase (#1953)
+  * Added extension point for NativeMailerHandler::mail (#1948)
+  * Added setHandler method to BufferHandler to modify the nested handler at runtime (#1946)
+  * Fixed date format in ElasticsearchFormatter to use +00:00 vs +0000 tz identifiers (#1942)
+  * Fixed GelfMessageFormatter handling numeric context/extra keys (#1932)
+
+### 3.8.1 (2024-12-05)
+
+  * Deprecated Monolog\DateTimeImmutable in favor of Monolog\JsonSerializableDateTimeImmutable (#1928)
+  * Fixed gelf keys not being valid when context/extra data keys have spaces in them (#1927)
+  * Fixed empty lines appearing in the stack traces when a custom formatter returned null (#1925)
+
+### 3.8.0 (2024-11-12)
+
+  * Added `$fileOpenMode` param to `StreamHandler` to define a custom fopen mode to open the log file (#1913)
+  * Fixed PHP 8.4 deprecation notices (#1903)
+  * Added ability to extend/override `IntrospectionProcessor` (#1899)
+  * Added `$timeout` param to `ProcessHandler` to configure the stream_select() timeout to avoid blocking too long (default is 1.0 sec) (#1916)
+  * Fixed JsonFormatter batch handling to normalize records individually to make sure they look the same as if they were handled one by one (#1906)
+  * Fixed `StreamHandler` handling of write failures so that it now closes/reopens the stream and retries the write once before failing (#1882)
+  * Fixed `StreamHandler` error handler causing issues if a stream handler triggers an error (#1866)
+  * Fixed `StreamHandler::reset` not closing the stream, so that it would fail to write in some cases with long running processes (#1862)
+  * Fixed `RotatingFileHandler` issue where rotation does not happen in some long running processes (#1905)
+  * Fixed `JsonFormatter` handling of incomplete classes (#1834)
+  * Fixed `RotatingFileHandler` bug where rotation could sometimes not happen correctly (#1905)
+
 ### 3.7.0 (2024-06-28)
 
   * Added `NormalizerFormatter->setBasePath(...)` (and `JsonFormatter` by extension) that allows removing the project's path from the stack trace output (47e301d3e)
@@ -121,6 +202,14 @@ New deprecations:
   to Monolog or one of its handlers, or `Level::Warning->value` if you need the integer
   value equal to what `Logger::WARNING` was giving you.
 - `Logger::getLevelName()` is now deprecated.
+
+### 2.10.0 (2024-11-12)
+
+  * Added `$fileOpenMode` to `StreamHandler` to define a custom fopen mode to open the log file (#1913)
+  * Fixed `StreamHandler` handling of write failures so that it now closes/reopens the stream and retries the write once before failing (#1882)
+  * Fixed `StreamHandler` error handler causing issues if a stream handler triggers an error (#1866)
+  * Fixed `JsonFormatter` handling of incomplete classes (#1834)
+  * Fixed `RotatingFileHandler` bug where rotation could sometimes not happen correctly (#1905)
 
 ### 2.9.3 (2024-04-12)
 

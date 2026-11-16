@@ -2,6 +2,7 @@
 
 namespace Illuminate\Process;
 
+use Illuminate\Support\Collection;
 use Symfony\Component\Process\Process;
 
 class FakeProcessDescription
@@ -56,7 +57,7 @@ class FakeProcessDescription
     public function output(array|string $output)
     {
         if (is_array($output)) {
-            collect($output)->each(fn ($line) => $this->output($line));
+            (new Collection($output))->each(fn ($line) => $this->output($line));
 
             return $this;
         }
@@ -75,7 +76,7 @@ class FakeProcessDescription
     public function errorOutput(array|string $output)
     {
         if (is_array($output)) {
-            collect($output)->each(fn ($line) => $this->errorOutput($line));
+            (new Collection($output))->each(fn ($line) => $this->errorOutput($line));
 
             return $this;
         }
@@ -93,11 +94,12 @@ class FakeProcessDescription
      */
     public function replaceOutput(string $output)
     {
-        $this->output = collect($this->output)->reject(function ($output) {
-            return $output['type'] === 'out';
-        })->values()->all();
+        $this->output = (new Collection($this->output))
+            ->reject(fn ($output) => $output['type'] === 'out')
+            ->values()
+            ->all();
 
-        if (strlen($output) > 0) {
+        if ($output !== '') {
             $this->output[] = [
                 'type' => 'out',
                 'buffer' => rtrim($output, "\n")."\n",
@@ -115,11 +117,12 @@ class FakeProcessDescription
      */
     public function replaceErrorOutput(string $output)
     {
-        $this->output = collect($this->output)->reject(function ($output) {
-            return $output['type'] === 'err';
-        })->values()->all();
+        $this->output = (new Collection($this->output))
+            ->reject(fn ($output) => $output['type'] === 'err')
+            ->values()
+            ->all();
 
-        if (strlen($output) > 0) {
+        if ($output !== '') {
             $this->output[] = [
                 'type' => 'err',
                 'buffer' => rtrim($output, "\n")."\n",
@@ -200,12 +203,12 @@ class FakeProcessDescription
      */
     protected function resolveOutput()
     {
-        $output = collect($this->output)
+        $output = (new Collection($this->output))
             ->filter(fn ($output) => $output['type'] === 'out');
 
         return $output->isNotEmpty()
-                    ? rtrim($output->map->buffer->implode(''), "\n")."\n"
-                    : '';
+            ? rtrim($output->map->buffer->implode(''), "\n")."\n"
+            : '';
     }
 
     /**
@@ -215,11 +218,11 @@ class FakeProcessDescription
      */
     protected function resolveErrorOutput()
     {
-        $output = collect($this->output)
+        $output = (new Collection($this->output))
             ->filter(fn ($output) => $output['type'] === 'err');
 
         return $output->isNotEmpty()
-                    ? rtrim($output->map->buffer->implode(''), "\n")."\n"
-                    : '';
+            ? rtrim($output->map->buffer->implode(''), "\n")."\n"
+            : '';
     }
 }

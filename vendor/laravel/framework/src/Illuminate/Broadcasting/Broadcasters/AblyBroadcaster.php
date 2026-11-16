@@ -12,21 +12,22 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 /**
  * @author Matthew Hall (matthall28@gmail.com)
  * @author Taylor Otwell (taylor@laravel.com)
+ *
+ * @template TClient of \Ably\AblyRest
  */
 class AblyBroadcaster extends Broadcaster
 {
     /**
      * The AblyRest SDK instance.
      *
-     * @var \Ably\AblyRest
+     * @var TClient
      */
     protected $ably;
 
     /**
      * Create a new broadcaster instance.
      *
-     * @param  \Ably\AblyRest  $ably
-     * @return void
+     * @param  TClient  $ably
      */
     public function __construct(AblyRest $ably)
     {
@@ -78,8 +79,8 @@ class AblyBroadcaster extends Broadcaster
         $user = $this->retrieveUser($request, $channelName);
 
         $broadcastIdentifier = method_exists($user, 'getAuthIdentifierForBroadcasting')
-                    ? $user->getAuthIdentifierForBroadcasting()
-                    : $user->getAuthIdentifier();
+            ? $user->getAuthIdentifierForBroadcasting()
+            : $user->getAuthIdentifier();
 
         $signature = $this->generateAblySignature(
             $request->channel_name,
@@ -175,8 +176,8 @@ class AblyBroadcaster extends Broadcaster
     {
         if ($this->isGuardedChannel($channel)) {
             return str_starts_with($channel, 'private-')
-                        ? Str::replaceFirst('private-', '', $channel)
-                        : Str::replaceFirst('presence-', '', $channel);
+                ? Str::replaceFirst('private-', '', $channel)
+                : Str::replaceFirst('presence-', '', $channel);
         }
 
         return $channel;
@@ -226,7 +227,7 @@ class AblyBroadcaster extends Broadcaster
     /**
      * Get the underlying Ably SDK instance.
      *
-     * @return \Ably\AblyRest
+     * @return TClient
      */
     public function getAbly()
     {
@@ -236,7 +237,7 @@ class AblyBroadcaster extends Broadcaster
     /**
      * Set the underlying Ably SDK instance.
      *
-     * @param  \Ably\AblyRest  $ably
+     * @param  TClient  $ably
      * @return void
      */
     public function setAbly($ably)

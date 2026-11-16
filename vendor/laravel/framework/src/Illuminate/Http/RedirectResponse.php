@@ -3,16 +3,18 @@
 namespace Illuminate\Http;
 
 use Illuminate\Contracts\Support\MessageProvider;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Session\Store as SessionStore;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\ForwardsCalls;
 use Illuminate\Support\Traits\Macroable;
+use Illuminate\Support\Uri;
 use Illuminate\Support\ViewErrorBag;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 use Symfony\Component\HttpFoundation\RedirectResponse as BaseRedirectResponse;
 
-class RedirectResponse extends BaseRedirectResponse
+class RedirectResponse extends BaseRedirectResponse implements Responsable
 {
     use ForwardsCalls, ResponseTrait, Macroable {
         Macroable::__call as macroCall;
@@ -51,27 +53,12 @@ class RedirectResponse extends BaseRedirectResponse
     }
 
     /**
-     * Add multiple cookies to the response.
-     *
-     * @param  array  $cookies
-     * @return $this
-     */
-    public function withCookies(array $cookies)
-    {
-        foreach ($cookies as $cookie) {
-            $this->headers->setCookie($cookie);
-        }
-
-        return $this;
-    }
-
-    /**
      * Flash an array of input to the session.
      *
      * @param  array|null  $input
      * @return $this
      */
-    public function withInput(array $input = null)
+    public function withInput(?array $input = null)
     {
         $this->session->flashInput($this->removeFilesFromInput(
             ! is_null($input) ? $input : $this->request->input()
@@ -169,7 +156,7 @@ class RedirectResponse extends BaseRedirectResponse
     public function withFragment($fragment)
     {
         return $this->withoutFragment()
-                ->setTargetUrl($this->getTargetUrl().'#'.Str::after($fragment, '#'));
+            ->setTargetUrl($this->getTargetUrl().'#'.Str::after($fragment, '#'));
     }
 
     /**
@@ -180,6 +167,26 @@ class RedirectResponse extends BaseRedirectResponse
     public function withoutFragment()
     {
         return $this->setTargetUrl(Str::before($this->getTargetUrl(), '#'));
+    }
+
+    /**
+     * Enforce that the redirect target must have the same host as the current request.
+     */
+    public function enforceSameOrigin(
+        string $fallback,
+        bool $validateScheme = true,
+        bool $validatePort = true,
+    ): static {
+        $target = Uri::of($this->targetUrl);
+        $current = Uri::of($this->request->getSchemeAndHttpHost());
+
+        if ($target->host() !== $current->host() ||
+            ($validateScheme && $target->scheme() !== $current->scheme()) ||
+            ($validatePort && $target->port() !== $current->port())) {
+            $this->setTargetUrl($fallback);
+        }
+
+        return $this;
     }
 
     /**
@@ -206,11 +213,13 @@ class RedirectResponse extends BaseRedirectResponse
      * Set the request instance.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return void
+     * @return $this
      */
     public function setRequest(Request $request)
     {
         $this->request = $request;
+
+        return $this;
     }
 
     /**
@@ -227,11 +236,24 @@ class RedirectResponse extends BaseRedirectResponse
      * Set the session store instance.
      *
      * @param  \Illuminate\Session\Store  $session
-     * @return void
+     * @return $this
      */
     public function setSession(SessionStore $session)
     {
         $this->session = $session;
+
+        return $this;
+    }
+
+    /**
+     * Create an HTTP response that represents the object.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return $this
+     */
+    public function toResponse(mixed $request): static
+    {
+        return $this;
     }
 
     /**

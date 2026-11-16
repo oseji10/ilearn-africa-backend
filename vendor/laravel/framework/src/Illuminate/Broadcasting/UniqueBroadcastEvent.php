@@ -5,6 +5,7 @@ namespace Illuminate\Broadcasting;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Queue\Attributes\UniqueFor;
 
 class UniqueBroadcastEvent extends BroadcastEvent implements ShouldBeUnique
 {
@@ -26,12 +27,9 @@ class UniqueBroadcastEvent extends BroadcastEvent implements ShouldBeUnique
      * Create a new event instance.
      *
      * @param  mixed  $event
-     * @return void
      */
     public function __construct($event)
     {
-        $this->uniqueId = get_class($event);
-
         if (method_exists($event, 'uniqueId')) {
             $this->uniqueId .= $event->uniqueId();
         } elseif (property_exists($event, 'uniqueId')) {
@@ -40,8 +38,8 @@ class UniqueBroadcastEvent extends BroadcastEvent implements ShouldBeUnique
 
         if (method_exists($event, 'uniqueFor')) {
             $this->uniqueFor = $event->uniqueFor();
-        } elseif (property_exists($event, 'uniqueFor')) {
-            $this->uniqueFor = $event->uniqueFor;
+        } else {
+            $this->uniqueFor = $this->getAttributeValue($event, UniqueFor::class, 'uniqueFor');
         }
 
         parent::__construct($event);
@@ -55,7 +53,7 @@ class UniqueBroadcastEvent extends BroadcastEvent implements ShouldBeUnique
     public function uniqueVia()
     {
         return method_exists($this->event, 'uniqueVia')
-                ? $this->event->uniqueVia()
-                : Container::getInstance()->make(Repository::class);
+            ? $this->event->uniqueVia()
+            : Container::getInstance()->make(Repository::class);
     }
 }

@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Console\Helper;
 
+use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
@@ -55,11 +56,11 @@ class ProcessHelper extends Helper
             $process = $cmd[0];
             unset($cmd[0]);
         } else {
-            throw new \InvalidArgumentException(sprintf('Invalid command provided to "%s()": the command should be an array whose first element is either the path to the binary to run or a "Process" object.', __METHOD__));
+            throw new \InvalidArgumentException(\sprintf('Invalid command provided to "%s()": the command should be an array whose first element is either the path to the binary to run or a "Process" object.', __METHOD__));
         }
 
         if ($verbosity <= $output->getVerbosity()) {
-            $output->write($formatter->start(spl_object_hash($process), $this->escapeString($process->getCommandLine())));
+            $output->write($formatter->start(spl_object_id($process), $this->escapeString($process->getCommandLine())));
         }
 
         if ($output->isDebug()) {
@@ -69,12 +70,12 @@ class ProcessHelper extends Helper
         $process->run($callback, $cmd);
 
         if ($verbosity <= $output->getVerbosity()) {
-            $message = $process->isSuccessful() ? 'Command ran successfully' : sprintf('%s Command did not run successfully', $process->getExitCode());
-            $output->write($formatter->stop(spl_object_hash($process), $message, $process->isSuccessful()));
+            $message = $process->isSuccessful() ? 'Command ran successfully' : \sprintf('%s Command did not run successfully', $process->getExitCode());
+            $output->write($formatter->stop(spl_object_id($process), $message, $process->isSuccessful()));
         }
 
         if (!$process->isSuccessful() && null !== $error) {
-            $output->writeln(sprintf('<error>%s</error>', $this->escapeString($error)));
+            $output->writeln(\sprintf('<error>%s</error>', $this->escapeString($error)));
         }
 
         return $process;
@@ -94,9 +95,9 @@ class ProcessHelper extends Helper
      *
      * @see run()
      */
-    public function mustRun(OutputInterface $output, array|Process $cmd, ?string $error = null, ?callable $callback = null): Process
+    public function mustRun(OutputInterface $output, array|Process $cmd, ?string $error = null, ?callable $callback = null, int $verbosity = OutputInterface::VERBOSITY_VERY_VERBOSE): Process
     {
-        $process = $this->run($output, $cmd, $error, $callback);
+        $process = $this->run($output, $cmd, $error, $callback, $verbosity);
 
         if (!$process->isSuccessful()) {
             throw new ProcessFailedException($process);
@@ -117,7 +118,7 @@ class ProcessHelper extends Helper
         $formatter = $this->getHelperSet()->get('debug_formatter');
 
         return function ($type, $buffer) use ($output, $process, $callback, $formatter) {
-            $output->write($formatter->progress(spl_object_hash($process), $this->escapeString($buffer), Process::ERR === $type));
+            $output->write($formatter->progress(spl_object_id($process), $this->escapeString($buffer), Process::ERR === $type));
 
             if (null !== $callback) {
                 $callback($type, $buffer);
@@ -127,7 +128,7 @@ class ProcessHelper extends Helper
 
     private function escapeString(string $str): string
     {
-        return str_replace('<', '\\<', $str);
+        return OutputFormatter::escapeTrailingBackslash(str_replace('<', '\\<', $str));
     }
 
     public function getName(): string

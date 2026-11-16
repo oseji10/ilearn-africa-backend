@@ -35,7 +35,6 @@ class ProviderRepository
      * @param  \Illuminate\Contracts\Foundation\Application  $app
      * @param  \Illuminate\Filesystem\Filesystem  $files
      * @param  string  $manifestPath
-     * @return void
      */
     public function __construct(ApplicationContract $app, Filesystem $files, $manifestPath)
     {
@@ -100,7 +99,7 @@ class ProviderRepository
     /**
      * Determine if the manifest should be compiled.
      *
-     * @param  array  $manifest
+     * @param  array|null  $manifest
      * @param  array  $providers
      * @return bool
      */

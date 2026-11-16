@@ -3,9 +3,12 @@
 namespace Illuminate\Process;
 
 use ArrayAccess;
+use ArrayIterator;
 use Illuminate\Support\Collection;
+use IteratorAggregate;
+use Traversable;
 
-class ProcessPoolResults implements ArrayAccess
+class ProcessPoolResults implements ArrayAccess, IteratorAggregate
 {
     /**
      * The results of the processes.
@@ -18,11 +21,30 @@ class ProcessPoolResults implements ArrayAccess
      * Create a new process pool result set.
      *
      * @param  array  $results
-     * @return void
      */
     public function __construct(array $results)
     {
         $this->results = $results;
+    }
+
+    /**
+     * Determine if all of the processes in the pool were successful.
+     *
+     * @return bool
+     */
+    public function successful()
+    {
+        return $this->collect()->every(fn ($p) => $p->successful());
+    }
+
+    /**
+     * Determine if any of the processes in the pool failed.
+     *
+     * @return bool
+     */
+    public function failed()
+    {
+        return ! $this->successful();
     }
 
     /**
@@ -78,5 +100,15 @@ class ProcessPoolResults implements ArrayAccess
     public function offsetUnset($offset): void
     {
         unset($this->results[$offset]);
+    }
+
+    /**
+     * Get an iterator for the results.
+     *
+     * @return \ArrayIterator
+     */
+    public function getIterator(): Traversable
+    {
+        return new ArrayIterator($this->results);
     }
 }

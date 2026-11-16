@@ -4,14 +4,26 @@ namespace Illuminate\Queue;
 
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Contracts\Queue\Queue as QueueContract;
+use Illuminate\Queue\Events\JobAttempted;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\Jobs\SyncJob;
+use Illuminate\Support\Collection;
 use Throwable;
 
 class SyncQueue extends Queue implements QueueContract
 {
+    /**
+     * Create a new sync queue instance.
+     *
+     * @param  bool  $dispatchAfterCommit
+     */
+    public function __construct($dispatchAfterCommit = false)
+    {
+        $this->dispatchAfterCommit = $dispatchAfterCommit;
+    }
+
     /**
      * Get the size of the queue.
      *
@@ -21,6 +33,153 @@ class SyncQueue extends Queue implements QueueContract
     public function size($queue = null)
     {
         return 0;
+    }
+
+    /**
+     * Get the number of pending jobs.
+     *
+     * @param  string|null  $queue
+     * @return int
+     */
+    public function pendingSize($queue = null)
+    {
+        return 0;
+    }
+
+    /**
+     * Get the number of delayed jobs.
+     *
+     * @param  string|null  $queue
+     * @return int
+     */
+    public function delayedSize($queue = null)
+    {
+        return 0;
+    }
+
+    /**
+     * Get the number of reserved jobs.
+     *
+     * @param  string|null  $queue
+     * @return int
+     */
+    public function reservedSize($queue = null)
+    {
+        return 0;
+    }
+
+    /**
+     * Get the number of jobs across every queue.
+     *
+     * @return int
+     */
+    public function totalSize()
+    {
+        return 0;
+    }
+
+    /**
+     * Get the number of pending jobs across every queue.
+     *
+     * @return int
+     */
+    public function totalPendingSize()
+    {
+        return 0;
+    }
+
+    /**
+     * Get the number of delayed jobs across every queue.
+     *
+     * @return int
+     */
+    public function totalDelayedSize()
+    {
+        return 0;
+    }
+
+    /**
+     * Get the number of reserved jobs across every queue.
+     *
+     * @return int
+     */
+    public function totalReservedSize()
+    {
+        return 0;
+    }
+
+    /**
+     * Get the pending jobs for the given queue.
+     *
+     * @param  string|null  $queue
+     * @return \Illuminate\Support\Collection
+     */
+    public function pendingJobs($queue = null): Collection
+    {
+        return new Collection;
+    }
+
+    /**
+     * Get the delayed jobs for the given queue.
+     *
+     * @param  string|null  $queue
+     * @return \Illuminate\Support\Collection
+     */
+    public function delayedJobs($queue = null): Collection
+    {
+        return new Collection;
+    }
+
+    /**
+     * Get the reserved jobs for the given queue.
+     *
+     * @param  string|null  $queue
+     * @return \Illuminate\Support\Collection
+     */
+    public function reservedJobs($queue = null): Collection
+    {
+        return new Collection;
+    }
+
+    /**
+     * Get all pending jobs across every queue.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function allPendingJobs(): Collection
+    {
+        return new Collection;
+    }
+
+    /**
+     * Get all delayed jobs across every queue.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function allDelayedJobs(): Collection
+    {
+        return new Collection;
+    }
+
+    /**
+     * Get all reserved jobs across every queue.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function allReservedJobs(): Collection
+    {
+        return new Collection;
+    }
+
+    /**
+     * Get the creation timestamp of the oldest pending job, excluding delayed jobs.
+     *
+     * @param  string|null  $queue
+     * @return int|null
+     */
+    public function creationTimeOfOldestPendingJob($queue = null)
+    {
+        return null;
     }
 
     /**
@@ -35,16 +194,50 @@ class SyncQueue extends Queue implements QueueContract
      */
     public function push($job, $data = '', $queue = null)
     {
+        if ($this->shouldDispatchAfterCommit($job) &&
+            $this->container->bound('db.transactions')) {
+            $this->registerRollbackCallbacksForJobsThatDispatchAfterCommit($job);
+
+            return $this->container->make('db.transactions')->addCallback(
+                fn () => $this->executeJob($job, $data, $queue)
+            );
+        }
+
+        return $this->executeJob($job, $data, $queue);
+    }
+
+    /**
+     * Execute a given job synchronously.
+     *
+     * @param  string  $job
+     * @param  mixed  $data
+     * @param  string|null  $queue
+     * @return int
+     *
+     * @throws \Throwable
+     */
+    protected function executeJob($job, $data = '', $queue = null)
+    {
         $queueJob = $this->resolveJob($this->createPayload($job, $queue, $data), $queue);
 
         try {
             $this->raiseBeforeJobEvent($queueJob);
 
-            $queueJob->fire();
+            $startedAt = hrtime(true);
 
-            $this->raiseAfterJobEvent($queueJob);
+            try {
+                $queueJob->fire();
+            } finally {
+                $duration = round((hrtime(true) - $startedAt) / 1e6, 2);
+            }
+
+            $this->raiseAfterJobEvent($queueJob, $duration);
         } catch (Throwable $e) {
+            $exceptionOccurred = $e;
+
             $this->handleException($queueJob, $e);
+        } finally {
+            $this->raiseJobAttemptedEvent($queueJob, $exceptionOccurred ?? null, $duration ?? null);
         }
 
         return 0;
@@ -79,12 +272,28 @@ class SyncQueue extends Queue implements QueueContract
      * Raise the after queue job event.
      *
      * @param  \Illuminate\Contracts\Queue\Job  $job
+     * @param  float|null  $duration
      * @return void
      */
-    protected function raiseAfterJobEvent(Job $job)
+    protected function raiseAfterJobEvent(Job $job, $duration = null)
     {
         if ($this->container->bound('events')) {
-            $this->container['events']->dispatch(new JobProcessed($this->connectionName, $job));
+            $this->container['events']->dispatch(new JobProcessed($this->connectionName, $job, $duration));
+        }
+    }
+
+    /**
+     * Raise the job attempted event.
+     *
+     * @param  \Illuminate\Contracts\Queue\Job  $job
+     * @param  \Throwable|null  $exceptionOccurred
+     * @param  float|null  $duration
+     * @return void
+     */
+    protected function raiseJobAttemptedEvent(Job $job, ?Throwable $exceptionOccurred = null, $duration = null)
+    {
+        if ($this->container->bound('events')) {
+            $this->container['events']->dispatch(new JobAttempted($this->connectionName, $job, $exceptionOccurred, $duration));
         }
     }
 

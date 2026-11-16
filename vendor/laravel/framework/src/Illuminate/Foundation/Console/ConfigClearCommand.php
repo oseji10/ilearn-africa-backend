@@ -10,11 +10,11 @@ use Symfony\Component\Console\Attribute\AsCommand;
 class ConfigClearCommand extends Command
 {
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'config:clear';
+    protected $signature = 'config:clear';
 
     /**
      * The console command description.
@@ -34,7 +34,6 @@ class ConfigClearCommand extends Command
      * Create a new config clear command instance.
      *
      * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
      */
     public function __construct(Filesystem $files)
     {

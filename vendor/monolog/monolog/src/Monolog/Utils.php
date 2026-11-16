@@ -11,14 +11,30 @@
 
 namespace Monolog;
 
+use Monolog\Formatter\FormatterInterface;
+use Monolog\Formatter\WrappingFormatterInterface;
+
 final class Utils
 {
     const DEFAULT_JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR;
 
+    /** @var array<class-string, array<string, true>> */
+    private static array $sensitiveParameterNames = [];
+
     public static function getClass(object $object): string
     {
-        $class = \get_class($object);
+        return self::getClassName(\get_class($object));
+    }
 
+    /**
+     * Strips the declaration site PHP appends to anonymous class names after a NUL byte
+     *
+     * Takes the name rather than the object because stack trace frames only carry the string.
+     *
+     * @param class-string $class
+     */
+    public static function getClassName(string $class): string
+    {
         if (false === ($pos = strpos($class, "@anonymous\0"))) {
             return $class;
         }
@@ -28,6 +44,60 @@ final class Utils
         }
 
         return $parent . '@anonymous';
+    }
+
+    /**
+     * Returns the names of the constructor parameters of a class which are marked #[SensitiveParameter]
+     *
+     * The attribute can only target parameters, and PHP does not copy it over to the promoted
+     * property, so the constructor signature is the only place it can be found. Non-promoted
+     * parameters are included too, to be matched by name against the object's properties, as
+     * assigning a sensitive parameter to a same-named property is just as common.
+     *
+     * Results are cached per class as the reflection cost is otherwise prohibitive.
+     *
+     * @param  class-string        $class
+     * @return array<string, true> Set of parameter names, to be used with isset()
+     */
+    public static function getSensitiveParameterNames(string $class): array
+    {
+        if (isset(self::$sensitiveParameterNames[$class])) {
+            return self::$sensitiveParameterNames[$class];
+        }
+
+        $names = [];
+        try {
+            $constructor = (new \ReflectionClass($class))->getConstructor();
+            if (null !== $constructor) {
+                foreach ($constructor->getParameters() as $parameter) {
+                    // filtering by name and not IS_INSTANCEOF on purpose, so this keeps working
+                    // on PHP < 8.2 where the attribute class does not exist yet
+                    if (\count($parameter->getAttributes(\SensitiveParameter::class)) > 0) {
+                        $names[$parameter->getName()] = true;
+                    }
+                }
+            }
+        } catch (\ReflectionException) {
+            // class is not loadable, nothing we can do
+        }
+
+        return self::$sensitiveParameterNames[$class] = $names;
+    }
+
+    /**
+     * Resolves a chain of formatter decorators down to the formatter doing the actual work
+     *
+     * Useful for handlers which only accept one specific formatter, to let them accept it
+     * wrapped in a decorator like the RedactingFormatter.
+     */
+    public static function unwrapFormatter(FormatterInterface $formatter): FormatterInterface
+    {
+        // bounded in case a decorator ends up wrapping itself
+        for ($i = 0; $i < 10 && $formatter instanceof WrappingFormatterInterface; $i++) {
+            $formatter = $formatter->getWrappedFormatter();
+        }
+
+        return $formatter;
     }
 
     public static function substr(string $string, int $start, ?int $length = null): string
@@ -141,25 +211,6 @@ final class Utils
     }
 
     /**
-     * @internal
-     */
-    public static function pcreLastErrorMessage(int $code): string
-    {
-        if (PHP_VERSION_ID >= 80000) {
-            return preg_last_error_msg();
-        }
-
-        $constants = (get_defined_constants(true))['pcre'];
-        $constants = array_filter($constants, function ($key) {
-            return substr($key, -6) == '_ERROR';
-        }, ARRAY_FILTER_USE_KEY);
-
-        $constants = array_flip($constants);
-
-        return $constants[$code] ?? 'UNDEFINED_ERROR';
-    }
-
-    /**
      * Throws an exception according to a given code with a customized message
      *
      * @param  int               $code return code of json_last_error function
@@ -200,14 +251,16 @@ final class Utils
             $data = preg_replace_callback(
                 '/[\x80-\xFF]+/',
                 function (array $m): string {
-                    return \function_exists('mb_convert_encoding') ? mb_convert_encoding($m[0], 'UTF-8', 'ISO-8859-1') : utf8_encode($m[0]);
+                    return \function_exists('mb_convert_encoding')
+                        ? mb_convert_encoding($m[0], 'UTF-8', 'ISO-8859-1')
+                        : (\function_exists('utf8_encode') ? utf8_encode($m[0]) : '');
                 },
                 $data
             );
             if (!\is_string($data)) {
                 $pcreErrorCode = preg_last_error();
 
-                throw new \RuntimeException('Failed to preg_replace_callback: ' . $pcreErrorCode . ' / ' . self::pcreLastErrorMessage($pcreErrorCode));
+                throw new \RuntimeException('Failed to preg_replace_callback: ' . $pcreErrorCode . ' / ' . preg_last_error_msg());
             }
             $data = str_replace(
                 ['¤', '¦', '¨', '´', '¸', '¼', '½', '¾'],
@@ -234,12 +287,12 @@ final class Utils
             return (int) $val;
         }
 
-        if (preg_match('/^\s*(?<val>\d+)(?:\.\d+)?\s*(?<unit>[gmk]?)\s*$/i', $val, $match) !== 1) {
+        if (!(bool) preg_match('/^\s*(?<val>\d+)(?:\.\d+)?\s*(?<unit>[gmk]?)\s*$/i', $val, $match)) {
             return false;
         }
 
         $val = (int) $match['val'];
-        switch (strtolower($match['unit'] ?? '')) {
+        switch (strtolower($match['unit'])) {
             case 'g':
                 $val *= 1024;
                 // no break

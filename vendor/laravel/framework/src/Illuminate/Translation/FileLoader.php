@@ -4,6 +4,7 @@ namespace Illuminate\Translation;
 
 use Illuminate\Contracts\Translation\Loader;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Collection;
 use RuntimeException;
 
 class FileLoader implements Loader
@@ -32,7 +33,7 @@ class FileLoader implements Loader
     /**
      * All of the namespace hints.
      *
-     * @var array
+     * @var array<string, string>
      */
     protected $hints = [];
 
@@ -41,7 +42,6 @@ class FileLoader implements Loader
      *
      * @param  \Illuminate\Filesystem\Filesystem  $files
      * @param  array|string  $path
-     * @return void
      */
     public function __construct(Filesystem $files, array|string $path)
     {
@@ -60,6 +60,11 @@ class FileLoader implements Loader
      */
     public function load($locale, $group, $namespace = null)
     {
+        if ($this->isUnsafePathSegment($locale) ||
+            ($group !== '*' && $this->isUnsafePathSegment($group, allowSlashes: true))) {
+            return [];
+        }
+
         if ($group === '*' && $namespace === '*') {
             return $this->loadJsonPaths($locale);
         }
@@ -101,16 +106,16 @@ class FileLoader implements Loader
      */
     protected function loadNamespaceOverrides(array $lines, $locale, $group, $namespace)
     {
-        return collect($this->paths)
-            ->reduce(function ($output, $path) use ($lines, $locale, $group, $namespace) {
+        return (new Collection($this->paths))
+            ->reduce(function ($output, $path) use ($locale, $group, $namespace) {
                 $file = "{$path}/vendor/{$namespace}/{$locale}/{$group}.php";
 
                 if ($this->files->exists($file)) {
-                    $lines = array_replace_recursive($lines, $this->files->getRequire($file));
+                    $output = array_replace_recursive($output, $this->files->getRequire($file));
                 }
 
-                return $lines;
-            }, []);
+                return $output;
+            }, $lines);
     }
 
     /**
@@ -123,7 +128,7 @@ class FileLoader implements Loader
      */
     protected function loadPaths(array $paths, $locale, $group)
     {
-        return collect($paths)
+        return (new Collection($paths))
             ->reduce(function ($output, $path) use ($locale, $group) {
                 if ($this->files->exists($full = "{$path}/{$locale}/{$group}.php")) {
                     $output = array_replace_recursive($output, $this->files->getRequire($full));
@@ -143,7 +148,7 @@ class FileLoader implements Loader
      */
     protected function loadJsonPaths($locale)
     {
-        return collect(array_merge($this->jsonPaths, $this->paths))
+        return (new Collection(array_merge($this->jsonPaths, $this->paths)))
             ->reduce(function ($output, $path) use ($locale) {
                 if ($this->files->exists($full = "{$path}/{$locale}.json")) {
                     $decoded = json_decode($this->files->get($full), true);
@@ -152,11 +157,28 @@ class FileLoader implements Loader
                         throw new RuntimeException("Translation file [{$full}] contains an invalid JSON structure.");
                     }
 
-                    $output = array_merge($output, $decoded);
+                    $output = array_replace($output, $decoded);
                 }
 
                 return $output;
             }, []);
+    }
+
+    /**
+     * Determine if the given value is unsafe to use as part of a translation file path.
+     *
+     * @param  mixed  $value
+     * @param  bool  $allowSlashes
+     * @return bool
+     */
+    protected function isUnsafePathSegment($value, $allowSlashes = false)
+    {
+        return ! is_string($value)
+            || $value === ''
+            || str_contains($value, '..')
+            || str_contains($value, '\\')
+            || str_contains($value, "\0")
+            || (! $allowSlashes && str_contains($value, '/'));
     }
 
     /**
@@ -174,11 +196,22 @@ class FileLoader implements Loader
     /**
      * Get an array of all the registered namespaces.
      *
-     * @return array
+     * @return array<string, string>
      */
     public function namespaces()
     {
         return $this->hints;
+    }
+
+    /**
+     * Add a new path to the loader.
+     *
+     * @param  string  $path
+     * @return void
+     */
+    public function addPath($path)
+    {
+        $this->paths[] = $path;
     }
 
     /**
@@ -190,6 +223,16 @@ class FileLoader implements Loader
     public function addJsonPath($path)
     {
         $this->jsonPaths[] = $path;
+    }
+
+    /**
+     * Get an array of all the registered paths to translation files.
+     *
+     * @return array
+     */
+    public function paths()
+    {
+        return $this->paths;
     }
 
     /**

@@ -1075,10 +1075,24 @@ class Html extends BaseWriter
         }
 
         $css['color'] = '#' . $font->getColor()->getRGB();
-        $css['font-family'] = '\'' . htmlspecialchars((string) $font->getName(), ENT_QUOTES) . '\'';
+        $css['font-family'] = "'" . self::cssEscape((string) $font->getName()) . "'";
         $css['font-size'] = $font->getSize() . 'pt';
 
         return $css;
+    }
+
+    /** @param string[] $matches */
+    public static function replaceUnexpected(array $matches): string
+    {
+        return '\\' . sprintf('%x ', mb_ord($matches[0], 'UTF-8'));
+    }
+
+    public static function cssEscape(string $convert): ?string
+    {
+        /** @var callable */
+        $callback = [self::class, 'replaceUnexpected'];
+
+        return preg_replace_callback('/[^-. \w]/u', $callback, $convert) ?? 'unparseable';
     }
 
     /**
@@ -1373,7 +1387,7 @@ class Html extends BaseWriter
 
             // Converts the cell content so that spaces occuring at beginning of each new line are replaced by &nbsp;
             // Example: "  Hello\n to the world" is converted to "&nbsp;&nbsp;Hello\n&nbsp;to the world"
-            $cellData = (string) preg_replace('/(?m)(?:^|\\G) /', '&nbsp;', $cellData);
+            $cellData = (string) preg_replace('/(?m)(?:^|\G) /', '&nbsp;', $cellData);
 
             // convert newline "\n" to '<br>'
             $cellData = nl2br($cellData);
@@ -1520,8 +1534,8 @@ class Html extends BaseWriter
             if ($worksheet->hyperlinkExists($coordinate) && !$worksheet->getHyperlink($coordinate)->isInternal()) {
                 $url = $worksheet->getHyperlink($coordinate)->getUrl();
                 $urlDecode1 = html_entity_decode($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                $urlTrim = preg_replace('/^\\s+/u', '', $urlDecode1) ?? $urlDecode1;
-                $parseScheme = preg_match('/^([\\w\\s\\x00-\\x1f]+):/u', strtolower($urlTrim), $matches);
+                $urlTrim = preg_replace('/^\s+/u', '', $urlDecode1) ?? $urlDecode1;
+                $parseScheme = preg_match('/^([\w\s\x00-\x1f]+):/u', strtolower($urlTrim), $matches);
                 if ($parseScheme === 1 && !in_array($matches[1], ['http', 'https', 'file', 'ftp', 'mailto', 's3'], true)) {
                     $cellData = htmlspecialchars($url, Settings::htmlEntityFlags());
                     $cellData = self::replaceControlChars($cellData);
@@ -1577,7 +1591,7 @@ class Html extends BaseWriter
     private static function replaceControlChars(string $convert): string
     {
         return (string) preg_replace_callback(
-            '/[\\x00-\\x1f]/',
+            '/[\x00-\x1f]/',
             [self::class, 'replaceNonAscii'],
             $convert
         );
@@ -1717,14 +1731,14 @@ class Html extends BaseWriter
         $color = null; // initialize
         $matches = [];
 
-        $color_regex = '/^\\[[a-zA-Z]+\\]/';
+        $color_regex = '/^\[[a-zA-Z]+\]/';
         if (preg_match($color_regex, $format, $matches)) {
             $color = str_replace(['[', ']'], '', $matches[0]);
             $color = strtolower($color);
         }
 
         // convert to PCDATA
-        $result = htmlspecialchars($value, Settings::htmlEntityFlags());
+        $result = htmlspecialchars($value, ENT_NOQUOTES);
 
         // color span tag
         if ($color !== null) {

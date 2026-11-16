@@ -41,14 +41,14 @@ class DynamoBatchRepository implements BatchRepository
     /**
      * The time-to-live value for batch records.
      *
-     * @var int
+     * @var int|null
      */
     protected $ttl;
 
     /**
      * The name of the time-to-live attribute for batch records.
      *
-     * @var string
+     * @var string|null
      */
     protected $ttlAttribute;
 
@@ -68,7 +68,7 @@ class DynamoBatchRepository implements BatchRepository
         string $applicationName,
         string $table,
         ?int $ttl,
-        ?string $ttlAttribute
+        ?string $ttlAttribute,
     ) {
         $this->factory = $factory;
         $this->dynamoDbClient = $dynamoDbClient;
@@ -119,7 +119,7 @@ class DynamoBatchRepository implements BatchRepository
      */
     public function find(string $batchId)
     {
-        if ($batchId === '') {
+        if (trim($batchId) === '') {
             return null;
         }
 
@@ -377,8 +377,10 @@ class DynamoBatchRepository implements BatchRepository
     /**
      * Execute the given Closure within a storage specific transaction.
      *
-     * @param  \Closure  $callback
-     * @return mixed
+     * @template TReturn
+     *
+     * @param  (\Closure(): TReturn)  $callback
+     * @return TReturn
      */
     public function transaction(Closure $callback)
     {
@@ -411,9 +413,9 @@ class DynamoBatchRepository implements BatchRepository
             (int) $batch->failed_jobs,
             $batch->failed_job_ids,
             $this->unserialize($batch->options) ?? [],
-            CarbonImmutable::createFromTimestamp($batch->created_at),
-            $batch->cancelled_at ? CarbonImmutable::createFromTimestamp($batch->cancelled_at) : $batch->cancelled_at,
-            $batch->finished_at ? CarbonImmutable::createFromTimestamp($batch->finished_at) : $batch->finished_at
+            CarbonImmutable::createFromTimestamp($batch->created_at, date_default_timezone_get()),
+            $batch->cancelled_at ? CarbonImmutable::createFromTimestamp($batch->cancelled_at, date_default_timezone_get()) : $batch->cancelled_at,
+            $batch->finished_at ? CarbonImmutable::createFromTimestamp($batch->finished_at, date_default_timezone_get()) : $batch->finished_at
         );
     }
 
@@ -525,7 +527,7 @@ class DynamoBatchRepository implements BatchRepository
     }
 
     /**
-     * The the name of the table that contains the batch records.
+     * The name of the table that contains the batch records.
      *
      * @return string
      */

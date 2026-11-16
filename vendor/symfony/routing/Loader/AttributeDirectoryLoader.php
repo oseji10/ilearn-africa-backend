@@ -11,7 +11,7 @@
 
 namespace Symfony\Component\Routing\Loader;
 
-use Symfony\Component\Config\Resource\DirectoryResource;
+use Symfony\Component\Config\Resource\GlobResource;
 use Symfony\Component\Routing\RouteCollection;
 
 /**
@@ -33,15 +33,15 @@ class AttributeDirectoryLoader extends AttributeFileLoader
         }
 
         $collection = new RouteCollection();
-        $collection->addResource(new DirectoryResource($dir, '/\.php$/'));
+        $collection->addResource(new GlobResource($dir, '/*.php', true));
         $files = iterator_to_array(new \RecursiveIteratorIterator(
             new \RecursiveCallbackFilterIterator(
                 new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS),
-                fn (\SplFileInfo $current) => !str_starts_with($current->getBasename(), '.')
+                static fn (\SplFileInfo $current) => !str_starts_with($current->getBasename(), '.')
             ),
             \RecursiveIteratorIterator::LEAVES_ONLY
         ));
-        usort($files, fn (\SplFileInfo $a, \SplFileInfo $b) => (string) $a > (string) $b ? 1 : -1);
+        usort($files, static fn (\SplFileInfo $a, \SplFileInfo $b) => (string) $a > (string) $b ? 1 : -1);
 
         foreach ($files as $file) {
             if (!$file->isFile() || !str_ends_with($file->getFilename(), '.php')) {
@@ -67,11 +67,7 @@ class AttributeDirectoryLoader extends AttributeFileLoader
             return false;
         }
 
-        if (\in_array($type, ['annotation', 'attribute'], true)) {
-            if ('annotation' === $type) {
-                trigger_deprecation('symfony/routing', '6.4', 'The "annotation" route type is deprecated, use the "attribute" route type instead.');
-            }
-
+        if ('attribute' === $type) {
             return true;
         }
 
@@ -85,8 +81,4 @@ class AttributeDirectoryLoader extends AttributeFileLoader
             return false;
         }
     }
-}
-
-if (!class_exists(AnnotationDirectoryLoader::class, false)) {
-    class_alias(AttributeDirectoryLoader::class, AnnotationDirectoryLoader::class);
 }

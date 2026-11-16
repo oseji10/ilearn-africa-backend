@@ -4,6 +4,7 @@ namespace Illuminate\Process;
 
 use Closure;
 use Illuminate\Contracts\Process\ProcessResult as ProcessResultContract;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Traits\Macroable;
 use PHPUnit\Framework\Assert as PHPUnit;
 
@@ -52,9 +53,9 @@ class Factory
     public function result(array|string $output = '', array|string $errorOutput = '', int $exitCode = 0)
     {
         return new FakeProcessResult(
+            exitCode: $exitCode,
             output: $output,
             errorOutput: $errorOutput,
-            exitCode: $exitCode,
         );
     }
 
@@ -85,7 +86,7 @@ class Factory
      * @param  \Closure|array|null  $callback
      * @return $this
      */
-    public function fake(Closure|array $callback = null)
+    public function fake(Closure|array|null $callback = null)
     {
         $this->recording = true;
 
@@ -103,8 +104,8 @@ class Factory
 
         foreach ($callback as $command => $handler) {
             $this->fakeHandlers[is_numeric($command) ? '*' : $command] = $handler instanceof Closure
-                    ? $handler
-                    : fn () => $handler;
+                ? $handler
+                : fn () => $handler;
         }
 
         return $this;
@@ -176,17 +177,17 @@ class Factory
     /**
      * Assert that a process was recorded matching a given truth test.
      *
-     * @param  \Closure|string  $callback
+     * @param  \Closure|array<array-key, string>|string  $callback
      * @return $this
      */
-    public function assertRan(Closure|string $callback)
+    public function assertRan(Closure|array|string $callback)
     {
-        $callback = is_string($callback) ? fn ($process) => $process->command === $callback : $callback;
+        $callback = $callback instanceof Closure ? $callback : fn ($process) => $process->command === $callback;
 
         PHPUnit::assertTrue(
-            collect($this->recorded)->filter(function ($pair) use ($callback) {
+            (new Collection($this->recorded))->contains(function ($pair) use ($callback) {
                 return $callback($pair[0], $pair[1]);
-            })->count() > 0,
+            }),
             'An expected process was not invoked.'
         );
 
@@ -196,17 +197,17 @@ class Factory
     /**
      * Assert that a process was recorded a given number of times matching a given truth test.
      *
-     * @param  \Closure|string  $callback
+     * @param  \Closure|array<array-key, string>|string  $callback
      * @param  int  $times
      * @return $this
      */
-    public function assertRanTimes(Closure|string $callback, int $times = 1)
+    public function assertRanTimes(Closure|array|string $callback, int $times = 1)
     {
-        $callback = is_string($callback) ? fn ($process) => $process->command === $callback : $callback;
+        $callback = $callback instanceof Closure ? $callback : fn ($process) => $process->command === $callback;
 
-        $count = collect($this->recorded)->filter(function ($pair) use ($callback) {
-            return $callback($pair[0], $pair[1]);
-        })->count();
+        $count = (new Collection($this->recorded))
+            ->filter(fn ($pair) => $callback($pair[0], $pair[1]))
+            ->count();
 
         PHPUnit::assertSame(
             $times, $count,
@@ -217,19 +218,56 @@ class Factory
     }
 
     /**
-     * Assert that a process was not recorded matching a given truth test.
+     * Assert that the given processes were run in the given order.
      *
-     * @param  \Closure|string  $callback
+     * @param  list<\Closure|array<array-key, string>|string>  $callbacks
      * @return $this
      */
-    public function assertNotRan(Closure|string $callback)
+    public function assertRanInOrder(array $callbacks)
     {
-        $callback = is_string($callback) ? fn ($process) => $process->command === $callback : $callback;
+        $this->assertRanCount(count($callbacks));
+
+        foreach ($callbacks as $index => $callback) {
+            $callback = $callback instanceof Closure
+                ? $callback
+                : fn ($process) => $process->command === $callback;
+
+            PHPUnit::assertTrue(
+                $callback($this->recorded[$index][0], $this->recorded[$index][1]),
+                'An expected process (#'.($index + 1).') was not invoked.'
+            );
+        }
+
+        return $this;
+    }
+
+    /**
+     * Assert how many processes have been recorded.
+     *
+     * @param  int  $count
+     * @return $this
+     */
+    protected function assertRanCount(int $count)
+    {
+        PHPUnit::assertCount($count, $this->recorded);
+
+        return $this;
+    }
+
+    /**
+     * Assert that a process was not recorded matching a given truth test.
+     *
+     * @param  \Closure|array<array-key, string>|string  $callback
+     * @return $this
+     */
+    public function assertNotRan(Closure|array|string $callback)
+    {
+        $callback = $callback instanceof Closure ? $callback : fn ($process) => $process->command === $callback;
 
         PHPUnit::assertTrue(
-            collect($this->recorded)->filter(function ($pair) use ($callback) {
+            (new Collection($this->recorded))->doesntContain(function ($pair) use ($callback) {
                 return $callback($pair[0], $pair[1]);
-            })->count() === 0,
+            }),
             'An unexpected process was invoked.'
         );
 
@@ -239,10 +277,10 @@ class Factory
     /**
      * Assert that a process was not recorded matching a given truth test.
      *
-     * @param  \Closure|string  $callback
+     * @param  \Closure|array<array-key, string>|string  $callback
      * @return $this
      */
-    public function assertDidntRun(Closure|string $callback)
+    public function assertDidntRun(Closure|array|string $callback)
     {
         return $this->assertNotRan($callback);
     }
@@ -282,7 +320,7 @@ class Factory
     public function pipe(callable|array $callback, ?callable $output = null)
     {
         return is_array($callback)
-            ? (new Pipe($this, fn ($pipe) => collect($callback)->each(
+            ? (new Pipe($this, fn ($pipe) => (new Collection($callback))->each(
                 fn ($command) => $pipe->command($command)
             )))->run(output: $output)
             : (new Pipe($this, $callback))->run(output: $output);

@@ -3,7 +3,6 @@
 namespace Illuminate\Console;
 
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Composer;
 
 use function Illuminate\Filesystem\join_paths;
 
@@ -17,27 +16,15 @@ abstract class MigrationGeneratorCommand extends Command
     protected $files;
 
     /**
-     * The Composer instance.
-     *
-     * @var \Illuminate\Support\Composer
-     *
-     * @deprecated Will be removed in a future Laravel version.
-     */
-    protected $composer;
-
-    /**
      * Create a new migration generator command instance.
      *
      * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  \Illuminate\Support\Composer  $composer
-     * @return void
      */
-    public function __construct(Filesystem $files, Composer $composer)
+    public function __construct(Filesystem $files)
     {
         parent::__construct();
 
         $this->files = $files;
-        $this->composer = $composer;
     }
 
     /**
@@ -66,7 +53,7 @@ abstract class MigrationGeneratorCommand extends Command
         if ($this->migrationExists($table)) {
             $this->components->error('Migration already exists.');
 
-            return 1;
+            return self::FAILURE;
         }
 
         $this->replaceMigrationPlaceholders(
@@ -75,7 +62,7 @@ abstract class MigrationGeneratorCommand extends Command
 
         $this->components->info('Migration created successfully.');
 
-        return 0;
+        return self::SUCCESS;
     }
 
     /**

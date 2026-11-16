@@ -56,6 +56,10 @@ function display_help {
     echo "  ${GREEN}sail composer ...${NC}                       Run a Composer command"
     echo "  ${GREEN}sail composer require laravel/sanctum${NC}"
     echo
+    echo "${YELLOW}CPX Commands:${NC}"
+    echo "  ${GREEN}sail cpx ...${NC}                       Run a CPX command (requires PHP 8.2+)"
+    echo "  ${GREEN}sail cpx php-cs-fixer fix ./src${NC}"
+    echo
     echo "${YELLOW}Node Commands:${NC}"
     echo "  ${GREEN}sail node ...${NC}         Run a Node command"
     echo "  ${GREEN}sail node --version${NC}"
@@ -83,7 +87,9 @@ function display_help {
     echo "  ${GREEN}sail mysql${NC}     Start a MySQL CLI session within the 'mysql' container"
     echo "  ${GREEN}sail mariadb${NC}   Start a MySQL CLI session within the 'mariadb' container"
     echo "  ${GREEN}sail psql${NC}      Start a PostgreSQL CLI session within the 'pgsql' container"
+    echo "  ${GREEN}sail mongodb${NC}   Start a Mongo Shell session within the 'mongodb' container"
     echo "  ${GREEN}sail redis${NC}     Start a Redis CLI session within the 'redis' container"
+    echo "  ${GREEN}sail valkey${NC}    Start a Valkey CLI session within the 'valkey' container"
     echo
     echo "${YELLOW}Debugging:${NC}"
     echo "  ${GREEN}sail debug ...${NC}          Run an Artisan command in debug mode"
@@ -110,6 +116,7 @@ function display_help {
     echo
     echo "${YELLOW}Binaries:${NC}"
     echo "  ${GREEN}sail bin ...${NC}   Run Composer binary scripts from the vendor/bin directory"
+    echo "  ${GREEN}sail run ...${NC}   Run a command within the application container"
     echo
     echo "${YELLOW}Customization:${NC}"
     echo "  ${GREEN}sail artisan sail:publish${NC}   Publish the Sail configuration files"
@@ -138,6 +145,7 @@ fi
 # Define environment variables...
 export APP_PORT=${APP_PORT:-80}
 export APP_SERVICE=${APP_SERVICE:-"laravel.test"}
+export APP_USER=${APP_USER:-"sail"}
 export DB_PORT=${DB_PORT:-3306}
 export WWWUSER=${WWWUSER:-$UID}
 export WWWGROUP=${WWWGROUP:-$(id -g)}
@@ -149,6 +157,7 @@ export SAIL_SHARE_SERVER_PORT=${SAIL_SHARE_SERVER_PORT:-8080}
 export SAIL_SHARE_SUBDOMAIN=${SAIL_SHARE_SUBDOMAIN:-""}
 export SAIL_SHARE_DOMAIN=${SAIL_SHARE_DOMAIN:-"$SAIL_SHARE_SERVER_HOST"}
 export SAIL_SHARE_SERVER=${SAIL_SHARE_SERVER:-""}
+export SAIL_DOCKER_BINARY=${SAIL_DOCKER_BINARY:-"docker"}
 
 # Function that outputs Sail is not running...
 function sail_is_not_running {
@@ -159,11 +168,45 @@ function sail_is_not_running {
     exit 1
 }
 
+# AI agent environment variables to forward into containers...
+AGENT_ENV_VARS=(
+    AI_AGENT
+    CLAUDECODE
+    CLAUDE_CODE
+    CLAUDE_CODE_IS_COWORK
+    CURSOR_TRACE_ID
+    CURSOR_AGENT
+    GEMINI_CLI
+    CODEX_SANDBOX
+    CODEX_CI
+    CODEX_THREAD_ID
+    AUGMENT_AGENT
+    OPENCODE_CLIENT
+    OPENCODE
+    AMP_CURRENT_THREAD_ID
+    REPL_ID
+    ANTIGRAVITY_AGENT
+    COPILOT_MODEL
+    COPILOT_ALLOW_ALL
+    COPILOT_GITHUB_TOKEN
+    COPILOT_CLI
+    PI_CODING_AGENT
+    KIRO_AGENT_PATH
+)
+
+function forward_agent_env() {
+    for VAR in "${AGENT_ENV_VARS[@]}"; do
+        if [ -n "${!VAR:-}" ]; then
+            ARGS+=(-e "${VAR}=${!VAR}")
+        fi
+    done
+}
+
 # Define Docker Compose command prefix...
-if docker compose &> /dev/null; then
-    DOCKER_COMPOSE=(docker compose)
+if ${SAIL_DOCKER_BINARY} compose &> /dev/null; then
+    COMPOSE_CMD=(${SAIL_DOCKER_BINARY} compose)
 else
-    DOCKER_COMPOSE=(docker-compose)
+    COMPOSE_CMD=(${SAIL_DOCKER_BINARY}-compose)
 fi
 
 if [ -n "$SAIL_FILES" ]; then
@@ -172,7 +215,7 @@ if [ -n "$SAIL_FILES" ]; then
 
     for FILE in "${SAIL_FILES[@]}"; do
         if [ -f "$FILE" ]; then
-            DOCKER_COMPOSE+=(-f "$FILE")
+            COMPOSE_CMD+=(-f "$FILE")
         else
             echo "${BOLD}Unable to find Docker Compose file: '${FILE}'${NC}" >&2
 
@@ -185,20 +228,20 @@ EXEC="yes"
 
 if [ -z "$SAIL_SKIP_CHECKS" ]; then
     # Ensure that Docker is running...
-    if ! docker info > /dev/null 2>&1; then
-        echo "${BOLD}Docker is not running.${NC}" >&2
+    if ! ${SAIL_DOCKER_BINARY} info > /dev/null 2>&1; then
+        echo "${BOLD}Docker or Podman is not running.${NC}" >&2
 
         exit 1
     fi
 
     # Determine if Sail is currently up...
-    if "${DOCKER_COMPOSE[@]}" ps "$APP_SERVICE" 2>&1 | grep 'Exit\|exited'; then
+    if "${COMPOSE_CMD[@]}" ps "$APP_SERVICE" 2>&1 | grep 'Exit\|exited'; then
         echo "${BOLD}Shutting down old Sail processes...${NC}" >&2
 
-        "${DOCKER_COMPOSE[@]}" down > /dev/null 2>&1
+        "${COMPOSE_CMD[@]}" down > /dev/null 2>&1
 
         EXEC="no"
-    elif [ -z "$("${DOCKER_COMPOSE[@]}" ps -q)" ]; then
+    elif [ -z "$("${COMPOSE_CMD[@]}" ps -q)" ]; then
         EXEC="no"
     fi
 fi
@@ -210,9 +253,10 @@ if [ "$1" == "php" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" "php" "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "php")
     else
         sail_is_not_running
     fi
@@ -222,9 +266,27 @@ elif [ "$1" == "bin" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        CMD=$1
+        shift 1
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" ./vendor/bin/"$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" ./vendor/bin/"$CMD")
+    else
+        sail_is_not_running
+    fi
+
+# Proxy commands on the application container...
+elif [ "$1" == "run" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        CMD=$1
+        shift 1
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "$CMD")
     else
         sail_is_not_running
     fi
@@ -234,9 +296,10 @@ elif [ "$1" == "docker-compose" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" "${DOCKER_COMPOSE[@]}")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "${COMPOSE_CMD[@]}")
     else
         sail_is_not_running
     fi
@@ -246,9 +309,38 @@ elif [ "$1" == "composer" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" "composer" "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "composer")
+    else
+        sail_is_not_running
+    fi
+
+# Proxy CPX commands to the "cpx" binary on the application container...
+elif [ "$1" == "cpx" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        # Determine the PHP version running in the container...
+        if ! PHP_VERSION=$("${COMPOSE_CMD[@]}" exec -u "$APP_USER" -T "$APP_SERVICE" php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;'); then
+            sail_is_not_running
+        fi
+
+        PHP_MAJOR="${PHP_VERSION%%.*}"
+        PHP_MINOR="${PHP_VERSION#*.}"
+
+        # Ensure cpx is supported on the current PHP version (requires PHP 8.2+)...
+        if [ "$PHP_MAJOR" -lt 8 ] || { [ "$PHP_MAJOR" -eq 8 ] && [ "$PHP_MINOR" -lt 2 ]; }; then
+            echo "${BOLD}cpx is not supported on PHP ${PHP_VERSION}. cpx requires PHP 8.2 or higher.${NC}" >&2
+
+            exit 1
+        fi
+
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "cpx")
     else
         sail_is_not_running
     fi
@@ -258,9 +350,12 @@ elif [ "$1" == "artisan" ] || [ "$1" == "art" ] || [ "$1" == "a" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
-        [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php artisan "$@")
+        ARGS+=(exec -u "$APP_USER")
+        if [ ! -t 0 ] || [ "$1" == "schedule:run" ]; then
+            ARGS+=(-T)
+        fi
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" php artisan)
     else
         sail_is_not_running
     fi
@@ -270,9 +365,10 @@ elif [ "$1" == "debug" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail -e XDEBUG_TRIGGER=1)
+        ARGS+=(exec -u "$APP_USER" -e XDEBUG_TRIGGER=1)
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php artisan "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" php artisan)
     else
         sail_is_not_running
     fi
@@ -282,9 +378,10 @@ elif [ "$1" == "test" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php artisan test "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" php artisan test)
     else
         sail_is_not_running
     fi
@@ -294,9 +391,10 @@ elif [ "$1" == "phpunit" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php vendor/bin/phpunit "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" php vendor/bin/phpunit)
     else
         sail_is_not_running
     fi
@@ -306,9 +404,10 @@ elif [ "$1" == "pest" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php vendor/bin/pest "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" php vendor/bin/pest)
     else
         sail_is_not_running
     fi
@@ -318,9 +417,10 @@ elif [ "$1" == "pint" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php vendor/bin/pint "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" php vendor/bin/pint)
     else
         sail_is_not_running
     fi
@@ -330,11 +430,12 @@ elif [ "$1" == "dusk" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
         ARGS+=(-e "APP_URL=http://${APP_SERVICE}")
         ARGS+=(-e "DUSK_DRIVER_URL=http://selenium:4444/wd/hub")
-        ARGS+=("$APP_SERVICE" php artisan dusk "$@")
+        ARGS+=("$APP_SERVICE" php artisan dusk)
     else
         sail_is_not_running
     fi
@@ -344,22 +445,24 @@ elif [ "$1" == "dusk:fails" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
         ARGS+=(-e "APP_URL=http://${APP_SERVICE}")
         ARGS+=(-e "DUSK_DRIVER_URL=http://selenium:4444/wd/hub")
-        ARGS+=("$APP_SERVICE" php artisan dusk:fails "$@")
+        ARGS+=("$APP_SERVICE" php artisan dusk:fails)
     else
         sail_is_not_running
     fi
 
 # Initiate a Laravel Tinker session within the application container...
-elif [ "$1" == "tinker" ] ; then
+elif [ "$1" == "tinker" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
         ARGS+=("$APP_SERVICE" php artisan tinker)
     else
         sail_is_not_running
@@ -370,9 +473,10 @@ elif [ "$1" == "node" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" node "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" node)
     else
         sail_is_not_running
     fi
@@ -382,9 +486,10 @@ elif [ "$1" == "npm" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" npm "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" npm)
     else
         sail_is_not_running
     fi
@@ -394,9 +499,10 @@ elif [ "$1" == "npx" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" npx "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" npx)
     else
         sail_is_not_running
     fi
@@ -406,9 +512,10 @@ elif [ "$1" == "pnpm" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" pnpm "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" pnpm)
     else
         sail_is_not_running
     fi
@@ -418,9 +525,10 @@ elif [ "$1" == "pnpx" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" pnpx "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" pnpx)
     else
         sail_is_not_running
     fi
@@ -430,9 +538,10 @@ elif [ "$1" == "yarn" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" yarn "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" yarn)
     else
         sail_is_not_running
     fi
@@ -442,9 +551,10 @@ elif [ "$1" == "bun" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" bun "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" bun)
     else
         sail_is_not_running
     fi
@@ -454,9 +564,10 @@ elif [ "$1" == "bunx" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" bunx "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" bunx)
     else
         sail_is_not_running
     fi
@@ -469,7 +580,7 @@ elif [ "$1" == "mysql" ]; then
         ARGS+=(exec)
         [ ! -t 0 ] && ARGS+=(-T)
         ARGS+=(mysql bash -c)
-        ARGS+=("MYSQL_PWD=\${MYSQL_PASSWORD} mysql -u \${MYSQL_USER} \${MYSQL_DATABASE}")
+        ARGS+=("MYSQL_PWD=\${MYSQL_PASSWORD} mysql -u \${MYSQL_USER} \${MYSQL_DATABASE} \${MYSQL_EXTRA_OPTIONS}")
     else
         sail_is_not_running
     fi
@@ -505,9 +616,10 @@ elif [ "$1" == "shell" ] || [ "$1" == "bash" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
+        ARGS+=(exec -u "$APP_USER")
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" bash "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" bash)
     else
         sail_is_not_running
     fi
@@ -519,13 +631,26 @@ elif [ "$1" == "root-shell" ] || [ "$1" == "root-bash" ]; then
     if [ "$EXEC" == "yes" ]; then
         ARGS+=(exec -u root)
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" bash "$@")
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" bash)
+    else
+        sail_is_not_running
+    fi
+
+# Initiate a MongoDB Shell within the "mongodb" container...
+elif [ "$1" == "mongodb" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec)
+        [ ! -t 0 ] && ARGS+=(-T)
+        ARGS+=(mongodb mongosh --port 27017 --username "$MONGODB_USERNAME" --password "$MONGODB_PASSWORD" --authenticationDatabase admin)
     else
         sail_is_not_running
     fi
 
 # Initiate a Redis CLI terminal session within the "redis" container...
-elif [ "$1" == "redis" ] ; then
+elif [ "$1" == "redis" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
@@ -536,12 +661,24 @@ elif [ "$1" == "redis" ] ; then
         sail_is_not_running
     fi
 
+# Initiate a Valkey CLI terminal session within the "valkey" container...
+elif [ "$1" == "valkey" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec)
+        [ ! -t 0 ] && ARGS+=(-T)
+        ARGS+=(valkey valkey-cli)
+    else
+        sail_is_not_running
+    fi
+
 # Share the site...
 elif [ "$1" == "share" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
-        docker run --init --rm -p "$SAIL_SHARE_DASHBOARD":4040 -t beyondcodegmbh/expose-server:latest share http://host.docker.internal:"$APP_PORT" \
+        ${SAIL_DOCKER_BINARY} run --init --rm --add-host=host.docker.internal:host-gateway -p "$SAIL_SHARE_DASHBOARD":4040 -t beyondcodegmbh/expose-server:latest share http://host.docker.internal:"$APP_PORT" \
             --server-host="$SAIL_SHARE_SERVER_HOST" \
             --server-port="$SAIL_SHARE_SERVER_PORT" \
             --auth="$SAIL_SHARE_TOKEN" \
@@ -559,6 +696,15 @@ elif [ "$1" == "share" ]; then
 elif [ "$1" == "open" ]; then
     shift 1
 
+    if command -v open &>/dev/null; then
+        OPEN="open"
+    elif command -v xdg-open &>/dev/null; then
+        OPEN="xdg-open"
+    else
+        echo "Neither open nor xdg-open is available. Exiting."
+        exit 1
+    fi
+
     if [ "$EXEC" == "yes" ]; then
 
         if [[ -n "$APP_PORT" && "$APP_PORT" != "80" ]]; then
@@ -567,17 +713,18 @@ elif [ "$1" == "open" ]; then
             FULL_URL="$APP_URL"
         fi
 
-        open "$FULL_URL"
+        $OPEN "$FULL_URL"
 
         exit
     else
         sail_is_not_running
     fi
+fi
 
-# Pass unknown commands to the "docker-compose" binary...
-else
-    ARGS+=("$@")
+# Forward the host terminal's color capability to container commands...
+if [ "${ARGS[0]:-}" == "exec" ] && [ -n "${COLORTERM:-}" ]; then
+    ARGS=(exec -e "COLORTERM=${COLORTERM}" "${ARGS[@]:1}")
 fi
 
 # Run Docker Compose with the defined arguments...
-"${DOCKER_COMPOSE[@]}" "${ARGS[@]}"
+"${COMPOSE_CMD[@]}" "${ARGS[@]}" "$@"

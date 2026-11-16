@@ -85,9 +85,8 @@ class Factory implements FactoryContract
      *
      * @param  \Illuminate\Contracts\Translation\Translator  $translator
      * @param  \Illuminate\Contracts\Container\Container|null  $container
-     * @return void
      */
-    public function __construct(Translator $translator, Container $container = null)
+    public function __construct(Translator $translator, ?Container $container = null)
     {
         $this->container = $container;
         $this->translator = $translator;
@@ -266,6 +265,17 @@ class Factory implements FactoryContract
     public function excludeUnvalidatedArrayKeys()
     {
         $this->excludeUnvalidatedArrayKeys = true;
+    }
+
+    /**
+     * Fake the DNS lookups performed by validation rules so they always succeed.
+     *
+     * @param  bool  $value
+     * @return void
+     */
+    public function fakeDnsLookups($value = true)
+    {
+        Validator::fakeDnsLookups($value);
     }
 
     /**

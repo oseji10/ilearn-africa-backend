@@ -7,20 +7,14 @@ use Illuminate\Console\Scheduling\Event;
 class ScheduledTaskSkipped
 {
     /**
-     * The scheduled event being run.
-     *
-     * @var \Illuminate\Console\Scheduling\Event
-     */
-    public $task;
-
-    /**
      * Create a new event instance.
      *
-     * @param  \Illuminate\Console\Scheduling\Event  $task
-     * @return void
+     * @param  \Illuminate\Console\Scheduling\Event  $task  The scheduled event being run.
+     * @param  \Illuminate\Console\Scheduling\ScheduledTaskSkipReason|null  $reason  The reason why the task was skipped.
      */
-    public function __construct(Event $task)
-    {
-        $this->task = $task;
+    public function __construct(
+        public Event $task,
+        public $reason = null,
+    ) {
     }
 }

@@ -2,10 +2,15 @@
 
 namespace Illuminate\Bus;
 
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Queue\Attributes\UniqueFor;
+use Illuminate\Support\Traits\ReadsClassAttributes;
 
 class UniqueLock
 {
+    use ReadsClassAttributes;
+
     /**
      * The cache repository implementation.
      *
@@ -17,7 +22,6 @@ class UniqueLock
      * Create a new unique lock manager instance.
      *
      * @param  \Illuminate\Contracts\Cache\Repository  $cache
-     * @return void
      */
     public function __construct(Cache $cache)
     {
@@ -33,14 +37,25 @@ class UniqueLock
     public function acquire($job)
     {
         $uniqueFor = method_exists($job, 'uniqueFor')
-                    ? $job->uniqueFor()
-                    : ($job->uniqueFor ?? 0);
+            ? $job->uniqueFor()
+            : ($this->getAttributeValue($job, UniqueFor::class, 'uniqueFor') ?? 0);
 
         $cache = method_exists($job, 'uniqueVia')
-                    ? $job->uniqueVia()
-                    : $this->cache;
+            ? ($job->uniqueVia() ?? $this->cache)
+            : $this->cache;
 
-        return (bool) $cache->lock($this->getKey($job), $uniqueFor)->get();
+        $lock = $cache->lock(self::getKey($job), $uniqueFor);
+
+        if (! $lock->get()) {
+            return false;
+        }
+
+        if (isset(class_uses_recursive($job)[Queueable::class]) &&
+            $cache->getStore() instanceof LockProvider) {
+            $job->uniqueLockOwner = $lock->owner();
+        }
+
+        return true;
     }
 
     /**
@@ -52,10 +67,22 @@ class UniqueLock
     public function release($job)
     {
         $cache = method_exists($job, 'uniqueVia')
-                    ? $job->uniqueVia()
-                    : $this->cache;
+            ? ($job->uniqueVia() ?? $this->cache)
+            : $this->cache;
 
-        $cache->lock($this->getKey($job))->forceRelease();
+        $owner = isset(class_uses_recursive($job)[Queueable::class])
+            ? ($job->uniqueLockOwner ?? '')
+            : '';
+
+        if (is_string($owner) && $owner !== '') {
+            if ($cache->getStore() instanceof LockProvider) {
+                $cache->restoreLock(self::getKey($job), $owner)->release();
+            }
+
+            return;
+        }
+
+        $cache->lock(self::getKey($job))->forceRelease();
     }
 
     /**
@@ -64,12 +91,16 @@ class UniqueLock
      * @param  mixed  $job
      * @return string
      */
-    protected function getKey($job)
+    public static function getKey($job)
     {
         $uniqueId = method_exists($job, 'uniqueId')
-                    ? $job->uniqueId()
-                    : ($job->uniqueId ?? '');
+            ? $job->uniqueId()
+            : ($job->uniqueId ?? '');
 
-        return 'laravel_unique_job:'.get_class($job).$uniqueId;
+        $jobName = method_exists($job, 'displayName')
+            ? hash('xxh128', $job->displayName())
+            : get_class($job);
+
+        return 'laravel_unique_job:'.$jobName.':'.$uniqueId;
     }
 }

@@ -8,8 +8,10 @@ use Illuminate\Contracts\Mail\Factory as MailFactory;
 use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Markdown;
+use Illuminate\Mail\TextMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Header\MetadataHeader;
 use Symfony\Component\Mailer\Header\TagHeader;
@@ -35,7 +37,6 @@ class MailChannel
      *
      * @param  \Illuminate\Contracts\Mail\Factory  $mailer
      * @param  \Illuminate\Mail\Markdown  $markdown
-     * @return void
      */
     public function __construct(MailFactory $mailer, Markdown $markdown)
     {
@@ -124,9 +125,17 @@ class MailChannel
      */
     protected function buildMarkdownText($message)
     {
-        return fn ($data) => $this->markdownRenderer($message)->renderText(
-            $message->markdown, array_merge($data, $message->data()),
-        );
+        return function ($data) use ($message) {
+            if (isset($data['message'])) {
+                $data = array_merge($data, [
+                    'message' => new TextMessage($data['message']),
+                ]);
+            }
+
+            return $this->markdownRenderer($message)->renderText(
+                $message->markdown, array_merge($data, $message->data()),
+            );
+        };
     }
 
     /**
@@ -262,11 +271,13 @@ class MailChannel
             $recipients = [$recipients];
         }
 
-        return collect($recipients)->mapWithKeys(function ($recipient, $email) {
-            return is_numeric($email)
+        return (new Collection($recipients))
+            ->mapWithKeys(function ($recipient, $email) {
+                return is_numeric($email)
                     ? [$email => (is_string($recipient) ? $recipient : $recipient->email)]
                     : [$email => $recipient];
-        })->all();
+            })
+            ->all();
     }
 
     /**

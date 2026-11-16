@@ -4,6 +4,7 @@ namespace Illuminate\Events;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Container\Container;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -15,7 +16,7 @@ class CallQueuedListener implements ShouldQueue
     /**
      * The listener class name.
      *
-     * @var string
+     * @var class-string
      */
     public $class;
 
@@ -76,6 +77,13 @@ class CallQueuedListener implements ShouldQueue
     public $failOnTimeout = false;
 
     /**
+     * Indicates if worker crashes should count towards the maximum exceptions.
+     *
+     * @var bool
+     */
+    public $countCrashesAsExceptions = false;
+
+    /**
      * Indicates if the job should be encrypted.
      *
      * @var bool
@@ -83,12 +91,43 @@ class CallQueuedListener implements ShouldQueue
     public $shouldBeEncrypted = false;
 
     /**
+     * Indicates if the job should be deleted when models are missing.
+     *
+     * @var bool
+     */
+    public $deleteWhenMissingModels;
+
+    /**
+     * Indicates if the listener should be unique.
+     */
+    public bool $shouldBeUnique = false;
+
+    /**
+     * Indicates if the listener should be unique until processing begins.
+     */
+    public bool $shouldBeUniqueUntilProcessing = false;
+
+    /**
+     * The unique ID of the listener.
+     */
+    public mixed $uniqueId = null;
+
+    /**
+     * The number of seconds the unique lock should be maintained.
+     */
+    public ?int $uniqueFor = null;
+
+    /**
+     * The debounce ID of the listener.
+     */
+    public mixed $debounceId = null;
+
+    /**
      * Create a new job instance.
      *
-     * @param  string  $class
+     * @param  class-string  $class
      * @param  string  $method
      * @param  array  $data
-     * @return void
      */
     public function __construct($class, $method, $data)
     {
@@ -115,6 +154,78 @@ class CallQueuedListener implements ShouldQueue
     }
 
     /**
+     * Determine if the listener should be unique.
+     */
+    public function shouldBeUnique(): bool
+    {
+        return $this->shouldBeUnique;
+    }
+
+    /**
+     * Determine if the listener should be unique until processing begins.
+     */
+    public function shouldBeUniqueUntilProcessing(): bool
+    {
+        return $this->shouldBeUniqueUntilProcessing;
+    }
+
+    /**
+     * Get the unique ID for the listener.
+     */
+    public function uniqueId(): mixed
+    {
+        return $this->uniqueId;
+    }
+
+    /**
+     * Get the number of seconds the unique lock should be maintained.
+     */
+    public function uniqueFor(): ?int
+    {
+        return $this->uniqueFor;
+    }
+
+    /**
+     * Get the cache store used to manage unique locks.
+     */
+    public function uniqueVia(): ?Cache
+    {
+        $listener = Container::getInstance()->make($this->class);
+
+        if (! method_exists($listener, 'uniqueVia')) {
+            return null;
+        }
+
+        $this->prepareData();
+
+        return $listener->uniqueVia(...array_values($this->data));
+    }
+
+    /**
+     * Get the debounce ID for the listener.
+     */
+    public function debounceId(): mixed
+    {
+        return $this->debounceId;
+    }
+
+    /**
+     * Get the cache store used to manage debounce ownership.
+     */
+    public function debounceVia(): ?Cache
+    {
+        $listener = Container::getInstance()->make($this->class);
+
+        if (! method_exists($listener, 'debounceVia')) {
+            return null;
+        }
+
+        $this->prepareData();
+
+        return $listener->debounceVia(...array_values($this->data));
+    }
+
+    /**
      * Set the job instance of the given class if necessary.
      *
      * @param  \Illuminate\Contracts\Queue\Job  $job
@@ -123,7 +234,7 @@ class CallQueuedListener implements ShouldQueue
      */
     protected function setJobInstanceIfNecessary(Job $job, $instance)
     {
-        if (in_array(InteractsWithQueue::class, class_uses_recursive($instance))) {
+        if (isset(class_uses_recursive($instance)[InteractsWithQueue::class])) {
             $instance->setJob($job);
         }
 

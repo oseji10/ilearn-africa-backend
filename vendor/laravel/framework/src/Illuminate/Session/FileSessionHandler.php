@@ -4,6 +4,7 @@ namespace Illuminate\Session;
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
+use RuntimeException;
 use SessionHandlerInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -36,7 +37,6 @@ class FileSessionHandler implements SessionHandlerInterface
      * @param  \Illuminate\Filesystem\Filesystem  $files
      * @param  string  $path
      * @param  int  $minutes
-     * @return void
      */
     public function __construct(Filesystem $files, $path, $minutes)
     {
@@ -63,6 +63,26 @@ class FileSessionHandler implements SessionHandlerInterface
     public function close(): bool
     {
         return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return string
+     */
+    public function create_sid(): string
+    {
+        return session_create_id() ?: throw new RuntimeException('Unable to create a session ID.');
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public function validateId($id): bool
+    {
+        return $this->files->isFile($this->path.'/'.$id);
     }
 
     /**
@@ -112,10 +132,10 @@ class FileSessionHandler implements SessionHandlerInterface
     public function gc($lifetime): int
     {
         $files = Finder::create()
-                    ->in($this->path)
-                    ->files()
-                    ->ignoreDotFiles(true)
-                    ->date('<= now - '.$lifetime.' seconds');
+            ->in($this->path)
+            ->files()
+            ->ignoreDotFiles(true)
+            ->date('<= now - '.$lifetime.' seconds');
 
         $deletedSessions = 0;
 

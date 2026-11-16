@@ -19,11 +19,11 @@ use Symfony\Component\Mime\Part\AbstractPart;
  */
 final class RelatedPart extends AbstractMultipartPart
 {
-    private AbstractPart $mainPart;
-
-    public function __construct(AbstractPart $mainPart, AbstractPart $part, AbstractPart ...$parts)
-    {
-        $this->mainPart = $mainPart;
+    public function __construct(
+        private AbstractPart $mainPart,
+        AbstractPart $part,
+        AbstractPart ...$parts,
+    ) {
         $this->prepareParts($part, ...$parts);
 
         parent::__construct($part, ...$parts);
@@ -37,6 +37,24 @@ final class RelatedPart extends AbstractMultipartPart
     public function getMediaSubtype(): string
     {
         return 'related';
+    }
+
+    public function __serialize(): array
+    {
+        return parent::__serialize() + ['mainPart' => $this->mainPart];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        foreach (['mainPart', "\0".self::class."\0mainPart"] as $key) {
+            if (\array_key_exists($key, $data)) {
+                $this->mainPart = $data[$key];
+                unset($data[$key]);
+                break;
+            }
+        }
+
+        parent::__unserialize($data);
     }
 
     private function generateContentId(): string

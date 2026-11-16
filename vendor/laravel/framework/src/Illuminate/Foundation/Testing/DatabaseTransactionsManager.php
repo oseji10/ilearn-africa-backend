@@ -7,6 +7,23 @@ use Illuminate\Database\DatabaseTransactionsManager as BaseManager;
 class DatabaseTransactionsManager extends BaseManager
 {
     /**
+     * The names of the connections transacting during tests.
+     */
+    protected array $connectionsTransacting;
+
+    /**
+     * Create a new database transaction manager instance.
+     *
+     * @param  array  $connectionsTransacting
+     */
+    public function __construct(array $connectionsTransacting)
+    {
+        parent::__construct();
+
+        $this->connectionsTransacting = $connectionsTransacting;
+    }
+
+    /**
      * Register a transaction callback.
      *
      * @param  callable  $callback
@@ -17,7 +34,7 @@ class DatabaseTransactionsManager extends BaseManager
         // If there are no transactions, we'll run the callbacks right away. Also, we'll run it
         // right away when we're in test mode and we only have the wrapping transaction. For
         // every other case, we'll queue up the callback to run after the commit happens.
-        if ($this->callbackApplicableTransactions()->count() === 0) {
+        if ($this->callbackApplicableTransactions()->isEmpty()) {
             return $callback();
         }
 
@@ -31,7 +48,7 @@ class DatabaseTransactionsManager extends BaseManager
      */
     public function callbackApplicableTransactions()
     {
-        return $this->pendingTransactions->skip(1)->values();
+        return $this->pendingTransactions->skip(count($this->connectionsTransacting))->values();
     }
 
     /**

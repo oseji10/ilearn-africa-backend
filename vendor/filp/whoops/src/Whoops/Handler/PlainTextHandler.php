@@ -147,7 +147,7 @@ class PlainTextHandler extends Handler
             return $this->addTraceFunctionArgsToOutput;
         }
 
-        if (! is_integer($addTraceFunctionArgsToOutput)) {
+        if (! is_int($addTraceFunctionArgsToOutput)) {
             $this->addTraceFunctionArgsToOutput = (bool) $addTraceFunctionArgsToOutput;
         } else {
             $this->addTraceFunctionArgsToOutput = $addTraceFunctionArgsToOutput;
@@ -159,12 +159,12 @@ class PlainTextHandler extends Handler
      * Set the size limit in bytes of frame arguments var_dump output.
      * If the limit is reached, the var_dump output is discarded.
      * Prevent memory limit errors.
-     * @var integer
+     * @param int $traceFunctionArgsOutputLimit
      * @return static
      */
     public function setTraceFunctionArgsOutputLimit($traceFunctionArgsOutputLimit)
     {
-        $this->traceFunctionArgsOutputLimit = (integer) $traceFunctionArgsOutputLimit;
+        $this->traceFunctionArgsOutputLimit = (int) $traceFunctionArgsOutputLimit;
         return $this;
     }
 

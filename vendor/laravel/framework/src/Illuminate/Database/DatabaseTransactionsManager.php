@@ -29,8 +29,6 @@ class DatabaseTransactionsManager
 
     /**
      * Create a new database transactions manager instance.
-     *
-     * @return void
      */
     public function __construct()
     {
@@ -141,6 +139,8 @@ class DatabaseTransactionsManager
                 do {
                     $this->removeCommittedTransactionsThatAreChildrenOf($this->currentTransaction[$connection]);
 
+                    $this->currentTransaction[$connection]->executeCallbacksForRollback();
+
                     $this->currentTransaction[$connection] = $this->currentTransaction[$connection]->parent;
                 } while (
                     isset($this->currentTransaction[$connection]) &&
@@ -158,6 +158,18 @@ class DatabaseTransactionsManager
      */
     protected function removeAllTransactionsForConnection($connection)
     {
+        $transactions = $this->committedTransactions->filter(
+            fn ($transaction) => $transaction->connection == $connection
+        );
+
+        for ($transaction = $this->currentTransaction[$connection] ?? null; isset($transaction); $transaction = $transaction->parent) {
+            $transactions->push($transaction);
+        }
+
+        $transactions
+            ->sortByDesc(fn ($transaction) => $transaction->level)
+            ->each(fn ($transaction) => $transaction->executeCallbacksForRollback());
+
         $this->currentTransaction[$connection] = null;
 
         $this->pendingTransactions = $this->pendingTransactions->reject(
@@ -188,6 +200,8 @@ class DatabaseTransactionsManager
         $removedTransactions->each(
             fn ($transaction) => $this->removeCommittedTransactionsThatAreChildrenOf($transaction)
         );
+
+        $removedTransactions->each(fn ($transaction) => $transaction->executeCallbacksForRollback());
     }
 
     /**
@@ -203,6 +217,19 @@ class DatabaseTransactionsManager
         }
 
         $callback();
+    }
+
+    /**
+     * Register a callback for transaction rollback.
+     *
+     * @param  callable  $callback
+     * @return void
+     */
+    public function addCallbackForRollback($callback)
+    {
+        if ($current = $this->callbackApplicableTransactions()->last()) {
+            return $current->addCallbackForRollback($callback);
+        }
     }
 
     /**
@@ -229,7 +256,7 @@ class DatabaseTransactionsManager
     /**
      * Get all of the pending transactions.
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Support\Collection<int, \Illuminate\Database\DatabaseTransactionRecord>
      */
     public function getPendingTransactions()
     {
@@ -239,7 +266,7 @@ class DatabaseTransactionsManager
     /**
      * Get all of the committed transactions.
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Support\Collection<int, \Illuminate\Database\DatabaseTransactionRecord>
      */
     public function getCommittedTransactions()
     {

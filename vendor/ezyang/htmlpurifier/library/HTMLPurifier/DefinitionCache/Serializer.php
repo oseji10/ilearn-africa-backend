@@ -139,8 +139,9 @@ class HTMLPurifier_DefinitionCache_Serializer extends HTMLPurifier_DefinitionCac
                 continue;
             }
             $key = substr($filename, 0, strlen($filename) - 4);
-            if ($this->isOld($key, $config)) {
-                unlink($dir . '/' . $filename);
+            $file = $dir . '/' . $filename;
+            if ($this->isOld($key, $config) && file_exists($file)) {
+                unlink($file);
             }
         }
         closedir($dh);
@@ -238,12 +239,17 @@ class HTMLPurifier_DefinitionCache_Serializer extends HTMLPurifier_DefinitionCac
             } elseif (!$this->_testPermissions($base, $chmod)) {
                 return false;
             }
-            if (!@mkdir($directory, $chmod) && !is_dir($directory)) {
+            $created = @mkdir($directory, $chmod);
+            if (!$created && !is_dir($directory)) {
                 trigger_error(
                     'Could not create directory ' . $directory . '',
                     E_USER_WARNING
                 );
                 return false;
+            }
+            if ($created) {
+                // Ensure the directory has the correct permissions, since mkdir() obeys the umask
+                @chmod($directory, $chmod);
             }
             if (!$this->_testPermissions($directory, $chmod)) {
                 return false;

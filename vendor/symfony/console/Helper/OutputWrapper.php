@@ -49,7 +49,7 @@ final class OutputWrapper
     private const URL_PATTERN = 'https?://\S+';
 
     public function __construct(
-        private bool $allowCutUrls = false
+        private bool $allowCutUrls = false,
     ) {
     }
 
@@ -59,7 +59,7 @@ final class OutputWrapper
             return $text;
         }
 
-        $tagPattern = sprintf('<(?:(?:%s)|/(?:%s)?)>', self::TAG_OPEN_REGEX_SEGMENT, self::TAG_CLOSE_REGEX_SEGMENT);
+        $tagPattern = \sprintf('<(?:(?:%s)|/(?:%s)?)>', self::TAG_OPEN_REGEX_SEGMENT, self::TAG_CLOSE_REGEX_SEGMENT);
         $limitPattern = "{1,$width}";
         $patternBlocks = [$tagPattern];
         if (!$this->allowCutUrls) {
@@ -68,7 +68,12 @@ final class OutputWrapper
         $patternBlocks[] = '.';
         $blocks = implode('|', $patternBlocks);
         $rowPattern = "(?:$blocks)$limitPattern";
-        $pattern = sprintf('#(?:((?>(%1$s)((?<=[^\S\r\n])[^\S\r\n]?|(?=\r?\n)|$|[^\S\r\n]))|(%1$s))(?:\r?\n)?|(?:\r?\n|$))#imux', $rowPattern);
+        // the u modifier counts characters instead of bytes, but preg_replace() returns null
+        // on malformed UTF-8, which would empty the text
+        $modifiers = preg_match('//u', $text) ? 'imux' : 'imx';
+        // a line cut inside a word never ends between a backslash and the "<" or ">" it escapes,
+        // or the escaped character would start the next line as a tag delimiter
+        $pattern = \sprintf('#(?:((?>(%1$s)((?<=[^\S\r\n])[^\S\r\n]?|(?=\r?\n)|$|[^\S\r\n]))|(%1$s)(?!(?<=\\\\)[<>]))(?:\r?\n)?|(?:\r?\n|$))#%2$s', $rowPattern, $modifiers);
         $output = rtrim(preg_replace($pattern, '\\1'.$break, $text), $break);
 
         return str_replace(' '.$break, $break, $output);

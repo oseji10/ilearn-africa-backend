@@ -8,6 +8,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Contracts\Permission;
 use Spatie\Permission\Contracts\Role;
+use Spatie\Permission\Events\RoleAttached;
+use Spatie\Permission\Events\RoleDetached;
 use Spatie\Permission\PermissionRegistrar;
 
 trait HasRoles
@@ -127,9 +129,6 @@ trait HasRoles
                 }
 
                 $role = $this->getStoredRole($role);
-                if (! $role instanceof Role) {
-                    return $array;
-                }
 
                 if (! in_array($role->getKey(), $array)) {
                     $this->ensureModelSharesGuard($role);
@@ -155,6 +154,11 @@ trait HasRoles
             [app(PermissionRegistrar::class)->teamsKey => getPermissionsTeamId()] : [];
 
         if ($model->exists) {
+            if (app(PermissionRegistrar::class)->teams) {
+                // explicit reload in case team has been changed since last load
+                $this->load('roles');
+            }
+
             $currentRoles = $this->roles->map(fn ($role) => $role->getKey())->toArray();
 
             $this->roles()->attach(array_diff($roles, $currentRoles), $teamPivot);
@@ -179,22 +183,33 @@ trait HasRoles
             $this->forgetCachedPermissions();
         }
 
+        if (config('permission.events_enabled')) {
+            event(new RoleAttached($this->getModel(), $roles));
+        }
+
         return $this;
     }
 
     /**
      * Revoke the given role from the model.
      *
-     * @param  string|int|Role|\BackedEnum  $role
+     * @param  string|int|array|Role|Collection|\BackedEnum  ...$role
+     * @return $this
      */
-    public function removeRole($role)
+    public function removeRole(...$role)
     {
-        $this->roles()->detach($this->getStoredRole($role));
+        $roles = $this->collectRoles($role);
+
+        $this->roles()->detach($roles);
 
         $this->unsetRelation('roles');
 
         if (is_a($this, Permission::class)) {
             $this->forgetCachedPermissions();
+        }
+
+        if (config('permission.events_enabled')) {
+            event(new RoleDetached($this->getModel(), $roles));
         }
 
         return $this;
@@ -210,8 +225,15 @@ trait HasRoles
     {
         if ($this->getModel()->exists) {
             $this->collectRoles($roles);
-            $this->roles()->detach();
-            $this->setRelation('roles', collect());
+            if (config('permission.events_enabled')) {
+                $currentRoles = $this->roles()->get();
+                if ($currentRoles->isNotEmpty()) {
+                    $this->removeRole($currentRoles);
+                }
+            } else {
+                $this->roles()->detach();
+                $this->setRelation('roles', collect());
+            }
         }
 
         return $this->assignRole($roles);

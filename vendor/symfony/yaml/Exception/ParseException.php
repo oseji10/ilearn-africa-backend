@@ -39,7 +39,7 @@ class ParseException extends RuntimeException
     /**
      * Gets the snippet of code near the error.
      */
-    public function getSnippet(): string
+    public function getSnippet(): ?string
     {
         return $this->snippet;
     }
@@ -59,7 +59,7 @@ class ParseException extends RuntimeException
      *
      * This method returns null if a string is parsed.
      */
-    public function getParsedFile(): string
+    public function getParsedFile(): ?string
     {
         return $this->parsedFile;
     }
@@ -103,15 +103,15 @@ class ParseException extends RuntimeException
         }
 
         if (null !== $this->parsedFile) {
-            $this->message .= sprintf(' in %s', json_encode($this->parsedFile, \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE));
+            $this->message .= \sprintf(' in %s', json_encode($this->parsedFile, \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE));
         }
 
         if ($this->parsedLine >= 0) {
-            $this->message .= sprintf(' at line %d', $this->parsedLine);
+            $this->message .= \sprintf(' at line %d', $this->parsedLine);
         }
 
         if ($this->snippet) {
-            $this->message .= sprintf(' (near "%s")', $this->snippet);
+            $this->message .= \sprintf(' (near "%s")', $this->snippet);
         }
 
         if ($dot) {

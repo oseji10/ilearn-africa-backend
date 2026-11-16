@@ -3,6 +3,7 @@
 namespace Illuminate\Database\Concerns;
 
 use Illuminate\Support\Str;
+use Illuminate\Support\Stringable;
 
 trait CompilesJsonPaths
 {
@@ -34,7 +35,7 @@ trait CompilesJsonPaths
     {
         $value = preg_replace("/([\\\\]+)?\\'/", "''", $value);
 
-        $jsonPath = collect(explode($delimiter, $value))
+        $jsonPath = (new Stringable($value))->explode($delimiter)
             ->map(fn ($segment) => $this->wrapJsonPathSegment($segment))
             ->join('.');
 

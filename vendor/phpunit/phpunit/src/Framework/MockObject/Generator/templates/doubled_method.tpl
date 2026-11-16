@@ -17,7 +17,7 @@
         $__phpunit_arguments = [{arguments_call}];
         $__phpunit_count     = func_num_args();
 
-        if ($__phpunit_count > {arguments_count}) {
+        if ({arguments_count} !== null && $__phpunit_count > {arguments_count}) {
             $__phpunit_arguments_tmp = func_get_args();
 
             for ($__phpunit_i = {arguments_count}; $__phpunit_i < $__phpunit_count; $__phpunit_i++) {
@@ -29,7 +29,7 @@
 
         $__phpunit_result = $this->__phpunit_getInvocationHandler()->invoke(
             new \PHPUnit\Framework\MockObject\Invocation(
-                '{class_name}', '{method_name}', $__phpunit_arguments, '{return_type}', $this, {clone_arguments}
+                '{class_name}', '{method_name}', $__phpunit_arguments, '{return_type}', $this
             )
         );{return_result}
     }

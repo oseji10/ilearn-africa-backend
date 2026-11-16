@@ -25,7 +25,7 @@ abstract class SchemaState
     /**
      * The name of the application's migration table.
      *
-     * @var string
+     * @var string|null
      */
     protected $migrationTable = 'migrations';
 
@@ -49,9 +49,8 @@ abstract class SchemaState
      * @param  \Illuminate\Database\Connection  $connection
      * @param  \Illuminate\Filesystem\Filesystem|null  $files
      * @param  callable|null  $processFactory
-     * @return void
      */
-    public function __construct(Connection $connection, Filesystem $files = null, callable $processFactory = null)
+    public function __construct(Connection $connection, ?Filesystem $files = null, ?callable $processFactory = null)
     {
         $this->connection = $connection;
 
@@ -101,16 +100,27 @@ abstract class SchemaState
      */
     public function hasMigrationTable(): bool
     {
-        return $this->connection->getSchemaBuilder()->hasTable($this->migrationTable);
+        return $this->migrationTable &&
+               $this->connection->getSchemaBuilder()->hasTable($this->migrationTable);
+    }
+
+    /**
+     * Get the name of the application's migration table.
+     *
+     * @return string
+     */
+    protected function getMigrationTable(): string
+    {
+        return $this->connection->getTablePrefix().$this->migrationTable;
     }
 
     /**
      * Specify the name of the application's migration table.
      *
-     * @param  string  $table
+     * @param  string|null  $table
      * @return $this
      */
-    public function withMigrationTable(string $table)
+    public function withMigrationTable(?string $table)
     {
         $this->migrationTable = $table;
 

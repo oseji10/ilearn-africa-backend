@@ -11,12 +11,14 @@ use NunoMaduro\Collision\Exceptions\ShouldNotHappen;
 use NunoMaduro\Collision\Exceptions\TestException;
 use NunoMaduro\Collision\Exceptions\TestOutcome;
 use NunoMaduro\Collision\Writer;
+use Pest\Collision\Events;
 use Pest\Expectation;
 use PHPUnit\Event\Code\Throwable;
 use PHPUnit\Event\Telemetry\Info;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\IncompleteTestError;
 use PHPUnit\Framework\SkippedWithMessageException;
+use PHPUnit\Runner\TestSuiteSorter;
 use PHPUnit\TestRunner\TestResult\TestResult as PHPUnitTestResult;
 use PHPUnit\TextUI\Configuration\Registry;
 use ReflectionClass;
@@ -55,7 +57,7 @@ final class Style
     public function __construct(ConsoleOutputInterface $output)
     {
         if (! $output instanceof ConsoleOutput) {
-            throw new ShouldNotHappen();
+            throw new ShouldNotHappen;
         }
 
         $this->terminal = terminal();
@@ -173,7 +175,7 @@ final class Style
 
         array_map(function (TestResult $testResult): void {
             if (! $testResult->throwable instanceof Throwable) {
-                throw new ShouldNotHappen();
+                throw new ShouldNotHappen;
             }
 
             renderUsing($this->output);
@@ -252,11 +254,20 @@ final class Style
         $this->output->writeln(['']);
 
         if (! empty($tests)) {
+            $extra = '';
+            foreach (DefaultPrinter::recapCallbacks() as $callback) {
+                $output = $callback($state, $telemetry, $result);
+                if ($output !== '') {
+                    $extra .= '<fg=gray>,</> '.$output;
+                }
+            }
+
             $this->output->writeln([
                 sprintf(
-                    '  <fg=gray>Tests:</>    <fg=default>%s</><fg=gray> (%s assertions)</>',
+                    '  <fg=gray>Tests:</>    <fg=default>%s</><fg=gray> (%s assertions%s)</>',
                     implode('<fg=gray>,</> ', $tests),
-                    $result->numberOfAssertions()
+                    $result->numberOfAssertions(),
+                    $extra,
                 ),
             ]);
         }
@@ -267,6 +278,16 @@ final class Style
                 $timeElapsed
             ),
         ]);
+
+        $configuration = Registry::get();
+        if ($configuration->executionOrder() === TestSuiteSorter::ORDER_RANDOMIZED) {
+            $this->output->writeln([
+                sprintf(
+                    '  <fg=gray>Random Order Seed:</> <fg=default>%s</>',
+                    $configuration->randomOrderSeed(),
+                ),
+            ]);
+        }
 
         $this->output->writeln('');
     }
@@ -327,7 +348,7 @@ final class Style
      */
     public function writeError(Throwable $throwable): void
     {
-        $writer = (new Writer())->setOutput($this->output);
+        $writer = (new Writer)->setOutput($this->output);
 
         $throwable = new TestException($throwable, $this->output->isVerbose());
 
@@ -337,8 +358,11 @@ final class Style
             '/vendor\/nunomaduro\/collision/',
             '/vendor\/bin\/pest/',
             '/bin\/pest/',
+            '/vendor\/brianium\/paratest/',
             '/vendor\/pestphp\/pest/',
             '/vendor\/pestphp\/pest-plugin-arch/',
+            '/vendor\/pestphp\/pest-plugin-evals/',
+            '/vendor\/pestphp\/pest-plugin-browser/',
             '/vendor\/phpspec\/prophecy-phpunit/',
             '/vendor\/phpspec\/prophecy/',
             '/vendor\/phpunit\/phpunit\/src/',
@@ -453,7 +477,14 @@ final class Style
             }
         }
 
-        $description = preg_replace('/`([^`]+)`/', '<span class="text-white">$1</span>', $result->description);
+        $description = $result->description;
+
+        /** @var string $description */
+        $description = preg_replace('/`([^`]+)`/', '<span class="text-white">$1</span>', $description);
+
+        if (class_exists(Events::class)) {
+            $description = Events::beforeTestMethodDescription($result, $description);
+        }
 
         renderUsing($this->output);
         render(sprintf(<<<'HTML'
@@ -463,6 +494,8 @@ final class Style
                 </span>%s
             </div>
         HTML, $seconds === '' ? '' : 'flex space-x-1 justify-between', $truncateClasses, $result->color, $result->icon, $description, $warning, $seconds));
+
+        class_exists(Events::class) && Events::afterTestMethodDescription($result);
     }
 
     /**

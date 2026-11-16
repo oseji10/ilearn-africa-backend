@@ -2,6 +2,7 @@
 
 namespace Illuminate\Console\Scheduling;
 
+use Exception;
 use Illuminate\Console\Application;
 use Illuminate\Console\Command;
 use Illuminate\Console\Events\ScheduledTaskFailed;
@@ -21,11 +22,11 @@ use Throwable;
 class ScheduleRunCommand extends Command
 {
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'schedule:run';
+    protected $signature = 'schedule:run {--whisper : Do not output message indicating that no jobs were ready to run}';
 
     /**
      * The console command description.
@@ -85,8 +86,6 @@ class ScheduleRunCommand extends Command
 
     /**
      * Create a new command instance.
-     *
-     * @return void
      */
     public function __construct()
     {
@@ -112,17 +111,25 @@ class ScheduleRunCommand extends Command
         $this->handler = $handler;
         $this->phpBinary = Application::phpBinary();
 
-        $this->clearInterruptSignal();
-
-        $this->newLine();
-
         $events = $this->schedule->dueEvents($this->laravel);
 
+        $paused = $this->isPaused();
+
         foreach ($events as $event) {
-            if (! $event->filtersPass($this->laravel)) {
-                $this->dispatcher->dispatch(new ScheduledTaskSkipped($event));
+            if ($paused && ! $event->runsWhenPaused()) {
+                $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::Paused));
 
                 continue;
+            }
+
+            if (! $event->filtersPass($this->laravel)) {
+                $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::ConditionNotMet));
+
+                continue;
+            }
+
+            if (! $this->eventsRan) {
+                $this->newLine();
             }
 
             if ($event->onOneServer) {
@@ -139,7 +146,9 @@ class ScheduleRunCommand extends Command
         }
 
         if (! $this->eventsRan) {
-            $this->components->info('No scheduled commands are ready to run.');
+            if (! $this->option('whisper')) {
+                $this->components->info('No scheduled commands are ready to run.');
+            }
         } else {
             $this->newLine();
         }
@@ -156,8 +165,10 @@ class ScheduleRunCommand extends Command
         if ($this->schedule->serverShouldRun($event, $this->startedAt)) {
             $this->runEvent($event);
         } else {
+            $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::RanOnAnotherServer));
+
             $this->components->info(sprintf(
-                'Skipping [%s], as command already run on another server.', $event->getSummaryForDisplay()
+                'Skipping [%s] because the command already ran on another server.', $event->getSummaryForDisplay()
             ));
         }
     }
@@ -197,8 +208,16 @@ class ScheduleRunCommand extends Command
                 ));
 
                 $this->eventsRan = true;
+
+                if ($event->exitCode != 0 && ! $event->runInBackground) {
+                    throw new Exception("Scheduled command [{$event->command}] failed with exit code [{$event->exitCode}].");
+                }
             } catch (Throwable $e) {
-                $this->dispatcher->dispatch(new ScheduledTaskFailed($event, $e));
+                $this->dispatcher->dispatch(new ScheduledTaskFailed(
+                    $event,
+                    $e,
+                    round(microtime(true) - $start, 2)
+                ));
 
                 $this->handler->report($e);
             }
@@ -223,7 +242,11 @@ class ScheduleRunCommand extends Command
     {
         $hasEnteredMaintenanceMode = false;
 
-        while (Date::now()->lte($this->startedAt->endOfMinute())) {
+        $endOfMinute = $this->startedAt->copy()->endOfMinute();
+
+        while (Date::now()->lte($endOfMinute)) {
+            $paused = $this->isPaused();
+
             foreach ($events as $event) {
                 if ($this->shouldInterrupt()) {
                     return;
@@ -233,14 +256,24 @@ class ScheduleRunCommand extends Command
                     continue;
                 }
 
+                if (Date::now()->gt($endOfMinute)) {
+                    return;
+                }
+
                 $hasEnteredMaintenanceMode = $hasEnteredMaintenanceMode || $this->laravel->isDownForMaintenance();
 
                 if ($hasEnteredMaintenanceMode && ! $event->runsInMaintenanceMode()) {
                     continue;
                 }
 
+                if ($paused && ! $event->runsWhenPaused()) {
+                    $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::Paused));
+
+                    continue;
+                }
+
                 if (! $event->filtersPass($this->laravel)) {
-                    $this->dispatcher->dispatch(new ScheduledTaskSkipped($event));
+                    $this->dispatcher->dispatch(new ScheduledTaskSkipped($event, ScheduledTaskSkipReason::ConditionNotMet));
 
                     continue;
                 }
@@ -254,8 +287,22 @@ class ScheduleRunCommand extends Command
                 $this->eventsRan = true;
             }
 
-            Sleep::usleep(100000);
+            Sleep::usleep(100_000);
         }
+    }
+
+    /**
+     * Determine if the schedule is paused.
+     *
+     * @return bool
+     */
+    protected function isPaused()
+    {
+        if (! Schedule::$pausable) {
+            return false;
+        }
+
+        return $this->cache->get('illuminate:schedule:paused', false);
     }
 
     /**
@@ -265,16 +312,6 @@ class ScheduleRunCommand extends Command
      */
     protected function shouldInterrupt()
     {
-        return $this->cache->get('illuminate:schedule:interrupt', false);
-    }
-
-    /**
-     * Ensure the interrupt signal is cleared.
-     *
-     * @return void
-     */
-    protected function clearInterruptSignal()
-    {
-        $this->cache->forget('illuminate:schedule:interrupt');
+        return $this->schedule->hasBeenInterruptedSince($this->startedAt);
     }
 }

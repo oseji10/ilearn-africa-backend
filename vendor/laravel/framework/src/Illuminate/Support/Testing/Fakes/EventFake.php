@@ -7,6 +7,7 @@ use Illuminate\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\ForwardsCalls;
 use Illuminate\Support\Traits\ReflectsClosures;
@@ -15,7 +16,7 @@ use ReflectionFunction;
 
 class EventFake implements Dispatcher, Fake
 {
-    use ForwardsCalls, ReflectsClosures;
+    use ForwardsCalls, MatchesProperties, ReflectsClosures;
 
     /**
      * The original event dispatcher.
@@ -50,7 +51,6 @@ class EventFake implements Dispatcher, Fake
      *
      * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
      * @param  array|string  $eventsToFake
-     * @return void
      */
     public function __construct(Dispatcher $dispatcher, $eventsToFake = [])
     {
@@ -86,7 +86,7 @@ class EventFake implements Dispatcher, Fake
     {
         foreach ($this->dispatcher->getListeners($expectedEvent) as $listenerClosure) {
             $actualListener = (new ReflectionFunction($listenerClosure))
-                        ->getStaticVariables()['listener'];
+                ->getStaticVariables()['listener'];
 
             $normalizedListener = $expectedListener;
 
@@ -128,7 +128,7 @@ class EventFake implements Dispatcher, Fake
      * Assert if an event was dispatched based on a truth-test callback.
      *
      * @param  string|\Closure  $event
-     * @param  callable|int|null  $callback
+     * @param  callable|array<string, mixed>|int|null  $callback
      * @return void
      */
     public function assertDispatched($event, $callback = null)
@@ -142,9 +142,20 @@ class EventFake implements Dispatcher, Fake
         }
 
         PHPUnit::assertTrue(
-            $this->dispatched($event, $callback)->count() > 0,
+            $this->dispatched($event, $callback)->isNotEmpty(),
             "The expected [{$event}] event was not dispatched."
         );
+    }
+
+    /**
+     * Assert if an event was dispatched exactly once.
+     *
+     * @param  string  $event
+     * @return void
+     */
+    public function assertDispatchedOnce($event)
+    {
+        $this->assertDispatchedTimes($event, 1);
     }
 
     /**
@@ -160,7 +171,11 @@ class EventFake implements Dispatcher, Fake
 
         PHPUnit::assertSame(
             $times, $count,
-            "The expected [{$event}] event was dispatched {$count} times instead of {$times} times."
+            sprintf(
+                "The expected [{$event}] event was dispatched {$count} %s instead of {$times} %s.",
+                Str::plural('time', $count),
+                Str::plural('time', $times)
+            )
         );
     }
 
@@ -168,7 +183,7 @@ class EventFake implements Dispatcher, Fake
      * Determine if an event was dispatched based on a truth-test callback.
      *
      * @param  string|\Closure  $event
-     * @param  callable|null  $callback
+     * @param  callable|array<string, mixed>|null  $callback
      * @return void
      */
     public function assertNotDispatched($event, $callback = null)
@@ -192,9 +207,18 @@ class EventFake implements Dispatcher, Fake
     {
         $count = count(Arr::flatten($this->events));
 
+        $eventNames = (new Collection($this->events))
+            ->map(fn ($events, $eventName) => sprintf(
+                '%s dispatched %s %s',
+                $eventName,
+                count($events),
+                Str::plural('time', count($events)),
+            ))
+            ->join("\n- ");
+
         PHPUnit::assertSame(
             0, $count,
-            "{$count} unexpected events were dispatched."
+            "{$count} unexpected events were dispatched:\n\n- $eventNames\n"
         );
     }
 
@@ -202,18 +226,18 @@ class EventFake implements Dispatcher, Fake
      * Get all of the events matching a truth-test callback.
      *
      * @param  string  $event
-     * @param  callable|null  $callback
+     * @param  callable|array<string, mixed>|null  $callback
      * @return \Illuminate\Support\Collection
      */
     public function dispatched($event, $callback = null)
     {
         if (! $this->hasDispatched($event)) {
-            return collect();
+            return new Collection;
         }
 
-        $callback = $callback ?: fn () => true;
+        $callback = $this->resolveTruthTest($callback) ?: fn () => true;
 
-        return collect($this->events[$event])->filter(
+        return (new Collection($this->events[$event]))->filter(
             fn ($arguments) => $callback(...$arguments)
         );
     }
@@ -322,13 +346,12 @@ class EventFake implements Dispatcher, Fake
             return true;
         }
 
-        return collect($this->eventsToFake)
-            ->filter(function ($event) use ($eventName, $payload) {
+        return (new Collection($this->eventsToFake))
+            ->contains(function ($event) use ($eventName, $payload) {
                 return $event instanceof Closure
-                            ? $event($eventName, $payload)
-                            : $event === $eventName;
-            })
-            ->isNotEmpty();
+                    ? $event($eventName, $payload)
+                    : $event === $eventName;
+            });
     }
 
     /**
@@ -362,13 +385,12 @@ class EventFake implements Dispatcher, Fake
             return false;
         }
 
-        return collect($this->eventsToDispatch)
-            ->filter(function ($event) use ($eventName, $payload) {
+        return (new Collection($this->eventsToDispatch))
+            ->contains(function ($event) use ($eventName, $payload) {
                 return $event instanceof Closure
                     ? $event($eventName, $payload)
                     : $event === $eventName;
-            })
-            ->isNotEmpty();
+            });
     }
 
     /**
@@ -402,6 +424,16 @@ class EventFake implements Dispatcher, Fake
     public function until($event, $payload = [])
     {
         return $this->dispatch($event, $payload, true);
+    }
+
+    /**
+     * Get the events that have been dispatched.
+     *
+     * @return array
+     */
+    public function dispatchedEvents()
+    {
+        return $this->events;
     }
 
     /**

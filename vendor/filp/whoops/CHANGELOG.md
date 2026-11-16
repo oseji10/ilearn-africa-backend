@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v2.19.0
+
+* `setEditor` has `pathMappings` option that maps server paths to local paths in editor links.
+
+## v2.18.0
+
+* Line numbers are now clickable.
+
+## v2.17.0
+
+* Support cursor IDE.
+
+## v2.16.0
+
+* Support PHP `8.4`.
+* Drop support for PHP older than `7.1`.
+
 ## v2.15.4
 
 * Improve link color in comments.

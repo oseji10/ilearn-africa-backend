@@ -4,7 +4,6 @@ namespace Illuminate\Database;
 
 use Closure;
 use Exception;
-use Illuminate\Database\PDO\SqlServerDriver;
 use Illuminate\Database\Query\Grammars\SqlServerGrammar as QueryGrammar;
 use Illuminate\Database\Query\Processors\SqlServerProcessor;
 use Illuminate\Database\Schema\Grammars\SqlServerGrammar as SchemaGrammar;
@@ -16,11 +15,21 @@ use Throwable;
 class SqlServerConnection extends Connection
 {
     /**
+     * {@inheritdoc}
+     */
+    public function getDriverTitle()
+    {
+        return 'SQL Server';
+    }
+
+    /**
      * Execute a Closure within a transaction.
      *
-     * @param  \Closure  $callback
+     * @template TReturn
+     *
+     * @param  (\Closure(static): TReturn)  $callback
      * @param  int  $attempts
-     * @return mixed
+     * @return TReturn
      *
      * @throws \Throwable
      */
@@ -74,9 +83,28 @@ class SqlServerConnection extends Connection
      * @param  \Exception  $exception
      * @return bool
      */
-    protected function isUniqueConstraintError(Exception $exception)
+    protected function isUniqueConstraintError(Exception $exception): bool
     {
-        return boolval(preg_match('#Cannot insert duplicate key row in object#i', $exception->getMessage()));
+        return (bool) preg_match('#Cannot insert duplicate key(?: row)? in object#i', $exception->getMessage());
+    }
+
+    /**
+     * Extract the index that caused a unique constraint violation.
+     *
+     * @param  Exception  $exception
+     * @return array{index: string|null, columns: list<string>}
+     */
+    protected function parseUniqueConstraintViolation(Exception $exception): array
+    {
+        $index = null;
+
+        if (preg_match('#with unique index \'([^\']+)\'#i', $message = $exception->getMessage(), $matches)) {
+            $index = $matches[1];
+        } elseif (preg_match('#Violation of [A-Z ]+ constraint \'([^\']+)\'#i', $message, $matches)) {
+            $index = $matches[1];
+        }
+
+        return ['columns' => [], 'index' => $index];
     }
 
     /**
@@ -86,9 +114,7 @@ class SqlServerConnection extends Connection
      */
     protected function getDefaultQueryGrammar()
     {
-        ($grammar = new QueryGrammar)->setConnection($this);
-
-        return $this->withTablePrefix($grammar);
+        return new QueryGrammar($this);
     }
 
     /**
@@ -112,9 +138,7 @@ class SqlServerConnection extends Connection
      */
     protected function getDefaultSchemaGrammar()
     {
-        ($grammar = new SchemaGrammar)->setConnection($this);
-
-        return $this->withTablePrefix($grammar);
+        return new SchemaGrammar($this);
     }
 
     /**
@@ -125,7 +149,7 @@ class SqlServerConnection extends Connection
      *
      * @throws \RuntimeException
      */
-    public function getSchemaState(Filesystem $files = null, callable $processFactory = null)
+    public function getSchemaState(?Filesystem $files = null, ?callable $processFactory = null)
     {
         throw new RuntimeException('Schema dumping is not supported when using SQL Server.');
     }
@@ -138,15 +162,5 @@ class SqlServerConnection extends Connection
     protected function getDefaultPostProcessor()
     {
         return new SqlServerProcessor;
-    }
-
-    /**
-     * Get the Doctrine DBAL driver.
-     *
-     * @return \Illuminate\Database\PDO\SqlServerDriver
-     */
-    protected function getDoctrineDriver()
-    {
-        return new SqlServerDriver;
     }
 }

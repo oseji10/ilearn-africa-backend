@@ -43,9 +43,11 @@ return [
     //     '*',
     // ],
 
-     'allowed_origins' => [
-        'https://app.ilearn360africa.com', 'http://locahost:3000',
-    ],
+    'allowed_origins' => [
+    'https://app.ilearn360africa.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',   // in case the frontend is opened via 127.0.0.1
+],
 
     'allowed_origins_patterns' => [],
 

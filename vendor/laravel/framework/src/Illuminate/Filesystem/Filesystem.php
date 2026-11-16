@@ -26,6 +26,10 @@ class Filesystem
      */
     public function exists($path)
     {
+        if ($this->hasDangerousStreamWrapper($path)) {
+            return false;
+        }
+
         return file_exists($path);
     }
 
@@ -90,7 +94,7 @@ class Filesystem
                 if (flock($handle, LOCK_SH)) {
                     clearstatcache(true, $path);
 
-                    $contents = fread($handle, $this->size($path) ?: 1);
+                    $contents = stream_get_contents($handle);
 
                     flock($handle, LOCK_UN);
                 }
@@ -168,7 +172,7 @@ class Filesystem
             );
         }
 
-        return LazyCollection::make(function () use ($path) {
+        return new LazyCollection(function () use ($path) {
             $file = new SplFileObject($path);
 
             $file->setFlags(SplFileObject::DROP_NEW_LINE);
@@ -184,7 +188,7 @@ class Filesystem
      *
      * @param  string  $path
      * @param  string  $algorithm
-     * @return string
+     * @return string|false
      */
     public function hash($path, $algorithm = 'md5')
     {
@@ -223,9 +227,9 @@ class Filesystem
 
         // Fix permissions of tempPath because `tempnam()` creates it with permissions set to 0600...
         if (! is_null($mode)) {
-            chmod($tempPath, $mode);
+            @chmod($tempPath, $mode);
         } else {
-            chmod($tempPath, 0777 - umask());
+            @chmod($tempPath, 0777 - umask());
         }
 
         file_put_contents($tempPath, $content);
@@ -352,7 +356,11 @@ class Filesystem
     public function link($target, $link)
     {
         if (! windows_os()) {
-            return symlink($target, $link);
+            if (function_exists('symlink')) {
+                return symlink($target, $link);
+            } else {
+                return exec('ln -s '.escapeshellarg($target).' '.escapeshellarg($link)) !== false;
+            }
         }
 
         $mode = $this->isDirectory($target) ? 'J' : 'H';
@@ -427,7 +435,7 @@ class Filesystem
     }
 
     /**
-     * Guess the file extension from the mime-type of a given file.
+     * Guess the file extension from the MIME type of a given file.
      *
      * @param  string  $path
      * @return string|null
@@ -449,7 +457,7 @@ class Filesystem
      * Get the file type of a given file.
      *
      * @param  string  $path
-     * @return string
+     * @return string|false
      */
     public function type($path)
     {
@@ -457,7 +465,7 @@ class Filesystem
     }
 
     /**
-     * Get the mime-type of a given file.
+     * Get the MIME type of a given file.
      *
      * @param  string  $path
      * @return string|false
@@ -543,9 +551,9 @@ class Filesystem
      */
     public function hasSameHash($firstFile, $secondFile)
     {
-        $hash = @md5_file($firstFile);
+        $hash = @hash_file('xxh128', $firstFile);
 
-        return $hash && hash_equals($hash, (string) @md5_file($secondFile));
+        return $hash && hash_equals($hash, (string) @hash_file('xxh128', $secondFile));
     }
 
     /**
@@ -556,7 +564,30 @@ class Filesystem
      */
     public function isFile($file)
     {
+        if ($this->hasDangerousStreamWrapper($file)) {
+            return false;
+        }
+
         return is_file($file);
+    }
+
+    /**
+     * Determine if the given path uses a stream wrapper that could trigger PHP object deserialization.
+     *
+     * @param  string  $path
+     * @return bool
+     */
+    protected function hasDangerousStreamWrapper($path)
+    {
+        $path = (string) $path;
+
+        if (! str_starts_with(strtolower($path), 'phar://')) {
+            return false;
+        }
+
+        $running = class_exists(\Phar::class, false) ? \Phar::running() : '';
+
+        return $running === '' || ! str_starts_with($path, $running.'/');
     }
 
     /**
@@ -578,10 +609,10 @@ class Filesystem
      * @param  bool  $hidden
      * @return \Symfony\Component\Finder\SplFileInfo[]
      */
-    public function files($directory, $hidden = false)
+    public function files($directory, $hidden = false, array|string|int $depth = 0)
     {
         return iterator_to_array(
-            Finder::create()->files()->ignoreDotFiles(! $hidden)->in($directory)->depth(0)->sortByName(),
+            Finder::create()->files()->ignoreDotFiles(! $hidden)->in($directory)->depth($depth)->sortByName(),
             false
         );
     }
@@ -595,10 +626,7 @@ class Filesystem
      */
     public function allFiles($directory, $hidden = false)
     {
-        return iterator_to_array(
-            Finder::create()->files()->ignoreDotFiles(! $hidden)->in($directory)->sortByName(),
-            false
-        );
+        return $this->files($directory, $hidden, []);
     }
 
     /**
@@ -607,15 +635,25 @@ class Filesystem
      * @param  string  $directory
      * @return array
      */
-    public function directories($directory)
+    public function directories($directory, array|string|int $depth = 0)
     {
         $directories = [];
 
-        foreach (Finder::create()->in($directory)->directories()->depth(0)->sortByName() as $dir) {
+        foreach (Finder::create()->in($directory)->directories()->depth($depth)->sortByName() as $dir) {
             $directories[] = $dir->getPathname();
         }
 
         return $directories;
+    }
+
+    /**
+     * Get all the directories within a given directory (recursive).
+     *
+     * @return array
+     */
+    public function allDirectories(string $directory): array
+    {
+        return $this->directories($directory, []);
     }
 
     /**

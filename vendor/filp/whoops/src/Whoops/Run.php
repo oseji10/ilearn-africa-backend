@@ -81,10 +81,15 @@ final class Run implements RunInterface
      */
     private $frameFilters = [];
 
-    public function __construct(SystemFacade $system = null)
+    public function __construct(?SystemFacade $system = null)
     {
         $this->system = $system ?: new SystemFacade;
         $this->inspectorFactory = new InspectorFactory();
+    }
+
+    public function __destruct()
+    {
+        $this->unregister();
     }
 
     /**
@@ -420,8 +425,10 @@ final class Run implements RunInterface
         if ($this->writeToOutput()) {
             // @todo Might be able to clean this up a bit better
             if ($willQuit) {
-                // Cleanup all other output buffers before sending our output:
-                while ($this->system->getOutputBufferLevel() > 0) {
+                // Cleanup all other output buffers before sending our output.
+                // Stop at a buffer that cannot be removed, e.g. zlib output
+                // compression once it has started sending compressed output:
+                while ($this->system->getOutputBufferLevel() > 0 && $this->system->isOutputBufferRemovable()) {
                     $this->system->endOutputBuffering();
                 }
 
@@ -502,6 +509,11 @@ final class Run implements RunInterface
         // to the exception handler. Pass that information along.
         $this->canThrowExceptions = false;
 
+        // If we are not currently registered, we should not do anything
+        if (!$this->isRegistered) {
+            return;
+        }
+
         $error = $this->system->getLastError();
         if ($error && Misc::isLevelFatal($error['type'])) {
             // If there was a fatal error,
@@ -531,7 +543,7 @@ final class Run implements RunInterface
     {
         if (!is_callable($filterCallback)) {
             throw new \InvalidArgumentException(sprintf(
-                "A frame filter must be of type callable, %s type given.", 
+                "A frame filter must be of type callable, %s type given.",
                 gettype($filterCallback)
             ));
         }

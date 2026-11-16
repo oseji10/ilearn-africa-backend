@@ -2,6 +2,7 @@
 
 namespace Illuminate\Hashing;
 
+use Error;
 use Illuminate\Contracts\Hashing\Hasher as HasherContract;
 use RuntimeException;
 
@@ -39,7 +40,6 @@ class ArgonHasher extends AbstractHasher implements HasherContract
      * Create a new hasher instance.
      *
      * @param  array  $options
-     * @return void
      */
     public function __construct(array $options = [])
     {
@@ -58,15 +58,15 @@ class ArgonHasher extends AbstractHasher implements HasherContract
      *
      * @throws \RuntimeException
      */
-    public function make($value, array $options = [])
+    public function make(#[\SensitiveParameter] $value, array $options = [])
     {
-        $hash = @password_hash($value, $this->algorithm(), [
-            'memory_cost' => $this->memory($options),
-            'time_cost' => $this->time($options),
-            'threads' => $this->threads($options),
-        ]);
-
-        if (! is_string($hash)) {
+        try {
+            $hash = password_hash($value, $this->algorithm(), [
+                'memory_cost' => $this->memory($options),
+                'time_cost' => $this->time($options),
+                'threads' => $this->threads($options),
+            ]);
+        } catch (Error) {
             throw new RuntimeException('Argon2 hashing not supported.');
         }
 
@@ -76,7 +76,7 @@ class ArgonHasher extends AbstractHasher implements HasherContract
     /**
      * Get the algorithm that should be used for hashing.
      *
-     * @return int
+     * @return string
      */
     protected function algorithm()
     {
@@ -87,14 +87,18 @@ class ArgonHasher extends AbstractHasher implements HasherContract
      * Check the given plain value against a hash.
      *
      * @param  string  $value
-     * @param  string  $hashedValue
+     * @param  string|null  $hashedValue
      * @param  array  $options
      * @return bool
      *
      * @throws \RuntimeException
      */
-    public function check($value, $hashedValue, array $options = [])
+    public function check(#[\SensitiveParameter] $value, $hashedValue, array $options = [])
     {
+        if (is_null($hashedValue) || (string) $hashedValue === '') {
+            return false;
+        }
+
         if ($this->verifyAlgorithm && ! $this->isUsingCorrectAlgorithm($hashedValue)) {
             throw new RuntimeException('This password does not use the Argon2i algorithm.');
         }

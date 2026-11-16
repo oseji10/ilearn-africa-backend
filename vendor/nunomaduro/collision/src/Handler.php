@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace NunoMaduro\Collision;
 
 use Symfony\Component\Console\Output\OutputInterface;
+use Tests\Unit\HandlerTest;
 use Whoops\Handler\Handler as AbstractHandler;
 
 /**
  * @internal
  *
- * @see \Tests\Unit\HandlerTest
+ * @see HandlerTest
  */
 final class Handler extends AbstractHandler
 {
@@ -22,9 +23,9 @@ final class Handler extends AbstractHandler
     /**
      * Creates an instance of the Handler.
      */
-    public function __construct(Writer $writer = null)
+    public function __construct(?Writer $writer = null)
     {
-        $this->writer = $writer ?: new Writer();
+        $this->writer = $writer ?: new Writer;
     }
 
     /**

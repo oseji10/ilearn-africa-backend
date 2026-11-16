@@ -24,7 +24,7 @@ class FakeProcessSequence
     /**
      * The response that should be returned when the sequence is empty.
      *
-     * @var \Illuminate\Contracts\Process\ProcessResult|\Illuminate\Process\FakeProcessDescription
+     * @var \Illuminate\Contracts\Process\ProcessResult|\Illuminate\Process\FakeProcessDescription|null
      */
     protected $emptyProcess;
 
@@ -32,7 +32,6 @@ class FakeProcessSequence
      * Create a new fake process sequence instance.
      *
      * @param  array  $processes
-     * @return void
      */
     public function __construct(array $processes = [])
     {
@@ -75,8 +74,8 @@ class FakeProcessSequence
     protected function toProcessResult(ProcessResultContract|FakeProcessDescription|array|string $process)
     {
         return is_array($process) || is_string($process)
-                ? new FakeProcessResult(output: $process)
-                : $process;
+            ? new FakeProcessResult(output: $process)
+            : $process;
     }
 
     /**

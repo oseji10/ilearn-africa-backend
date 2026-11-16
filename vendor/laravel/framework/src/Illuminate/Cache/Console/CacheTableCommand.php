@@ -5,15 +5,22 @@ namespace Illuminate\Cache\Console;
 use Illuminate\Console\MigrationGeneratorCommand;
 use Symfony\Component\Console\Attribute\AsCommand;
 
-#[AsCommand(name: 'cache:table')]
+#[AsCommand(name: 'make:cache-table', aliases: ['cache:table'])]
 class CacheTableCommand extends MigrationGeneratorCommand
 {
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'cache:table';
+    protected $signature = 'make:cache-table';
+
+    /**
+     * The console command name aliases.
+     *
+     * @var string[]
+     */
+    protected $aliases = ['cache:table'];
 
     /**
      * The console command description.

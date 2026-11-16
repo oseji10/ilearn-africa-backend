@@ -16,6 +16,13 @@ trait InteractsWithConsole
     public $mockConsoleOutput = true;
 
     /**
+     * Indicates if the command is expected to output anything.
+     *
+     * @var bool|null
+     */
+    public $expectsOutput;
+
+    /**
      * All of the expected output lines.
      *
      * @var array
@@ -65,7 +72,7 @@ trait InteractsWithConsole
     public $expectedChoices = [];
 
     /**
-     * Call artisan command and return code.
+     * Invoke an Artisan command and return a mocked pending command or exit code.
      *
      * @param  string  $command
      * @param  array  $parameters
@@ -73,11 +80,33 @@ trait InteractsWithConsole
      */
     public function artisan($command, $parameters = [])
     {
-        if (! $this->mockConsoleOutput) {
-            return $this->app[Kernel::class]->call($command, $parameters);
-        }
+        return $this->mockConsoleOutput
+            ? $this->mockArtisan($command, $parameters)
+            : $this->realArtisan($command, $parameters);
+    }
 
+    /**
+     * Invoke an Artisan command and return a mocked pending command.
+     *
+     * @param  string  $command
+     * @param  array  $parameters
+     * @return \Illuminate\Testing\PendingCommand
+     */
+    public function mockArtisan($command, $parameters = []): PendingCommand
+    {
         return new PendingCommand($this, $this->app, $command, $parameters);
+    }
+
+    /**
+     * Invoke an Artisan command and return the exit code.
+     *
+     * @param  string  $command
+     * @param  array  $parameters
+     * @return int
+     */
+    public function realArtisan($command, $parameters = []): int
+    {
+        return $this->app[Kernel::class]->call($command, $parameters);
     }
 
     /**

@@ -26,7 +26,6 @@ class CacheEventMutex implements EventMutex, CacheAware
      * Create a new overlapping strategy.
      *
      * @param  \Illuminate\Contracts\Cache\Factory  $cache
-     * @return void
      */
     public function __construct(Cache $cache)
     {
@@ -61,9 +60,12 @@ class CacheEventMutex implements EventMutex, CacheAware
     public function exists(Event $event)
     {
         if ($this->shouldUseLocks($this->cache->store($this->store)->getStore())) {
-            return ! $this->cache->store($this->store)->getStore()
-                ->lock($event->mutexName(), $event->expiresAt * 60)
-                ->get(fn () => true);
+            $lock = $this->cache->store($this->store)->getStore()
+                ->lock($event->mutexName(), $event->expiresAt * 60);
+
+            return method_exists($lock, 'isLocked')
+                ? $lock->isLocked()
+                : ! $lock->get(fn () => true);
         }
 
         return $this->cache->store($this->store)->has($event->mutexName());
