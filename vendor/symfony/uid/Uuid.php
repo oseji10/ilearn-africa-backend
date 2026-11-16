@@ -127,8 +127,10 @@ class Uuid extends AbstractUid
     /**
      * @param int-mask-of<Uuid::FORMAT_*> $format
      */
-    public static function isValid(string $uuid, int $format = self::FORMAT_RFC_9562): bool
+    public static function isValid(string $uuid /* , int $format = self::FORMAT_RFC_9562 */): bool
     {
+        $format = 1 < \func_num_args() ? func_get_arg(1) : self::FORMAT_RFC_9562;
+
         if (36 === \strlen($uuid) && !($format & self::FORMAT_RFC_9562)) {
             return false;
         }
@@ -167,15 +169,6 @@ class Uuid extends AbstractUid
     public function toRfc4122(): string
     {
         return $this->uid;
-    }
-
-    public function compare(AbstractUid $other): int
-    {
-        if (false !== $cmp = uuid_compare($this->uid, $other->uid)) {
-            return $cmp;
-        }
-
-        return parent::compare($other);
     }
 
     private static function format(string $uuid, string $version): string
